@@ -1,0 +1,538 @@
+{
+  "format": "kestrel-template",
+  "schema": 1,
+  "app": {
+    "name": "Kestrel",
+    "version": "0.1.0"
+  },
+  "name": "Demo 7-colour PBMC panel",
+  "created": "2026-10-15T12:28:46.950Z",
+  "transforms": {
+    "FSC-A": {
+      "type": "linear",
+      "min": 0,
+      "max": 262144
+    },
+    "FSC-H": {
+      "type": "linear",
+      "min": 0,
+      "max": 262144
+    },
+    "SSC-A": {
+      "type": "linear",
+      "min": 0,
+      "max": 262144
+    },
+    "SSC-H": {
+      "type": "linear",
+      "min": 0,
+      "max": 262144
+    },
+    "BV421-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.47,
+      "M": 4.5,
+      "A": 0
+    },
+    "BV510-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.4,
+      "M": 4.5,
+      "A": 0
+    },
+    "FITC-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.7,
+      "M": 4.5,
+      "A": 0
+    },
+    "PE-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.53,
+      "M": 4.5,
+      "A": 0
+    },
+    "PerCP-Cy5-5-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.67,
+      "M": 4.5,
+      "A": 0
+    },
+    "PE-Cy7-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.52,
+      "M": 4.5,
+      "A": 0
+    },
+    "APC-A": {
+      "type": "logicle",
+      "T": 262144,
+      "W": 0.56,
+      "M": 4.5,
+      "A": 0
+    },
+    "Time": {
+      "type": "linear",
+      "min": 0,
+      "max": 10000
+    }
+  },
+  "comp": {
+    "matrices": [],
+    "default": "file"
+  },
+  "derived": [],
+  "gates": [
+    {
+      "id": "gmv9im76s58ow2",
+      "name": "Cells",
+      "parent": "root",
+      "type": "polygon",
+      "x": "FSC-A",
+      "y": "SSC-A",
+      "color": "#1f77d0",
+      "polygon": [
+        [
+          34000,
+          3500
+        ],
+        [
+          178000,
+          3500
+        ],
+        [
+          236000,
+          118000
+        ],
+        [
+          236000,
+          236000
+        ],
+        [
+          118000,
+          236000
+        ],
+        [
+          34000,
+          64000
+        ]
+      ]
+    },
+    {
+      "id": "gmv9im76sbawe3",
+      "name": "Singlets",
+      "parent": "gmv9im76s58ow2",
+      "type": "polygon",
+      "x": "FSC-A",
+      "y": "FSC-H",
+      "color": "#d6336c",
+      "polygon": [
+        [
+          20000,
+          14000
+        ],
+        [
+          250000,
+          182000
+        ],
+        [
+          250000,
+          238000
+        ],
+        [
+          20000,
+          19500
+        ]
+      ]
+    },
+    {
+      "id": "gmv9im76scc3l4",
+      "name": "Live",
+      "parent": "gmv9im76sbawe3",
+      "type": "rect",
+      "x": "BV510-A",
+      "y": "SSC-A",
+      "color": "#2b9a66",
+      "rect": {
+        "x0": null,
+        "x1": 4200,
+        "y0": null,
+        "y1": null
+      }
+    },
+    {
+      "id": "gmv9im76sju6h5",
+      "name": "Lymphocytes",
+      "parent": "gmv9im76scc3l4",
+      "type": "polygon",
+      "x": "FSC-A",
+      "y": "SSC-A",
+      "color": "#e8590c",
+      "polygon": [
+        [
+          43000,
+          7800
+        ],
+        [
+          86000,
+          8500
+        ],
+        [
+          93000,
+          29000
+        ],
+        [
+          74000,
+          36000
+        ],
+        [
+          47000,
+          31000
+        ]
+      ]
+    },
+    {
+      "id": "gmv9im76scil46",
+      "name": "Monocytes",
+      "parent": "gmv9im76scc3l4",
+      "type": "rect",
+      "x": "BV421-A",
+      "y": "SSC-A",
+      "color": "#7048e8",
+      "rect": {
+        "x0": 6000,
+        "x1": null,
+        "y0": 26000,
+        "y1": 125000
+      }
+    },
+    {
+      "id": "gmv9im76s9c4l7",
+      "name": "T cells",
+      "parent": "gmv9im76sju6h5",
+      "type": "rect",
+      "x": "FITC-A",
+      "y": "APC-A",
+      "color": "#0c8599",
+      "rect": {
+        "x0": 2200,
+        "x1": null,
+        "y0": null,
+        "y1": 1100
+      }
+    },
+    {
+      "id": "gmv9im76sjfal8",
+      "name": "B cells",
+      "parent": "gmv9im76sju6h5",
+      "type": "rect",
+      "x": "FITC-A",
+      "y": "APC-A",
+      "color": "#c2255c",
+      "rect": {
+        "x0": null,
+        "x1": 1300,
+        "y0": 1700,
+        "y1": null
+      }
+    },
+    {
+      "id": "gmv9im76s60r19",
+      "name": "Non-T/B",
+      "parent": "gmv9im76sju6h5",
+      "type": "rect",
+      "x": "FITC-A",
+      "y": "APC-A",
+      "color": "#5c940d",
+      "rect": {
+        "x0": null,
+        "x1": 1300,
+        "y0": null,
+        "y1": 1100
+      }
+    },
+    {
+      "id": "gmv9im76s14mtb",
+      "name": "CD4− CD8+",
+      "parent": "gmv9im76s9c4l7",
+      "type": "rect",
+      "x": "PE-Cy7-A",
+      "y": "PerCP-Cy5-5-A",
+      "color": "#ae3ec9",
+      "rect": {
+        "x0": null,
+        "x1": 2200,
+        "y0": 3200,
+        "y1": null
+      },
+      "link": {
+        "kind": "quad",
+        "group": "qmv9im76shqusa",
+        "role": "UL"
+      }
+    },
+    {
+      "id": "gmv9im76t37auc",
+      "name": "CD4+ CD8+",
+      "parent": "gmv9im76s9c4l7",
+      "type": "rect",
+      "x": "PE-Cy7-A",
+      "y": "PerCP-Cy5-5-A",
+      "color": "#f08c00",
+      "rect": {
+        "x0": 2200,
+        "x1": null,
+        "y0": 3200,
+        "y1": null
+      },
+      "link": {
+        "kind": "quad",
+        "group": "qmv9im76shqusa",
+        "role": "UR"
+      }
+    },
+    {
+      "id": "gmv9im76t8g6ld",
+      "name": "CD4− CD8−",
+      "parent": "gmv9im76s9c4l7",
+      "type": "rect",
+      "x": "PE-Cy7-A",
+      "y": "PerCP-Cy5-5-A",
+      "color": "#364fc7",
+      "rect": {
+        "x0": null,
+        "x1": 2200,
+        "y0": null,
+        "y1": 3200
+      },
+      "link": {
+        "kind": "quad",
+        "group": "qmv9im76shqusa",
+        "role": "LL"
+      }
+    },
+    {
+      "id": "gmv9im76t3hzle",
+      "name": "CD4+ CD8−",
+      "parent": "gmv9im76s9c4l7",
+      "type": "rect",
+      "x": "PE-Cy7-A",
+      "y": "PerCP-Cy5-5-A",
+      "color": "#087f5b",
+      "rect": {
+        "x0": 2200,
+        "x1": null,
+        "y0": null,
+        "y1": 3200
+      },
+      "link": {
+        "kind": "quad",
+        "group": "qmv9im76shqusa",
+        "role": "LR"
+      }
+    },
+    {
+      "id": "gmv9im76t81xvf",
+      "name": "NK cells",
+      "parent": "gmv9im76s60r19",
+      "type": "range",
+      "x": "PE-A",
+      "y": null,
+      "color": "#d6336c",
+      "range": {
+        "lo": 2000,
+        "hi": null
+      }
+    }
+  ],
+  "plots": [
+    {
+      "id": "pmv9im76tf7x8g",
+      "pop": "root",
+      "x": "FSC-A",
+      "y": "SSC-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76t8iawh",
+      "pop": "gmv9im76s58ow2",
+      "x": "FSC-A",
+      "y": "FSC-H",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76tjs71i",
+      "pop": "gmv9im76sbawe3",
+      "x": "BV510-A",
+      "y": "SSC-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76tbgupj",
+      "pop": "gmv9im76scc3l4",
+      "x": "FSC-A",
+      "y": "SSC-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76ti8llk",
+      "pop": "gmv9im76scc3l4",
+      "x": "BV421-A",
+      "y": "SSC-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76tf7sjl",
+      "pop": "gmv9im76sju6h5",
+      "x": "FITC-A",
+      "y": "APC-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76t8zagm",
+      "pop": "gmv9im76s9c4l7",
+      "x": "PE-Cy7-A",
+      "y": "PerCP-Cy5-5-A",
+      "type": "pseudo",
+      "overlay": "none"
+    },
+    {
+      "id": "pmv9im76tgpfjn",
+      "pop": "gmv9im76s60r19",
+      "x": "PE-A",
+      "y": null,
+      "type": "hist",
+      "overlay": "none"
+    }
+  ],
+  "table": {
+    "columns": [
+      {
+        "id": "cmv9im76t5mefo",
+        "kind": "stat",
+        "pop": "gmv9im76sju6h5",
+        "stat": "count",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76teglpp",
+        "kind": "stat",
+        "pop": "gmv9im76scc3l4",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76td4w2q",
+        "kind": "stat",
+        "pop": "gmv9im76sju6h5",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76t7y7mr",
+        "kind": "stat",
+        "pop": "gmv9im76scil46",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76thxg0s",
+        "kind": "stat",
+        "pop": "gmv9im76s9c4l7",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76tj92ot",
+        "kind": "stat",
+        "pop": "gmv9im76sjfal8",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76t6q7su",
+        "kind": "stat",
+        "pop": "gmv9im76t81xvf",
+        "stat": "freqGrandparent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76ta6ivv",
+        "kind": "stat",
+        "pop": "gmv9im76t3hzle",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76thjatw",
+        "kind": "stat",
+        "pop": "gmv9im76s14mtb",
+        "stat": "freqParent",
+        "channel": null
+      },
+      {
+        "id": "cmv9im76tcuw4x",
+        "kind": "stat",
+        "pop": "gmv9im76t3hzle",
+        "stat": "median",
+        "channel": "PE-Cy7-A"
+      },
+      {
+        "id": "cmv9im76tk4rqy",
+        "kind": "stat",
+        "pop": "gmv9im76s14mtb",
+        "stat": "median",
+        "channel": "PerCP-Cy5-5-A"
+      }
+    ]
+  },
+  "layout": {
+    "plotIds": [
+      "pmv9im76tf7sjl",
+      "pmv9im76t8zagm",
+      "pmv9im76tgpfjn"
+    ],
+    "size": 220,
+    "transpose": false,
+    "overlays": [
+      {
+        "id": "omv9im76t1bysz",
+        "title": "CD4 on T cells",
+        "channel": "PE-Cy7-A",
+        "pop": "gmv9im76s9c4l7",
+        "sampleIds": [],
+        "mode": "offset",
+        "normalize": "mode"
+      }
+    ]
+  },
+  "settings": {
+    "colormap": "classic",
+    "smooth": 1,
+    "labelStat": "freqParent",
+    "showLabels": true,
+    "dotSize": 1,
+    "plotSize": 290,
+    "histSmooth": true,
+    "autoDrill": true
+  },
+  "groups": [
+    {
+      "id": "grp-samples",
+      "name": "Samples"
+    }
+  ],
+  "description": "Viability, singlets, lymphocytes, monocytes, T/B/NK cells and CD4/CD8 subsets for the simulated 7-colour PBMC panel bundled with Kestrel."
+}

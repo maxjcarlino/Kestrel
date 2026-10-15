@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gating:Gating-ML xmlns:gating="http://www.isac-net.org/std/Gating-ML/v2.0/gating" xmlns:transforms="http://www.isac-net.org/std/Gating-ML/v2.0/transformations" xmlns:data-type="http://www.isac-net.org/std/Gating-ML/v2.0/datatypes" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- Exported by Kestrel -->
+  <transforms:transformation transforms:id="T_FSC-A">
+    <transforms:flin transforms:T="262144" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_BV510-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.4" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_BV421-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.47" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_FITC-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.7" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_APC-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.56" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_PE-Cy7-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.52" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_PerCP-Cy5-5-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.67" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <transforms:transformation transforms:id="T_PE-A">
+    <transforms:logicle transforms:T="262144" transforms:W="0.53" transforms:M="4.5" transforms:A="0"/>
+  </transforms:transformation>
+  <gating:PolygonGate gating:id="Cells">
+    <data-type:custom_info><app>Kestrel</app><name>Cells</name><color>#1f77d0</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="FSC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="SSC-A"/></gating:dimension>
+    <gating:vertex><gating:coordinate data-type:value="0.129699707031"/><gating:coordinate data-type:value="0.0133514404297"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.679016113281"/><gating:coordinate data-type:value="0.0133514404297"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.900268554688"/><gating:coordinate data-type:value="0.450134277344"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.900268554688"/><gating:coordinate data-type:value="0.900268554688"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.450134277344"/><gating:coordinate data-type:value="0.900268554688"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.129699707031"/><gating:coordinate data-type:value="0.244140625"/></gating:vertex>
+  </gating:PolygonGate>
+  <gating:PolygonGate gating:id="Singlets" gating:parent_id="Cells">
+    <data-type:custom_info><app>Kestrel</app><name>Singlets</name><color>#d6336c</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="FSC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="FSC-H"/></gating:dimension>
+    <gating:vertex><gating:coordinate data-type:value="0.0762939453125"/><gating:coordinate data-type:value="0.0534057617188"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.953674316406"/><gating:coordinate data-type:value="0.694274902344"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.953674316406"/><gating:coordinate data-type:value="0.907897949219"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.0762939453125"/><gating:coordinate data-type:value="0.0743865966797"/></gating:vertex>
+  </gating:PolygonGate>
+  <gating:RectangleGate gating:id="Live" gating:parent_id="Singlets">
+    <data-type:custom_info><app>Kestrel</app><name>Live</name><color>#2b9a66</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_BV510-A" gating:max="0.599767069272"><data-type:fcs-dimension data-type:name="BV510-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="SSC-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:PolygonGate gating:id="Lymphocytes" gating:parent_id="Live">
+    <data-type:custom_info><app>Kestrel</app><name>Lymphocytes</name><color>#e8590c</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="FSC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A"><data-type:fcs-dimension data-type:name="SSC-A"/></gating:dimension>
+    <gating:vertex><gating:coordinate data-type:value="0.164031982422"/><gating:coordinate data-type:value="0.0297546386719"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.328063964844"/><gating:coordinate data-type:value="0.0324249267578"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.354766845703"/><gating:coordinate data-type:value="0.110626220703"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.282287597656"/><gating:coordinate data-type:value="0.137329101563"/></gating:vertex>
+    <gating:vertex><gating:coordinate data-type:value="0.179290771484"/><gating:coordinate data-type:value="0.118255615234"/></gating:vertex>
+  </gating:PolygonGate>
+  <gating:RectangleGate gating:id="Monocytes" gating:parent_id="Live">
+    <data-type:custom_info><app>Kestrel</app><name>Monocytes</name><color>#7048e8</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_BV421-A" gating:min="0.634143495904"><data-type:fcs-dimension data-type:name="BV421-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="uncompensated" gating:transformation-ref="T_FSC-A" gating:min="0.0991821289063" gating:max="0.476837158203"><data-type:fcs-dimension data-type:name="SSC-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="T_cells" gating:parent_id="Lymphocytes">
+    <data-type:custom_info><app>Kestrel</app><name>T cells</name><color>#0c8599</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_FITC-A" gating:min="0.528516667819"><data-type:fcs-dimension data-type:name="FITC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_APC-A" gating:max="0.461718149795"><data-type:fcs-dimension data-type:name="APC-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="B_cells" gating:parent_id="Lymphocytes">
+    <data-type:custom_info><app>Kestrel</app><name>B cells</name><color>#c2255c</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_FITC-A" gating:max="0.471855741227"><data-type:fcs-dimension data-type:name="FITC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_APC-A" gating:min="0.506940429699"><data-type:fcs-dimension data-type:name="APC-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="Non-T_B" gating:parent_id="Lymphocytes">
+    <data-type:custom_info><app>Kestrel</app><name>Non-T/B</name><color>#5c940d</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_FITC-A" gating:max="0.471855741227"><data-type:fcs-dimension data-type:name="FITC-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_APC-A" gating:max="0.461718149795"><data-type:fcs-dimension data-type:name="APC-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="CD4_CD8_" gating:parent_id="T_cells">
+    <data-type:custom_info><app>Kestrel</app><name>CD4− CD8+</name><color>#ae3ec9</color><link kind="quad" group="qmv9im76shqusa" role="UL"/></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PE-Cy7-A" gating:max="0.534195681922"><data-type:fcs-dimension data-type:name="PE-Cy7-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PerCP-Cy5-5-A" gating:min="0.568480922809"><data-type:fcs-dimension data-type:name="PerCP-Cy5-5-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="CD4_CD8__2" gating:parent_id="T_cells">
+    <data-type:custom_info><app>Kestrel</app><name>CD4+ CD8+</name><color>#f08c00</color><link kind="quad" group="qmv9im76shqusa" role="UR"/></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PE-Cy7-A" gating:min="0.534195681922"><data-type:fcs-dimension data-type:name="PE-Cy7-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PerCP-Cy5-5-A" gating:min="0.568480922809"><data-type:fcs-dimension data-type:name="PerCP-Cy5-5-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="CD4_CD8__3" gating:parent_id="T_cells">
+    <data-type:custom_info><app>Kestrel</app><name>CD4− CD8−</name><color>#364fc7</color><link kind="quad" group="qmv9im76shqusa" role="LL"/></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PE-Cy7-A" gating:max="0.534195681922"><data-type:fcs-dimension data-type:name="PE-Cy7-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PerCP-Cy5-5-A" gating:max="0.568480922809"><data-type:fcs-dimension data-type:name="PerCP-Cy5-5-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="CD4_CD8__4" gating:parent_id="T_cells">
+    <data-type:custom_info><app>Kestrel</app><name>CD4+ CD8−</name><color>#087f5b</color><link kind="quad" group="qmv9im76shqusa" role="LR"/></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PE-Cy7-A" gating:min="0.534195681922"><data-type:fcs-dimension data-type:name="PE-Cy7-A"/></gating:dimension>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PerCP-Cy5-5-A" gating:max="0.568480922809"><data-type:fcs-dimension data-type:name="PerCP-Cy5-5-A"/></gating:dimension>
+  </gating:RectangleGate>
+  <gating:RectangleGate gating:id="NK_cells" gating:parent_id="Non-T_B">
+    <data-type:custom_info><app>Kestrel</app><name>NK cells</name><color>#d6336c</color></data-type:custom_info>
+    <gating:dimension gating:compensation-ref="FCS" gating:transformation-ref="T_PE-A" gating:min="0.524346812286"><data-type:fcs-dimension data-type:name="PE-A"/></gating:dimension>
+  </gating:RectangleGate>
+</gating:Gating-ML>

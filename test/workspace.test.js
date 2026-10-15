@@ -1,0 +1,141 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { store } from '../src/ui/state/store.js';
+import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform } from '../src/ui/state/doc.js';
+import { makeTemplate, applyTemplate, migrateDoc, migrateTemplate, workspaceFile } from '../src/ui/state/loader.js';
+import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey } from '../src/ui/state/derived.js';
+import { buildDemoTemplate } from '../src/ui/state/demo-template.js';
+import { ROOT } from '../src/core/gates.js';
+
+const CH = ['FSC-A', 'FSC-H', 'SSC-A', 'SSC-H', 'BV421-A', 'BV510-A', 'FITC-A', 'PE-A', 'PerCP-Cy5-5-A', 'PE-Cy7-A', 'APC-A', 'Time'];
+const kind = (n) => (/^(FSC|SSC)/.test(n) ? 'scatter' : n === 'Time' ? 'time' : 'fluor');
+
+function freshDemo() {
+  const doc = emptyDoc('Test');
+  doc.groups = [{ id: 'g1', name: 'Samples' }];
+  doc.samples = [
+    { id: 's1', name: 'A', fileName: 'A.fcs', nEvents: 100, groupIds: ['g1'], channels: CH.map((name) => ({ name, label: '', kind: kind(name), range: 262144 })) },
+    { id: 's2', name: 'B', fileName: 'B.fcs', nEvents: 100, groupIds: ['g1'], channels: CH.map((name) => ({ name, label: '', kind: kind(name), range: 262144 })) },
+  ];
+  Object.assign(doc, buildDemoTemplate(doc));
+  for (const c of CH) doc.transforms[c] = defaultSpec({ name: c, kind: kind(c), range: 262144, max: 262144, suggest: { W: 0.6 } });
+  store.set({ ...initialState(), doc, ui: { ...initialState().ui, sampleId: 's1' } });
+  return doc;
+}
+
+test('demo template builds a consistent hierarchy', () => {
+  const doc = freshDemo();
+  const gates = Object.values(doc.gates);
+  assert.equal(gates.length, 13);
+  for (const g of gates) assert.ok(g.parent === ROOT || doc.gates[g.parent], `${g.name} has a parent`);
+  const quads = gates.filter((g) => g.link && g.link.kind === 'quad');
+  assert.equal(quads.length, 4);
+  assert.ok(doc.plots.every((p) => p.pop === ROOT || doc.gates[p.pop]));
+  assert.ok(doc.table.columns.every((c) => doc.gates[c.pop]));
+});
+
+test('template round trip reproduces gates, plots and scales', () => {
+  const doc = freshDemo();
+  const tpl = JSON.parse(JSON.stringify(makeTemplate(doc, 'T')));
+  assert.equal(tpl.format, 'kestrel-template');
+  // apply to a workspace with different samples and no analysis
+  const other = emptyDoc('Other');
+  other.samples = [{ id: 'x', name: 'X', fileName: 'X.fcs', nEvents: 1, groupIds: [], channels: [] }];
+  store.set({ ...initialState(), doc: other });
+  applyTemplate(tpl);
+  const d2 = store.get().doc;
+  assert.equal(Object.keys(d2.gates).length, Object.keys(doc.gates).length);
+  assert.equal(d2.plots.length, doc.plots.length);
+  assert.deepEqual(d2.transforms['FITC-A'], doc.transforms['FITC-A']);
+  assert.equal(d2.samples[0].id, 'x');
+  assert.deepEqual(d2.overrides, {});
+  assert.throws(() => migrateTemplate({ format: 'something' }));
+  assert.throws(() => migrateTemplate({ format: 'kestrel-template', schema: 99 }));
+});
+
+test('workspace file round trip', () => {
+  const doc = freshDemo();
+  const file = JSON.parse(JSON.stringify(workspaceFile(doc)));
+  assert.equal(file.format, 'kestrel-workspace');
+  const back = migrateDoc(file);
+  assert.equal(back.name, 'Test');
+  assert.equal(Object.keys(back.gates).length, 13);
+  assert.equal(back.samples.length, 2);
+  assert.throws(() => migrateDoc({ format: 'kestrel-template' }), /template/);
+});
+
+test('undo/redo cover analysis edits and transactions', () => {
+  freshDemo();
+  const id = Object.values(store.get().doc.gates).find((g) => g.name === 'T cells').id;
+  const r0 = store.get().doc.gates[id].rect;
+  setGeometry(id, { rect: { ...r0, x0: 5000 } }, { scope: 'all' });
+  assert.equal(store.get().doc.gates[id].rect.x0, 5000);
+  undo();
+  assert.equal(store.get().doc.gates[id].rect.x0, r0.x0);
+  redo();
+  assert.equal(store.get().doc.gates[id].rect.x0, 5000);
+  // a drag is one undo step
+  beginTxn();
+  for (let i = 0; i < 5; i++) setGeometry(id, { rect: { ...r0, x0: 6000 + i } }, { scope: 'all', transient: true });
+  commitTxn();
+  assert.equal(store.get().doc.gates[id].rect.x0, 6004);
+  undo();
+  assert.equal(store.get().doc.gates[id].rect.x0, 5000);
+  // sample additions are not undone
+  updateDoc((d) => ({ ...d, samples: [...d.samples, { id: 's3', name: 'C', channels: [] }] }), { history: false });
+  undo();
+  assert.ok(store.get().doc.samples.some((s) => s.id === 's3'));
+});
+
+test('per-sample overrides, promotion and reset', () => {
+  freshDemo();
+  const doc = store.get().doc;
+  const live = Object.values(doc.gates).find((g) => g.name === 'Live');
+  makeOverride(live.id, 's1');
+  setGeometry(live.id, { rect: { ...live.rect, x1: 9999 } }, { sampleId: 's1', scope: 'all' });
+  assert.equal(store.get().doc.overrides.s1[live.id].rect.x1, 9999, 'edits go to the existing override');
+  assert.equal(store.get().doc.gates[live.id].rect.x1, live.rect.x1, 'shared gate unchanged');
+  const sigA = popSig(store.get(), 's1', live.id);
+  const sigB = popSig(store.get(), 's2', live.id);
+  assert.notEqual(sigA, sigB);
+  applyOverrideToAll(live.id, 's1');
+  assert.equal(store.get().doc.gates[live.id].rect.x1, 9999);
+  assert.equal(store.get().doc.overrides.s1, undefined);
+  makeOverride(live.id, 's2');
+  clearOverride(live.id, 's2');
+  assert.equal(store.get().doc.overrides.s2, undefined);
+});
+
+test('quadrant member converts to an independent polygon; deleting removes dependents', () => {
+  freshDemo();
+  const doc = store.get().doc;
+  const q = Object.values(doc.gates).find((g) => g.name === 'CD4+ CD8−');
+  assert.ok(convertToPolygon(q.id));
+  const p = store.get().doc.gates[q.id];
+  assert.equal(p.type, 'polygon');
+  assert.equal(p.link, undefined);
+  assert.equal(p.polygon.length, 4);
+  const lymph = Object.values(doc.gates).find((g) => g.name === 'Lymphocytes');
+  const n = deleteGate(lymph.id);
+  assert.equal(n, 9); // lymphocytes, T, B, Non-T/B, 4 quadrants, NK
+  assert.ok(store.get().doc.plots.every((pl) => pl.pop === ROOT || store.get().doc.gates[pl.pop]));
+});
+
+test('derived helpers: frequencies, signatures, axis suggestions', () => {
+  freshDemo();
+  const s = store.get();
+  const g = Object.values(s.doc.gates).find((x) => x.name === 'Singlets');
+  const counts = { root: 1000, [g.parent]: 800, [g.id]: 600 };
+  assert.equal(frequency(s.doc, counts, g.id, 'freqParent'), 75);
+  assert.equal(frequency(s.doc, counts, g.id, 'freqTotal'), 60);
+  assert.equal(frequency(s.doc, counts, g.id, 'freqGrandparent'), 60);
+  const before = popSig(s, 's1', g.id);
+  setTransform('FSC-H', { type: 'linear', min: 0, max: 100000 });
+  assert.notEqual(popSig(store.get(), 's1', g.id), before, 'polygon gates depend on their axis scales');
+  const cells = Object.values(s.doc.gates).find((x) => x.name === 'Cells');
+  assert.deepEqual(suggestAxes(s.doc, cells.id), ['FSC-A', 'FSC-H']);
+  assert.equal(allChannels(s.doc).length, 12);
+  assert.equal(effectiveComp(s, 's1'), null);
+  assert.equal(compKey(s, 's1'), 'none');
+});

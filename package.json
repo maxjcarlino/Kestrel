@@ -1,0 +1,59 @@
+{
+  "name": "kestrel",
+  "version": "0.1.0",
+  "description": "Open-source flow cytometry analysis in the browser: FCS reading, compensation, transforms, hierarchical gating, interactive plots and reusable workflow templates.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./core/*": "./src/core/*"
+  },
+  "bin": {
+    "kestrel-batch": "scripts/kestrel-batch.mjs"
+  },
+  "files": [
+    "src",
+    "scripts/kestrel-batch.mjs",
+    "dist/kestrel.html",
+    "examples",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:min": "node scripts/build.mjs --minify",
+    "dev": "node scripts/build.mjs --watch",
+    "test": "node --test test/*.test.js",
+    "e2e": "node e2e/run.mjs && node e2e/run-more.mjs",
+    "compliance": "node scripts/gatingml-compliance.mjs",
+    "perf": "node e2e/perf.mjs",
+    "demo-data": "node scripts/make-demo-fcs.mjs",
+    "examples": "node scripts/make-examples.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "lint": "node scripts/check-imports.mjs",
+    "batch": "node scripts/kestrel-batch.mjs"
+  },
+  "keywords": [
+    "flow-cytometry",
+    "fcs",
+    "gating",
+    "compensation",
+    "logicle",
+    "cytometry",
+    "bioinformatics",
+    "gating-ml",
+    "fcs-files",
+    "immunology",
+    "single-file",
+    "webapp"
+  ],
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "playwright": "^1.56.0",
+    "preact": "^10.25.4"
+  }
+}

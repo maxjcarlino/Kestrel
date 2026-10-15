@@ -1,0 +1,7 @@
+node_modules/
+.cache/
+demo-data/
+e2e/shots/
+dist/artifact.html
+*.log
+.DS_Store
