@@ -142,6 +142,24 @@ These are not available yet. Contributions are welcome.
 
 Kestrel is research software and is not intended for clinical diagnostic use.
 
+## How to cite
+
+If Kestrel contributed to your analysis, please cite it:
+
+> Carlino, M.J. (2026). *Kestrel: free, browser-based flow cytometry analysis* (version 0.1.1) [Computer software]. https://github.com/maxjcarlino/Kestrel
+
+```bibtex
+@software{kestrel,
+  author  = {Carlino, Maximillian J.},
+  title   = {Kestrel: free, browser-based flow cytometry analysis},
+  year    = {2026},
+  version = {0.1.1},
+  url     = {https://github.com/maxjcarlino/Kestrel}
+}
+```
+
+A machine-readable [CITATION.cff](CITATION.cff) is also included, which GitHub uses to show a "Cite this repository" button on the repo page and to populate reference managers (Zotero, EndNote) that support it.
+
 ## Contributing
 
 Bug reports, test files that read incorrectly, and pull requests are all welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).

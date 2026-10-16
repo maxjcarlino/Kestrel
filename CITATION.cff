@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Kestrel: free, browser-based flow cytometry analysis"
+version: 0.1.1
+date-released: "2026-10-16"
+url: "https://github.com/maxjcarlino/Kestrel"
+repository-code: "https://github.com/maxjcarlino/Kestrel"
+license: MIT
+authors:
+  - family-names: Carlino
+    given-names: "Maximillian J."
