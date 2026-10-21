@@ -128,7 +128,9 @@ function Toolbar() {
 }
 
 export function GatingView() {
-  const plots = useSel((s) => s.doc.plots);
+  // Gating-hierarchy panels are read-only summaries (Layout/Batch only); the
+  // interactive grid's gate-drawing tools don't apply to them.
+  const plots = useSel((s) => s.doc.plots.filter((p) => p.type !== 'tree'));
   const sampleId = useSel((s) => s.ui.sampleId);
   const nSamples = useSel((s) => s.doc.samples.length);
   const tool = useSel((s) => s.ui.tool);

@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
-import { setLayout, samplesInGroup, toast } from '../state/doc.js';
+import { setLayout, samplesInGroup, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
 import { popName, popSig, compKey, channelInfo, allChannels } from '../state/derived.js';
 import { transformKey } from '../../core/transforms.js';
 import { newId } from '../../core/gate-geometry.js';
+import { ROOT } from '../../core/gates.js';
+import { STATS } from '../../core/stats.js';
 import { fetchLayer, drawPanel, SvgContext, fetchOverlay, drawOverlay, SERIES_COLORS } from '../plot/export.js';
 import { watchCounts } from '../state/bridge.js';
-import { makeCanvas } from '../plot/paint.js';
+import { makeCanvas, TREE_STATS, TREE_STATS_DEFAULT } from '../plot/paint.js';
 import { useTheme, exportTheme } from '../theme.js';
-import { IconButton, Button, Segmented, Empty, openMenu, rectOf } from './ui.jsx';
+import { Icon, IconButton, Button, Segmented, Empty, openMenu, rectOf } from './ui.jsx';
 import { popOptions } from '../plot/PlotCard.jsx';
 import { saveFile, safeName } from '../util/download.js';
 import { report } from '../state/gating.js';
@@ -18,6 +20,7 @@ import { report } from '../state/gating.js';
 const TITLE = 22;
 
 function plotLabel(doc, p) {
+  if (p.type === 'tree') return `${popName(doc, p.pop)} · Gating hierarchy`;
   const x = channelInfo(doc, p.x);
   const y = p.y ? channelInfo(doc, p.y) : null;
   return `${popName(doc, p.pop)} · ${x.label || x.name}${y && p.type !== 'hist' ? ` × ${y.label || y.name}` : ''}`;
@@ -37,7 +40,7 @@ export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle =
         sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size,
         popSig(state, sampleId, plot.pop), transformKey(doc.transforms[plot.x]), plot.y ? transformKey(doc.transforms[plot.y]) : '',
         compKey(state, sampleId), doc.settings.colormap, doc.settings.dotSize, plot.dotSize,
-        (plot.concatIds || []).join(','),
+        (plot.concatIds || []).join(','), (plot.statCols || []).join(','),
       ].join('|')
     : null;
   const [layer, setLayer] = useState(null);
@@ -159,6 +162,20 @@ export function LayoutView() {
           ) : (
             <p class="muted small">Add plots in the Gating view first.</p>
           )}
+          <button
+            type="button"
+            class="link-btn add-tree-btn"
+            onClick={() => {
+              const id = addPlot({ pop: ROOT, type: 'tree', statCols: TREE_STATS_DEFAULT }, { focus: false });
+              setLayout({ plotIds: [...L.plotIds, id] });
+            }}
+          >
+            <Icon name="plus" size={13} />
+            <span>Add gating hierarchy</span>
+          </button>
+          {doc.plots.filter((p) => p.type === 'tree').map((p) => (
+            <TreePlotCard plot={p} key={p.id} />
+          ))}
           <label class="field-row">
             <span>Samples</span>
             <select class="field" value={L.groupId || ''} onChange={(e) => setLayout({ groupId: e.currentTarget.value || null })}>
@@ -236,6 +253,41 @@ export function LayoutView() {
         )}
         <OverlayPanels />
       </section>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------- tree panels
+
+/** Inline settings for one gating-hierarchy panel: which population it's rooted at and which stat columns to show. */
+function TreePlotCard({ plot: p }) {
+  const doc = useSel((s) => s.doc);
+  const cols = p.statCols && p.statCols.length ? p.statCols : TREE_STATS_DEFAULT;
+  const toggleCol = (key) => updatePlot(p.id, { statCols: cols.includes(key) ? cols.filter((k) => k !== key) : [...cols, key] });
+  return (
+    <div class="tree-plot-card">
+      <label class="field-row">
+        <span>Root population</span>
+        <select class="field field-sm" value={p.pop} onChange={(e) => updatePlot(p.id, { pop: e.currentTarget.value })}>
+          {popOptions(doc).map((o) => (
+            <option value={o.id} key={o.id}>
+              {' '.repeat(o.depth)}
+              {o.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div class="check-list short tree-stat-cols">
+        {TREE_STATS.map((key) => (
+          <label class="check-row" key={key}>
+            <input type="checkbox" checked={cols.includes(key)} onChange={() => toggleCol(key)} />
+            <span>{STATS[key].short}</span>
+          </label>
+        ))}
+      </div>
+      <button type="button" class="link-btn danger" onClick={() => removePlot(p.id)}>
+        Delete this panel
+      </button>
     </div>
   );
 }

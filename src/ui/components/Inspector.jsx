@@ -332,14 +332,19 @@ function SampleInspector() {
           />
         </div>
         <p class="muted small">Applies to plots with no dot size of their own. Set one on a plot from its options menu to override it there.</p>
-        <div class="setting row">
+        <div class="setting labelstat-seg">
           <span>Gate labels show</span>
           <Segmented
             size="sm"
             label="Gate labels show"
             value={st.labelStat || 'freqParent'}
             onChange={(v) => updateSettings({ labelStat: v })}
-            options={[{ value: 'freqParent', label: '% parent' }, { value: 'freqTotal', label: '% total' }, { value: 'count', label: 'Count' }]}
+            options={[
+              { value: 'freqParent', label: '% parent' },
+              { value: 'freqGrandparent', label: '% g.parent' },
+              { value: 'freqTotal', label: '% total' },
+              { value: 'count', label: 'Count' },
+            ]}
           />
         </div>
         <label class="setting row check">

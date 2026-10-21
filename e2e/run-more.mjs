@@ -439,6 +439,56 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
     await axisToggle.click();
   }
 
+  // ---- layout view: gating-hierarchy panel
+  const nPlotsBefore = await p2.evaluate(() => window.kestrel.state().doc.plots.length);
+  await p2.click('.add-tree-btn');
+  await p2.waitForTimeout(600);
+  const afterAdd = await p2.evaluate(() => {
+    const st = window.kestrel.state();
+    const added = st.doc.plots.find((p) => p.type === 'tree');
+    return { nPlots: st.doc.plots.length, added, inLayout: st.doc.layout.plotIds.includes(added && added.id) };
+  });
+  check(
+    'adding a gating hierarchy panel creates a tree plot, included in the layout, with default stat columns',
+    afterAdd.nPlots === nPlotsBefore + 1 && !!afterAdd.added && afterAdd.inLayout && Array.isArray(afterAdd.added.statCols) && afterAdd.added.statCols.includes('count') && afterAdd.added.statCols.includes('freqParent'),
+    JSON.stringify(afterAdd),
+  );
+  const treeCard = await p2.$('.tree-plot-card');
+  check('the panel gets an inline settings card (root population + stat columns)', !!treeCard);
+  await p2.waitForTimeout(1200);
+  const gridHasExtraCol = await p2.$$eval('.layout-main .batch-col', (els) => els.length);
+  check('the hierarchy panel appears as an extra column in the grid', gridHasExtraCol >= 1, `${gridHasExtraCol} columns`);
+
+  // untick one stat column and confirm the plot's statCols updates
+  const gpCheckbox = await p2.$('.tree-plot-card .tree-stat-cols .check-row:has-text("% Parent") input');
+  if (gpCheckbox) {
+    await gpCheckbox.click();
+    await p2.waitForTimeout(400);
+    const cols = await p2.evaluate(() => window.kestrel.state().doc.plots.find((p) => p.type === 'tree').statCols);
+    check('unticking a stat column removes it from the plot', !cols.includes('freqParent'), JSON.stringify(cols));
+  } else {
+    check('unticking a stat column removes it from the plot', false, 'no "% Parent" checkbox found');
+  }
+
+  // the panel should also show up in Batch, alongside the ordinary plots
+  const batchCellsBefore = cells;
+  await p2.click('.view-tab:has-text("Batch")');
+  await p2.waitForTimeout(1500);
+  const batchCellsAfter = await p2.$$eval('.batch-cell', (els) => els.length);
+  check(
+    'the gating hierarchy panel also appears in the Batch grid',
+    batchCellsAfter === batchCellsBefore + 3,
+    `${batchCellsBefore} -> ${batchCellsAfter}`,
+  );
+  const staticTreeCell = await p2.$('.batch-cell-static');
+  check('the Batch hierarchy panel is a static (non-clickable) cell', !!staticTreeCell);
+
+  // the interactive Gating grid should keep ignoring tree plots (no PlotCard crash)
+  await p2.click('.view-tab:has-text("Gating")');
+  await p2.waitForTimeout(800);
+  const gatingPlotCards = await p2.$$eval('.plot-grid .plot-card', (els) => els.length);
+  check('the Gating grid still filters out the gating-hierarchy panel', gatingPlotCards === nPlotsBefore, `${gatingPlotCards} cards, expected ${nPlotsBefore}`);
+
   await p2.close();
 }
 

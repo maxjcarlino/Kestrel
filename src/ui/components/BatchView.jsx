@@ -10,6 +10,7 @@ import { StaticPanel } from './LayoutView.jsx';
 import { Empty, Icon } from './ui.jsx';
 
 function axesLabel(doc, p) {
+  if (p.type === 'tree') return 'Gating hierarchy';
   const x = channelInfo(doc, p.x);
   const y = p.y && p.type !== 'hist' ? channelInfo(doc, p.y) : null;
   return `${x.label || x.name}${y ? ` × ${y.label || y.name}` : ''}`;
@@ -77,11 +78,17 @@ export function BatchView() {
                 <div class="batch-row" key={`h${smp.id}`}>
                   {smp.name}
                 </div>
-                {plots.map((p) => (
-                  <button type="button" class="batch-cell" onClick={() => open(smp.id, p.id)} title={`Open ${popName(doc, p.pop)} for ${smp.name}`} key={`${p.id}|${smp.id}`}>
-                    <StaticPanel plot={p} sampleId={smp.id} size={size} title="" subtitle="" />
-                  </button>
-                ))}
+                {plots.map((p) =>
+                  p.type === 'tree' ? (
+                    <div class="batch-cell batch-cell-static" key={`${p.id}|${smp.id}`}>
+                      <StaticPanel plot={p} sampleId={smp.id} size={size} title="" subtitle="" />
+                    </div>
+                  ) : (
+                    <button type="button" class="batch-cell" onClick={() => open(smp.id, p.id)} title={`Open ${popName(doc, p.pop)} for ${smp.name}`} key={`${p.id}|${smp.id}`}>
+                      <StaticPanel plot={p} sampleId={smp.id} size={size} title="" subtitle="" />
+                    </button>
+                  ),
+                )}
               </>
             ))}
           </div>

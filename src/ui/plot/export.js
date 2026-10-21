@@ -184,6 +184,9 @@ const YT_W = 18;
  * concatIds list, pools binned counts from those samples instead of just
  * sampleId. */
 export async function fetchLayer(plot, sampleId, W, H, theme) {
+  // A gating-hierarchy panel only needs per-gate counts, already kept fresh
+  // by watchCounts; it has no binned 'plot' data to fetch from the engine.
+  if (plot.type === 'tree') return { layer: null, message: null };
   const s = store.get();
   const doc = s.doc;
   const is2D = !!plot.y && plot.type !== 'hist';
@@ -238,8 +241,8 @@ export function drawPanel(ctx, o) {
   paintPlot(target, { W, H, doc, plot, sampleId, layer, theme, counts, gates: o.gates || gatesForPlot(doc, plot), selected: o.selected || null, hover: null, readOnly: true, overridden: new Set(), message, noClear: true });
   if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
   else ctx.restore();
-  // axis titles
-  if (showAxisLabels) {
+  // axis titles (a gating-hierarchy panel has no x/y channel to label)
+  if (showAxisLabels && plot.type !== 'tree') {
     const area = plotArea(W, H);
     const xi = channelInfo(doc, plot.x);
     const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;

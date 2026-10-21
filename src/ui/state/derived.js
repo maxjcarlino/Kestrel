@@ -182,6 +182,41 @@ export function frequency(doc, counts, id, stat) {
   return populationFrequency(doc.gates, counts, id, stat);
 }
 
+/**
+ * Flatten the gate tree under `rootId` (ROOT for the whole hierarchy, or any
+ * gate id to show just that gate and its descendants) into rows ordered the
+ * way the Populations panel shows them, each `{ gate, depth, last }` with
+ * `depth` relative to `rootId` (the root itself is depth 0 and included
+ * unless `rootId` is ROOT, matching how "All events" is drawn separately).
+ */
+export function hierarchyRows(doc, rootId) {
+  const root = rootId && rootId !== ROOT ? rootId : ROOT;
+  const kids = new Map();
+  for (const g of Object.values(doc.gates)) {
+    const p = g.parent || ROOT;
+    if (!kids.has(p)) kids.set(p, []);
+    kids.get(p).push(g);
+  }
+  const order = new Map((doc.gateOrder || []).map((id, i) => [id, i]));
+  const out = [];
+  const walk = (id, depth) => {
+    const list = (kids.get(id) || []).slice().sort((a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9));
+    list.forEach((g, i) => {
+      out.push({ gate: g, depth, last: i === list.length - 1 });
+      walk(g.id, depth + 1);
+    });
+  };
+  if (root === ROOT) {
+    walk(ROOT, 0);
+  } else {
+    const g = doc.gates[root];
+    if (!g) return [];
+    out.push({ gate: g, depth: 0, last: true });
+    walk(root, 1);
+  }
+  return out;
+}
+
 function isA(n) {
   return /-A$/i.test(n) || /\bA$/.test(n);
 }

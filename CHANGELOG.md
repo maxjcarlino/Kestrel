@@ -14,6 +14,8 @@
 - Double-click a `.kestrel.json` workspace to open it, once associated with the included Windows launcher. See [Open workspace files by double-clicking](README.md#open-workspace-files-by-double-clicking-windows).
 - The sidebar (Samples and Populations) can be dragged wider or narrower by its right edge, double-click to reset; the width is remembered. Sample names that don't fit shrink to a smaller size instead of being cut off with an ellipsis.
 - The per-plot dot size popover is now sized to its content instead of a fixed box, so it never scrolls.
+- Layout and Batch: add a gating-hierarchy panel ("Add gating hierarchy" in the Layout sidebar) showing every population under a chosen root, one per sample, with configurable columns (count, % parent, % grandparent, % total).
+- Inspector: "Gate labels show" gained a % grandparent option, alongside % parent, % total and count, for the label drawn next to each gate.
 
 ## 0.1.0
 

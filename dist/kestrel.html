@@ -502,6 +502,38 @@ h1, h2, h3 {
 .link-btn:hover {
   text-decoration: underline;
 }
+.link-btn.danger {
+  color: var(--bad);
+}
+.add-tree-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 2px;
+  font-size: 12.5px;
+}
+.tree-plot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 8px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2, var(--panel));
+}
+.tree-stat-cols {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  max-height: none;
+  gap: 2px 12px;
+  border: 0;
+  padding: 2px 0;
+}
+.tree-stat-cols .check-row {
+  width: auto;
+}
 .field {
   border: 1px solid var(--line-2);
   background: var(--panel);
@@ -549,6 +581,9 @@ select.field {
   background: var(--panel);
   color: var(--fg);
   box-shadow: var(--shadow), 0 0 0 1px var(--line);
+}
+.labelstat-seg .seg {
+  flex-wrap: wrap;
 }
 .chips {
   display: flex;
@@ -2976,6 +3011,9 @@ canvas.mini.is-hl {
 .batch-cell:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+.batch-cell-static {
+  cursor: default;
 }
 .mat-hidden {
   margin: 0 0 8px;
@@ -7317,6 +7355,33 @@ canvas.mini.is-hl {
   }
   function frequency(doc, counts, id, stat) {
     return populationFrequency(doc.gates, counts, id, stat);
+  }
+  function hierarchyRows(doc, rootId) {
+    const root = rootId && rootId !== ROOT ? rootId : ROOT;
+    const kids2 = /* @__PURE__ */ new Map();
+    for (const g4 of Object.values(doc.gates)) {
+      const p3 = g4.parent || ROOT;
+      if (!kids2.has(p3)) kids2.set(p3, []);
+      kids2.get(p3).push(g4);
+    }
+    const order = new Map((doc.gateOrder || []).map((id, i4) => [id, i4]));
+    const out = [];
+    const walk = (id, depth) => {
+      const list = (kids2.get(id) || []).slice().sort((a3, b2) => (order.get(a3.id) ?? 1e9) - (order.get(b2.id) ?? 1e9));
+      list.forEach((g4, i4) => {
+        out.push({ gate: g4, depth, last: i4 === list.length - 1 });
+        walk(g4.id, depth + 1);
+      });
+    };
+    if (root === ROOT) {
+      walk(ROOT, 0);
+    } else {
+      const g4 = doc.gates[root];
+      if (!g4) return [];
+      out.push({ gate: g4, depth: 0, last: true });
+      walk(root, 1);
+    }
+    return out;
   }
   function isA(n2) {
     return /-A$/i.test(n2) || /\bA$/.test(n2);
@@ -11742,6 +11807,9 @@ canvas.mini.is-hl {
   init_render();
   init_derived();
   init_doc();
+  var TREE_STATS = ["count", "freqParent", "freqGrandparent", "freqTotal"];
+  var TREE_STATS_DEFAULT = ["count", "freqParent"];
+  var TREE_MARGIN = { l: 6, r: 6, t: 4, b: 4 };
   function makeCanvas(w3, h3) {
     const c3 = document.createElement("canvas");
     c3.width = Math.max(1, w3);
@@ -11815,21 +11883,126 @@ canvas.mini.is-hl {
   }
   function gateLabels(doc, counts, gates, stat) {
     const map = /* @__PURE__ */ new Map();
+    const unit = STATS[stat] && STATS[stat].unit || "";
     for (const g4 of gates) {
-      const v3 = frequency(doc, counts, g4.id, stat === "count" ? "count" : stat);
-      let value = "";
-      if (Number.isFinite(v3)) value = stat === "count" ? formatStat("count", v3) : `${formatStat("freqParent", v3)}%`;
+      const v3 = frequency(doc, counts, g4.id, stat);
+      const value = Number.isFinite(v3) ? `${formatStat(stat, v3)}${unit}` : "";
       map.set(g4.id, { value });
     }
     return map;
   }
+  function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }) {
+    const stats = (plot.statCols && plot.statCols.length ? plot.statCols : TREE_STATS_DEFAULT).filter((s3) => STATS[s3]);
+    const rowH = 19;
+    const headerH = 17;
+    const padX = 6;
+    const minNameW = 70;
+    const colW = stats.length ? Math.max(30, Math.min(48, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
+    const statsW = stats.length * colW;
+    const nameW = Math.max(30, area.w - padX * 2 - statsW);
+    const small = area.w < 170;
+    const fontHead = `600 ${small ? 9 : 10}px ${theme.fontUI}`;
+    const fontName = `500 ${small ? 10 : 11}px ${theme.fontUI}`;
+    const fontVal = `500 ${small ? 10 : 11}px ${theme.fontMono}`;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(area.x, area.y, area.w, area.h);
+    ctx.clip();
+    ctx.textBaseline = "middle";
+    ctx.font = fontHead;
+    ctx.fillStyle = theme.muted;
+    const hy = area.y + headerH / 2 + 1;
+    ctx.textAlign = "left";
+    ctx.fillText("Population", area.x + padX, hy);
+    stats.forEach((key, i4) => {
+      ctx.textAlign = "right";
+      ctx.fillText(STATS[key].short, area.x + padX + nameW + i4 * colW + colW - 6, hy);
+    });
+    ctx.strokeStyle = theme.axis;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(area.x, area.y + headerH + 0.5);
+    ctx.lineTo(area.x + area.w, area.y + headerH + 0.5);
+    ctx.stroke();
+    const rootId = plot.pop && plot.pop !== ROOT ? plot.pop : ROOT;
+    const rows = hierarchyRows(doc, rootId);
+    const allRows = rootId === ROOT ? [{ gate: null, depth: 0 }, ...rows] : rows;
+    const maxRows = Math.max(0, Math.floor((area.h - headerH) / rowH));
+    const shown = allRows.slice(0, maxRows);
+    const overflow = allRows.length - shown.length;
+    let y3 = area.y + headerH;
+    for (const { gate, depth } of shown) {
+      const rowY = y3;
+      y3 += rowH;
+      const gid = gate ? gate.id : ROOT;
+      if (selected != null && selected === gid) {
+        ctx.fillStyle = withAlpha(theme.accent, 0.14);
+        ctx.fillRect(area.x, rowY, area.w, rowH);
+      }
+      const cy = rowY + rowH / 2;
+      const indent = Math.min(depth, 4) * 8;
+      ctx.textAlign = "left";
+      ctx.font = fontName;
+      ctx.fillStyle = theme.labelFg;
+      let nameX = area.x + padX + indent;
+      if (gate && gate.color) {
+        ctx.save();
+        ctx.fillStyle = gate.color;
+        ctx.beginPath();
+        ctx.arc(nameX + 3, cy, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = theme.labelFg;
+        nameX += 9;
+      }
+      const name = gate ? gate.name : "All events";
+      const avail = Math.max(10, area.x + padX + nameW - nameX);
+      let text = name;
+      if (ctx.measureText(text).width > avail) {
+        while (text.length > 1 && ctx.measureText(`${text}\u2026`).width > avail) text = text.slice(0, -1);
+        text += "\u2026";
+      }
+      ctx.fillText(text, nameX, cy);
+      ctx.font = fontVal;
+      ctx.fillStyle = theme.tick;
+      ctx.textAlign = "right";
+      stats.forEach((key, i4) => {
+        const v3 = frequency(doc, counts, gid, key);
+        const txt = Number.isFinite(v3) ? `${formatStat(key, v3)}${STATS[key].unit || ""}` : "\u2013";
+        ctx.fillText(txt, area.x + padX + nameW + i4 * colW + colW - 6, cy);
+      });
+    }
+    if (overflow > 0) {
+      ctx.textAlign = "left";
+      ctx.font = `500 10px ${theme.fontUI}`;
+      ctx.fillStyle = theme.muted;
+      ctx.fillText(`+${overflow} more`, area.x + padX, y3 + rowH / 2);
+    }
+    ctx.restore();
+  }
   function paintPlot(ctx, o3) {
     const { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, selected, hover, readOnly, overridden, message } = o3;
+    const area = plot.type === "tree" ? plotArea(W2, H3, TREE_MARGIN) : plotArea(W2, H3);
+    if (!o3.noClear) ctx.clearRect(0, 0, W2, H3);
+    if (plot.type === "tree") {
+      drawFrame(ctx, area, theme);
+      paintHierarchy(ctx, { area, doc, plot, counts, theme, selected });
+      if (message) {
+        ctx.save();
+        ctx.fillStyle = theme.labelBg;
+        ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
+        ctx.fillStyle = theme.tick;
+        ctx.font = `500 12px ${theme.fontUI}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);
+        ctx.restore();
+      }
+      return { area, shapes: [], labelBoxes: [] };
+    }
     const is2D = !!plot.y && plot.type !== "hist";
-    const area = plotArea(W2, H3);
     const tx2 = makeTransform(doc.transforms[plot.x]);
     const ty = is2D ? makeTransform(doc.transforms[plot.y]) : null;
-    if (!o3.noClear) ctx.clearRect(0, 0, W2, H3);
     drawFrame(ctx, area, theme);
     const fontTick = `10.5px ${theme.fontUI}`;
     if (layer && layer.kind === "image") {
@@ -12528,6 +12701,7 @@ canvas.mini.is-hl {
   var XT_H = 20;
   var YT_W = 18;
   async function fetchLayer(plot, sampleId, W2, H3, theme) {
+    if (plot.type === "tree") return { layer: null, message: null };
     const s3 = store.get();
     const doc = s3.doc;
     const is2D = !!plot.y && plot.type !== "hist";
@@ -12574,7 +12748,7 @@ canvas.mini.is-hl {
     paintPlot(target, { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, gates: o3.gates || gatesForPlot(doc, plot), selected: o3.selected || null, hover: null, readOnly: true, overridden: /* @__PURE__ */ new Set(), message, noClear: true });
     if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
     else ctx.restore();
-    if (showAxisLabels) {
+    if (showAxisLabels && plot.type !== "tree") {
       const area = plotArea(W2, H3);
       const xi = channelInfo(doc, plot.x);
       const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
@@ -13869,7 +14043,7 @@ canvas.mini.is-hl {
           )
         ] }),
         /* @__PURE__ */ u3("p", { class: "muted small", children: "Applies to plots with no dot size of their own. Set one on a plot from its options menu to override it there." }),
-        /* @__PURE__ */ u3("div", { class: "setting row", children: [
+        /* @__PURE__ */ u3("div", { class: "setting labelstat-seg", children: [
           /* @__PURE__ */ u3("span", { children: "Gate labels show" }),
           /* @__PURE__ */ u3(
             Segmented,
@@ -13878,7 +14052,12 @@ canvas.mini.is-hl {
               label: "Gate labels show",
               value: st.labelStat || "freqParent",
               onChange: (v3) => updateSettings({ labelStat: v3 }),
-              options: [{ value: "freqParent", label: "% parent" }, { value: "freqTotal", label: "% total" }, { value: "count", label: "Count" }]
+              options: [
+                { value: "freqParent", label: "% parent" },
+                { value: "freqGrandparent", label: "% g.parent" },
+                { value: "freqTotal", label: "% total" },
+                { value: "count", label: "Count" }
+              ]
             }
           )
         ] }),
@@ -14001,7 +14180,7 @@ canvas.mini.is-hl {
     ] });
   }
   function GatingView() {
-    const plots = useSel((s3) => s3.doc.plots);
+    const plots = useSel((s3) => s3.doc.plots.filter((p3) => p3.type !== "tree"));
     const sampleId = useSel((s3) => s3.ui.sampleId);
     const nSamples = useSel((s3) => s3.doc.samples.length);
     const tool = useSel((s3) => s3.ui.tool);
@@ -14798,6 +14977,8 @@ canvas.mini.is-hl {
   init_derived();
   init_transforms();
   init_gate_geometry();
+  init_gates();
+  init_stats();
   init_bridge();
   init_ui();
   init_download();
@@ -14805,6 +14986,7 @@ canvas.mini.is-hl {
   init_jsxRuntime_module();
   var TITLE = 22;
   function plotLabel(doc, p3) {
+    if (p3.type === "tree") return `${popName(doc, p3.pop)} \xB7 Gating hierarchy`;
     const x3 = channelInfo(doc, p3.x);
     const y3 = p3.y ? channelInfo(doc, p3.y) : null;
     return `${popName(doc, p3.pop)} \xB7 ${x3.label || x3.name}${y3 && p3.type !== "hist" ? ` \xD7 ${y3.label || y3.name}` : ""}`;
@@ -14833,7 +15015,8 @@ canvas.mini.is-hl {
       doc.settings.colormap,
       doc.settings.dotSize,
       plot.dotSize,
-      (plot.concatIds || []).join(",")
+      (plot.concatIds || []).join(","),
+      (plot.statCols || []).join(",")
     ].join("|") : null;
     const [layer, setLayer] = h2(null);
     y2(() => {
@@ -14939,6 +15122,22 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.plotIds.includes(p3.id), onChange: () => togglePlot(p3.id) }),
             /* @__PURE__ */ u3("span", { children: plotLabel(doc, p3) })
           ] }, p3.id)) }) : /* @__PURE__ */ u3("p", { class: "muted small", children: "Add plots in the Gating view first." }),
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              class: "link-btn add-tree-btn",
+              onClick: () => {
+                const id = addPlot({ pop: ROOT, type: "tree", statCols: TREE_STATS_DEFAULT }, { focus: false });
+                setLayout({ plotIds: [...L2.plotIds, id] });
+              },
+              children: [
+                /* @__PURE__ */ u3(Icon, { name: "plus", size: 13 }),
+                /* @__PURE__ */ u3("span", { children: "Add gating hierarchy" })
+              ]
+            }
+          ),
+          doc.plots.filter((p3) => p3.type === "tree").map((p3) => /* @__PURE__ */ u3(TreePlotCard, { plot: p3 }, p3.id)),
           /* @__PURE__ */ u3("label", { class: "field-row", children: [
             /* @__PURE__ */ u3("span", { children: "Samples" }),
             /* @__PURE__ */ u3("select", { class: "field", value: L2.groupId || "", onChange: (e3) => setLayout({ groupId: e3.currentTarget.value || null }), children: [
@@ -14997,6 +15196,25 @@ canvas.mini.is-hl {
         ] }),
         /* @__PURE__ */ u3(OverlayPanels, {})
       ] })
+    ] });
+  }
+  function TreePlotCard({ plot: p3 }) {
+    const doc = useSel((s3) => s3.doc);
+    const cols = p3.statCols && p3.statCols.length ? p3.statCols : TREE_STATS_DEFAULT;
+    const toggleCol = (key) => updatePlot(p3.id, { statCols: cols.includes(key) ? cols.filter((k3) => k3 !== key) : [...cols, key] });
+    return /* @__PURE__ */ u3("div", { class: "tree-plot-card", children: [
+      /* @__PURE__ */ u3("label", { class: "field-row", children: [
+        /* @__PURE__ */ u3("span", { children: "Root population" }),
+        /* @__PURE__ */ u3("select", { class: "field field-sm", value: p3.pop, onChange: (e3) => updatePlot(p3.id, { pop: e3.currentTarget.value }), children: popOptions(doc).map((o3) => /* @__PURE__ */ u3("option", { value: o3.id, children: [
+          " ".repeat(o3.depth),
+          o3.name
+        ] }, o3.id)) })
+      ] }),
+      /* @__PURE__ */ u3("div", { class: "check-list short tree-stat-cols", children: TREE_STATS.map((key) => /* @__PURE__ */ u3("label", { class: "check-row", children: [
+        /* @__PURE__ */ u3("input", { type: "checkbox", checked: cols.includes(key), onChange: () => toggleCol(key) }),
+        /* @__PURE__ */ u3("span", { children: STATS[key].short })
+      ] }, key)) }),
+      /* @__PURE__ */ u3("button", { type: "button", class: "link-btn danger", onClick: () => removePlot(p3.id), children: "Delete this panel" })
     ] });
   }
   function OverlayList() {
@@ -15156,6 +15374,7 @@ canvas.mini.is-hl {
   init_ui();
   init_jsxRuntime_module();
   function axesLabel(doc, p3) {
+    if (p3.type === "tree") return "Gating hierarchy";
     const x3 = channelInfo(doc, p3.x);
     const y3 = p3.y && p3.type !== "hist" ? channelInfo(doc, p3.y) : null;
     return `${x3.label || x3.name}${y3 ? ` \xD7 ${y3.label || y3.name}` : ""}`;
@@ -15209,7 +15428,9 @@ canvas.mini.is-hl {
         ] }, p3.id)),
         ready.map((smp) => /* @__PURE__ */ u3(k, { children: [
           /* @__PURE__ */ u3("div", { class: "batch-row", children: smp.name }, `h${smp.id}`),
-          plots.map((p3) => /* @__PURE__ */ u3("button", { type: "button", class: "batch-cell", onClick: () => open(smp.id, p3.id), title: `Open ${popName(doc, p3.pop)} for ${smp.name}`, children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`))
+          plots.map(
+            (p3) => p3.type === "tree" ? /* @__PURE__ */ u3("div", { class: "batch-cell batch-cell-static", children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`) : /* @__PURE__ */ u3("button", { type: "button", class: "batch-cell", onClick: () => open(smp.id, p3.id), title: `Open ${popName(doc, p3.pop)} for ${smp.name}`, children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`)
+          )
         ] }))
       ] }) })
     ] });

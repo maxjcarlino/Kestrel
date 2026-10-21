@@ -2,12 +2,19 @@
 
 import { makeTransform } from '../../core/transforms.js';
 import { ROOT } from '../../core/gates.js';
-import { formatStat } from '../../core/stats.js';
+import { formatStat, STATS } from '../../core/stats.js';
 import {
   plotArea, densityImage, dotImage, contours, smoothHist, drawFrame, drawAxes, gateShape, drawGates, parseColor, withAlpha, toPx,
 } from './render.js';
-import { frequency } from '../state/derived.js';
+import { frequency, hierarchyRows } from '../state/derived.js';
 import { effectiveGate } from '../state/doc.js';
+
+/** Stat columns a gating-hierarchy panel can show, and their default set. */
+export const TREE_STATS = ['count', 'freqParent', 'freqGrandparent', 'freqTotal'];
+export const TREE_STATS_DEFAULT = ['count', 'freqParent'];
+// A hierarchy panel has no axis ticks, so it doesn't need the scatter-plot
+// margin (left gutter for y-axis ticks, bottom gutter for x-axis ticks).
+const TREE_MARGIN = { l: 6, r: 6, t: 4, b: 4 };
 
 export function makeCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -99,13 +106,115 @@ export function buildLayer(res, { type, settings, theme, overlayColors = [] }) {
 /** Label text for each gate on a plot. */
 export function gateLabels(doc, counts, gates, stat) {
   const map = new Map();
+  const unit = (STATS[stat] && STATS[stat].unit) || '';
   for (const g of gates) {
-    const v = frequency(doc, counts, g.id, stat === 'count' ? 'count' : stat);
-    let value = '';
-    if (Number.isFinite(v)) value = stat === 'count' ? formatStat('count', v) : `${formatStat('freqParent', v)}%`;
+    const v = frequency(doc, counts, g.id, stat);
+    const value = Number.isFinite(v) ? `${formatStat(stat, v)}${unit}` : '';
     map.set(g.id, { value });
   }
   return map;
+}
+
+/**
+ * Draw a gating-hierarchy panel: the gate tree under `plot.pop` (ROOT for
+ * the whole hierarchy), one row per population, with the stat columns from
+ * `plot.statCols` (count / % parent / % grandparent / % total) right
+ * aligned next to each name.
+ */
+export function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }) {
+  const stats = (plot.statCols && plot.statCols.length ? plot.statCols : TREE_STATS_DEFAULT).filter((s) => STATS[s]);
+  const rowH = 19;
+  const headerH = 17;
+  const padX = 6;
+  // Keep at least ~70px for names; split whatever's left between stat columns,
+  // never wider than 48px each (narrower when the panel or the list is small).
+  const minNameW = 70;
+  const colW = stats.length ? Math.max(30, Math.min(48, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
+  const statsW = stats.length * colW;
+  const nameW = Math.max(30, area.w - padX * 2 - statsW);
+  const small = area.w < 170;
+  const fontHead = `600 ${small ? 9 : 10}px ${theme.fontUI}`;
+  const fontName = `500 ${small ? 10 : 11}px ${theme.fontUI}`;
+  const fontVal = `500 ${small ? 10 : 11}px ${theme.fontMono}`;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(area.x, area.y, area.w, area.h);
+  ctx.clip();
+
+  ctx.textBaseline = 'middle';
+  ctx.font = fontHead;
+  ctx.fillStyle = theme.muted;
+  const hy = area.y + headerH / 2 + 1;
+  ctx.textAlign = 'left';
+  ctx.fillText('Population', area.x + padX, hy);
+  stats.forEach((key, i) => {
+    ctx.textAlign = 'right';
+    ctx.fillText(STATS[key].short, area.x + padX + nameW + i * colW + colW - 6, hy);
+  });
+  ctx.strokeStyle = theme.axis;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(area.x, area.y + headerH + 0.5);
+  ctx.lineTo(area.x + area.w, area.y + headerH + 0.5);
+  ctx.stroke();
+
+  const rootId = plot.pop && plot.pop !== ROOT ? plot.pop : ROOT;
+  const rows = hierarchyRows(doc, rootId);
+  const allRows = rootId === ROOT ? [{ gate: null, depth: 0 }, ...rows] : rows;
+  const maxRows = Math.max(0, Math.floor((area.h - headerH) / rowH));
+  const shown = allRows.slice(0, maxRows);
+  const overflow = allRows.length - shown.length;
+
+  let y = area.y + headerH;
+  for (const { gate, depth } of shown) {
+    const rowY = y;
+    y += rowH;
+    const gid = gate ? gate.id : ROOT;
+    if (selected != null && selected === gid) {
+      ctx.fillStyle = withAlpha(theme.accent, 0.14);
+      ctx.fillRect(area.x, rowY, area.w, rowH);
+    }
+    const cy = rowY + rowH / 2;
+    const indent = Math.min(depth, 4) * 8;
+    ctx.textAlign = 'left';
+    ctx.font = fontName;
+    ctx.fillStyle = theme.labelFg;
+    let nameX = area.x + padX + indent;
+    if (gate && gate.color) {
+      ctx.save();
+      ctx.fillStyle = gate.color;
+      ctx.beginPath();
+      ctx.arc(nameX + 3, cy, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = theme.labelFg;
+      nameX += 9;
+    }
+    const name = gate ? gate.name : 'All events';
+    const avail = Math.max(10, area.x + padX + nameW - nameX);
+    let text = name;
+    if (ctx.measureText(text).width > avail) {
+      while (text.length > 1 && ctx.measureText(`${text}…`).width > avail) text = text.slice(0, -1);
+      text += '…';
+    }
+    ctx.fillText(text, nameX, cy);
+    ctx.font = fontVal;
+    ctx.fillStyle = theme.tick;
+    ctx.textAlign = 'right';
+    stats.forEach((key, i) => {
+      const v = frequency(doc, counts, gid, key);
+      const txt = Number.isFinite(v) ? `${formatStat(key, v)}${STATS[key].unit || ''}` : '–';
+      ctx.fillText(txt, area.x + padX + nameW + i * colW + colW - 6, cy);
+    });
+  }
+  if (overflow > 0) {
+    ctx.textAlign = 'left';
+    ctx.font = `500 10px ${theme.fontUI}`;
+    ctx.fillStyle = theme.muted;
+    ctx.fillText(`+${overflow} more`, area.x + padX, y + rowH / 2);
+  }
+  ctx.restore();
 }
 
 /**
@@ -114,11 +223,27 @@ export function gateLabels(doc, counts, gates, stat) {
  */
 export function paintPlot(ctx, o) {
   const { W, H, doc, plot, sampleId, layer, theme, counts, selected, hover, readOnly, overridden, message } = o;
+  const area = plot.type === 'tree' ? plotArea(W, H, TREE_MARGIN) : plotArea(W, H);
+  if (!o.noClear) ctx.clearRect(0, 0, W, H);
+  if (plot.type === 'tree') {
+    drawFrame(ctx, area, theme);
+    paintHierarchy(ctx, { area, doc, plot, counts, theme, selected });
+    if (message) {
+      ctx.save();
+      ctx.fillStyle = theme.labelBg;
+      ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
+      ctx.fillStyle = theme.tick;
+      ctx.font = `500 12px ${theme.fontUI}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);
+      ctx.restore();
+    }
+    return { area, shapes: [], labelBoxes: [] };
+  }
   const is2D = !!plot.y && plot.type !== 'hist';
-  const area = plotArea(W, H);
   const tx = makeTransform(doc.transforms[plot.x]);
   const ty = is2D ? makeTransform(doc.transforms[plot.y]) : null;
-  if (!o.noClear) ctx.clearRect(0, 0, W, H);
   drawFrame(ctx, area, theme);
   const fontTick = `10.5px ${theme.fontUI}`;
   if (layer && layer.kind === 'image') {

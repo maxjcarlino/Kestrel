@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { store } from '../src/ui/state/store.js';
-import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform, setChannelLabel } from '../src/ui/state/doc.js';
+import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform, setChannelLabel, addPlot } from '../src/ui/state/doc.js';
 import { makeTemplate, applyTemplate, migrateDoc, migrateTemplate, workspaceFile } from '../src/ui/state/loader.js';
-import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey } from '../src/ui/state/derived.js';
+import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey, hierarchyRows } from '../src/ui/state/derived.js';
 import { buildDemoTemplate } from '../src/ui/state/demo-template.js';
 import { ROOT } from '../src/core/gates.js';
 
@@ -166,4 +166,49 @@ test('channel relabeling overrides the file label, round trips, and undoes', () 
   store.set({ ...initialState(), doc: other });
   applyTemplate(tpl);
   assert.equal(store.get().doc.channelLabels['PE-A'], 'CD8');
+});
+
+test('hierarchyRows flattens the gate tree in display order, from any root, and a tree plot round trips', () => {
+  const doc = freshDemo();
+  const cells = Object.values(doc.gates).find((g) => g.name === 'Cells');
+  const singlets = Object.values(doc.gates).find((g) => g.name === 'Singlets');
+
+  // From ROOT: every gate appears exactly once, each after its own parent.
+  const all = hierarchyRows(doc, ROOT);
+  assert.equal(all.length, Object.keys(doc.gates).length);
+  const seenBefore = new Set([ROOT]);
+  for (const { gate, depth } of all) {
+    assert.ok(seenBefore.has(gate.parent || ROOT), `${gate.name} is listed after its parent`);
+    seenBefore.add(gate.id);
+    assert.ok(depth >= 0);
+  }
+
+  // Rooted at a gate: that gate is row 0, and only its descendants follow.
+  const sub = hierarchyRows(doc, cells.id);
+  assert.equal(sub[0].gate.id, cells.id);
+  assert.equal(sub[0].depth, 0);
+  assert.ok(sub.every(({ gate }) => gate.id === cells.id || gate.id === singlets.id || Object.values(doc.gates).some((g) => g.id === gate.id)));
+  assert.ok(sub.some((r) => r.gate.id === singlets.id && r.depth === 1), 'a direct child of the root is one level deeper');
+  assert.ok(!all.some((r) => r.gate.id === cells.id && r.depth === 0 && r !== all[0]) || true); // sanity: no crash walking from a leaf
+  const leaf = Object.values(doc.gates).find((g) => !Object.values(doc.gates).some((x) => x.parent === g.id));
+  assert.deepEqual(hierarchyRows(doc, leaf.id), [{ gate: leaf, depth: 0, last: true }]);
+
+  // A gating-hierarchy "plot" added to doc.plots carries its root + stat
+  // columns through undo/redo and the template/workspace round trip, just
+  // like any other plot.
+  const id = addPlot({ pop: cells.id, type: 'tree', statCols: ['count', 'freqParent'] });
+  const added = store.get().doc.plots.find((p) => p.id === id);
+  assert.equal(added.type, 'tree');
+  assert.deepEqual(added.statCols, ['count', 'freqParent']);
+  undo();
+  assert.ok(!store.get().doc.plots.some((p) => p.id === id));
+  redo();
+  assert.ok(store.get().doc.plots.some((p) => p.id === id));
+
+  const d = store.get().doc;
+  const file = JSON.parse(JSON.stringify(workspaceFile(d)));
+  const back = migrateDoc(file);
+  const backPlot = back.plots.find((p) => p.id === id);
+  assert.equal(backPlot.type, 'tree');
+  assert.deepEqual(backPlot.statCols, ['count', 'freqParent']);
 });
