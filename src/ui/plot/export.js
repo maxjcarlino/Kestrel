@@ -6,7 +6,7 @@
 import { store } from '../state/store.js';
 import { request } from '../state/bridge.js';
 import { channelInfo, popName, popPath, gatesForPlot, frequency } from '../state/derived.js';
-import { buildLayer, paintPlot, overlayIds, makeCanvas } from './paint.js';
+import { buildLayer, paintPlot, overlayIds, makeCanvas, mergeResults } from './paint.js';
 import { plotArea, smoothHist, drawAxes, drawFrame, niceStep, withAlpha } from './render.js';
 import { makeTransform } from '../../core/transforms.js';
 import { exportTheme } from '../theme.js';
@@ -180,7 +180,9 @@ const TITLE_H = 22;
 const XT_H = 20;
 const YT_W = 18;
 
-/** Fetch the event layer for a plot at a given size. */
+/** Fetch the event layer for a plot at a given size. If the plot has a
+ * concatIds list, pools binned counts from those samples instead of just
+ * sampleId. */
 export async function fetchLayer(plot, sampleId, W, H, theme) {
   const s = store.get();
   const doc = s.doc;
@@ -190,9 +192,12 @@ export async function fetchLayer(plot, sampleId, W, H, theme) {
   const req = is2D
     ? { pop: plot.pop, x: plot.x, y: plot.y, w: Math.round(area.w), h: Math.round(area.h), overlays: ov }
     : { pop: plot.pop, x: plot.x, bins: Math.max(64, Math.min(512, Math.round(area.w / 1.25))), overlays: ov };
-  const res = await request(sampleId, 'plot', { req });
-  if (res.missing) return { layer: null, message: `${res.missing.join(' and ')} not in this sample` };
-  const layer = buildLayer(res, { type: plot.type, settings: doc.settings, theme, overlayColors: ov.map((id) => (doc.gates[id] ? doc.gates[id].color : theme.accent)) });
+  const ids = plot.concatIds && plot.concatIds.length ? plot.concatIds.filter((id) => ((s.meta[id] || {}).status === 'ready')) : [sampleId];
+  if (!ids.length) return { layer: null, message: 'None of the samples chosen for concatenation have this data yet.' };
+  const results = await Promise.all(ids.map((id) => request(id, 'plot', { req }).catch((err) => ({ missing: [err.message] }))));
+  const res = results.length > 1 ? mergeResults(results) : results[0];
+  if (!res || res.missing) return { layer: null, message: `${((res && res.missing) || ['Data']).join(' and ')} not in ${ids.length > 1 ? 'these samples' : 'this sample'}` };
+  const layer = buildLayer(res, { type: plot.type, settings: { ...doc.settings, dotSize: plot.dotSize ?? doc.settings.dotSize }, theme, overlayColors: ov.map((id) => (doc.gates[id] ? doc.gates[id].color : theme.accent)) });
   return { layer, message: layer && layer.n === 0 ? 'No events' : null };
 }
 
@@ -200,7 +205,7 @@ export async function fetchLayer(plot, sampleId, W, H, theme) {
  * Draw one titled panel (plot + axis titles) at (ox, oy) with outer size PW×PH.
  */
 export function drawPanel(ctx, o) {
-  const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH } = o;
+  const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH, showTitle = true, showAxisLabels = true } = o;
   const s = store.get();
   const doc = s.doc;
   const counts = (s.counts[sampleId] || {}).counts || null;
@@ -210,16 +215,18 @@ export function drawPanel(ctx, o) {
   if (!ctx.isSvgRecorder) ctx.translate(ox, oy);
   const off = ctx.isSvgRecorder ? [ox, oy] : [0, 0];
   // title
-  ctx.fillStyle = theme.labelFg;
-  ctx.font = `600 12px ${theme.fontUI}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
-  if (subtitle) {
-    ctx.font = `400 10.5px ${theme.fontUI}`;
-    ctx.fillStyle = theme.tick;
-    ctx.textAlign = 'right';
-    ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+  if (showTitle) {
+    ctx.fillStyle = theme.labelFg;
+    ctx.font = `600 12px ${theme.fontUI}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
+    if (subtitle) {
+      ctx.font = `400 10.5px ${theme.fontUI}`;
+      ctx.fillStyle = theme.tick;
+      ctx.textAlign = 'right';
+      ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+    }
   }
   // plot body
   const inner = ctx.isSvgRecorder ? new SvgContext(W, H) : null;
@@ -232,20 +239,22 @@ export function drawPanel(ctx, o) {
   if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
   else ctx.restore();
   // axis titles
-  const area = plotArea(W, H);
-  const xi = channelInfo(doc, plot.x);
-  const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
-  ctx.fillStyle = theme.labelFg;
-  ctx.font = `500 11px ${theme.fontUI}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H + XT_H / 2);
-  let yt = 'Count';
-  if (plot.y && plot.type !== 'hist') {
-    const yi = channelInfo(doc, plot.y);
-    yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
+  if (showAxisLabels) {
+    const area = plotArea(W, H);
+    const xi = channelInfo(doc, plot.x);
+    const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
+    ctx.fillStyle = theme.labelFg;
+    ctx.font = `500 11px ${theme.fontUI}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H + XT_H / 2);
+    let yt = 'Count';
+    if (plot.y && plot.type !== 'hist') {
+      const yi = channelInfo(doc, plot.y);
+      yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
+    }
+    rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
   }
-  rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
   ctx.restore();
 }
 

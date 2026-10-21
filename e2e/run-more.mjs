@@ -264,13 +264,181 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   const caps = await p2.$$eval('.bg-item .bg-cap', (els) => els.map((e) => e.textContent));
   const cur = await p2.$$eval('.bg-item.is-current .bg-cap', (els) => els.map((e) => e.textContent));
   check('gating path runs from ungated FSC-A × SSC-A to the selected population', caps.length === 6 && caps[0] === 'All events→Cells' && cur[0] === 'T cells→CD4+ CD8−', caps.join(' | '));
+
+  // ---- the sidebar can be dragged wider/narrower, and the choice persists
+  const sidebarBox = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
+  const handleBox = await p2.$eval('.sidebar-resizer', (el) => el.getBoundingClientRect());
+  await p2.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await p2.mouse.down();
+  await p2.mouse.move(handleBox.x + 120, handleBox.y + handleBox.height / 2, { steps: 6 });
+  await p2.mouse.up();
+  await p2.waitForTimeout(300);
+  const widerBox = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
+  check('dragging the sidebar handle resizes the sidebar', widerBox.width > sidebarBox.width + 80, `${sidebarBox.width} -> ${widerBox.width}`);
+  await p2.reload();
+  await p2.waitForSelector('.sidebar', { timeout: 15000 });
+  await p2.waitForTimeout(800);
+  const afterReload = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
+  check('the resized sidebar width survives a reload', Math.abs(afterReload.width - widerBox.width) < 2, `${widerBox.width} vs ${afterReload.width}`);
+  // double-click resets it back to the default
+  await p2.waitForSelector('.sidebar-resizer');
+  await p2.dblclick('.sidebar-resizer');
+  await p2.waitForTimeout(300);
+  const resetBox = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
+  check('double-clicking the handle resets the sidebar to its default width', Math.round(resetBox.width) === 304, resetBox.width);
+
+  // ---- a long sample name shrinks to fit instead of being cropped
+  const originalName = await p2.$eval('.sample-row .fit-text', (el) => el.textContent);
+  const longName = 'PBMC Donor 01 (unstained control)';
+  const renameTo = async (name) => {
+    await p2.$eval('.sample-row', (el) => el.querySelector('.row-more').click());
+    await p2.waitForTimeout(150);
+    await p2.click('.menu-item:has-text("Rename")');
+    await p2.fill('.row-input', name);
+    await p2.press('.row-input', 'Enter');
+    await p2.waitForTimeout(500);
+  };
+  await renameTo(longName);
+  const fit = await p2.$eval('.sample-row .fit-text', (el) => ({
+    text: el.textContent,
+    fontSize: parseFloat(getComputedStyle(el).fontSize),
+    overflowing: el.scrollWidth > el.clientWidth + 1,
+  }));
+  check('a long sample name shrinks its font instead of being cropped', fit.text === longName && !fit.overflowing && fit.fontSize < 13, JSON.stringify(fit));
+  await renameTo(originalName); // restore it: later checks pick samples by their demo names
+
+  // ---- dot size: a typed integer, settable per plot
+  const card0 = (await p2.$$('.plot-card'))[0];
+  await card0.$eval('button[title="Dot plot"]', (b) => b.click());
+  await p2.waitForTimeout(400);
+  await card0.$eval('button[title="Dot size"]', (b) => b.click());
+  await p2.waitForTimeout(200);
+  await p2.fill('input[aria-label="Dot size for this plot"]', '6');
+  await p2.press('input[aria-label="Dot size for this plot"]', 'Enter');
+  await p2.waitForTimeout(400);
+  await p2.keyboard.press('Escape');
+  await p2.waitForTimeout(200);
+  await card0.$eval('button[title="Dot size"]', (b) => b.click());
+  await p2.waitForTimeout(200);
+  const dotVal = await p2.$eval('input[aria-label="Dot size for this plot"]', (el) => el.value);
+  const hasReset = await p2.$('button:has-text("Use default")');
+  check('dot size accepts a typed integer, per plot', dotVal === '6' && !!hasReset, dotVal);
+  const dotPopSize = await p2.$eval('.dotsize-pop', (el) => {
+    const pop = el.closest('.popover');
+    return { w: pop.scrollWidth - pop.clientWidth, h: pop.scrollHeight - pop.clientHeight, cw: pop.clientWidth, ch: pop.clientHeight };
+  });
+  check('the dot size popover is small and never scrolls', dotPopSize.w === 0 && dotPopSize.h === 0, JSON.stringify(dotPopSize));
+  await p2.keyboard.press('Escape');
+  await p2.waitForTimeout(200);
+  const globalDot = await p2.$('input[aria-label="Default dot size in pixels"]');
+  if (globalDot) {
+    await globalDot.fill('3');
+    await globalDot.press('Enter');
+    await p2.waitForTimeout(300);
+    const gv = await p2.$eval('input[aria-label="Default dot size in pixels"]', (el) => el.value);
+    check('the default dot size (Display panel) accepts a typed integer', gv === '3', gv);
+  }
+
+  // ---- concatenate samples into one plot (all plot types)
+  await card0.$eval('button[title="Concatenate samples"]', (b) => b.click());
+  await p2.waitForTimeout(300);
+  await p2.click('.concat-menu .check-row:has-text("PBMC_Donor01") input');
+  await p2.click('.concat-menu .check-row:has-text("PBMC_Donor02") input');
+  await p2.waitForTimeout(1500);
+  const pooled = await card0.$eval('.num', (el) => el.textContent.trim());
+  check('concatenating samples pools events into one plot', /pooled from 2 samples/.test(pooled), pooled);
+  await p2.keyboard.press('Escape');
+  await p2.waitForTimeout(200);
+
+  // ---- relabel a parameter (the "CD4" for "FITC-A" problem): the rename
+  // pencil in the axis picker overrides whatever the file's own label is,
+  // applies everywhere that channel is shown, round-trips, and resets.
+  await card0.$eval('.axis-x', (b) => b.click());
+  await p2.waitForSelector('.axis-menu', { timeout: 3000 });
+  await p2.click('.axis-row:has-text("FITC-A") .axis-relabel');
+  await p2.fill('input[aria-label="Label for FITC-A"]', 'CD4-test');
+  await p2.press('input[aria-label="Label for FITC-A"]', 'Enter');
+  await p2.waitForTimeout(300);
+  const relabeledRow = await p2.$eval('.axis-row:has-text("FITC-A") .axis-opt b', (el) => el.textContent);
+  check('relabeling a parameter is reflected in the picker', relabeledRow === 'CD4-test', relabeledRow);
+  await p2.click('.axis-opt:has-text("CD4-test")');
+  await p2.waitForTimeout(300);
+  const axisShows = await card0.$eval('.axis-x', (el) => el.textContent);
+  check('the new label shows on the plot axis', /CD4-test/.test(axisShows), axisShows);
+  const relabeled = await p2.evaluate(() => window.kestrel.state().doc.channelLabels['FITC-A']);
+  check('the override is stored on the document (so it saves and syncs)', relabeled === 'CD4-test', relabeled);
+  await card0.$eval('.axis-x', (b) => b.click());
+  await p2.waitForSelector('.axis-menu .scale-editor');
+  await p2.click('.scale-head button:has-text("Reset label")');
+  await p2.waitForTimeout(300);
+  const afterReset = await p2.evaluate(() => window.kestrel.state().doc.channelLabels['FITC-A']);
+  check('"Reset label" clears the override', afterReset === undefined, afterReset);
+  await p2.keyboard.press('Escape');
+  await p2.waitForTimeout(200);
+
+  // ---- Batch view keeps every sample's percentages current, not just the
+  // one that happened to be active in Gating. Edit a shared gate's bounds
+  // (so every sample's membership changes at once), then go straight to
+  // Batch without ever selecting the other samples individually, and check
+  // their counts were refreshed to the new gate anyway.
+  await p2.click('.tree-row:has-text("Live")');
+  await p2.waitForTimeout(300);
+  const boundInputs = await p2.$$('.geom-grid input');
+  const editApplied = boundInputs.length >= 2;
+  if (editApplied) {
+    const x1 = boundInputs[1];
+    const cur = parseFloat(await x1.inputValue());
+    await x1.fill(String(Math.round(cur * 0.7)));
+    await x1.press('Enter');
+    await p2.waitForTimeout(700);
+  }
+  const otherIds = await p2.evaluate(() => {
+    const st = window.kestrel.state();
+    const g = st.doc.groups.find((x) => /^samples$/i.test(x.name));
+    const members = g ? st.doc.samples.filter((s) => (s.groupIds || []).includes(g.id)) : st.doc.samples;
+    return members.filter((s) => s.id !== st.ui.sampleId).map((s) => s.id);
+  });
   await p2.click('.view-tab:has-text("Batch")');
   await p2.waitForTimeout(2500);
   const cells = await p2.$$eval('.batch-cell', (els) => els.length);
   check('Batch tab draws every plot for every sample', cells === 8 * 3, `${cells} panels`);
+  const freshness = await p2.evaluate((ids) => {
+    const st = window.kestrel.state();
+    return ids.map((id) => {
+      const want = window.kestrel.countsVersion(st, id);
+      const have = st.counts[id] && st.counts[id].version;
+      return have === want;
+    });
+  }, otherIds);
+  check(
+    "Batch view refreshes every sample's counts after a shared gate edit, not only the one last viewed in Gating",
+    editApplied && otherIds.length > 0 && freshness.every(Boolean),
+    `${freshness.filter(Boolean).length} of ${freshness.length} other samples fresh (edit applied: ${editApplied})`,
+  );
+
   await p2.click('.batch-cell >> nth=4');
   await p2.waitForTimeout(600);
   check('clicking a Batch panel opens it in Gating', (await p2.$eval('.view-tab.is-on', (e) => e.textContent)).includes('Gating'));
+
+  // ---- layout view: toggle which labels are drawn on each panel
+  await p2.click('.view-tab:has-text("Layout")');
+  await p2.waitForTimeout(800);
+  const plotChecks = await p2.$$('.check-list .check-row input');
+  if (plotChecks.length) await plotChecks[0].click();
+  await p2.waitForTimeout(1500);
+  const titleToggle = await p2.$('.layout-side label.check-row:has-text("Plot title") input');
+  const axisToggle = await p2.$('.layout-side label.check-row:has-text("Axis labels") input');
+  check('Layout view offers toggles for plot title and axis labels', !!titleToggle && !!axisToggle);
+  if (titleToggle && axisToggle) {
+    await titleToggle.click();
+    await axisToggle.click();
+    await p2.waitForTimeout(600);
+    const bothOff = (await titleToggle.isChecked()) === false && (await axisToggle.isChecked()) === false;
+    check('unchecking both toggles turns them off', bothOff);
+    await titleToggle.click();
+    await axisToggle.click();
+  }
+
   await p2.close();
 }
 

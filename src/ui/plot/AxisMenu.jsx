@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
-import { updatePlot, setTransform, toast, undo, addDerived, removeDerived } from '../state/doc.js';
+import { updatePlot, setTransform, toast, undo, addDerived, removeDerived, setChannelLabel } from '../state/doc.js';
 import { allChannels, isCompensated } from '../state/derived.js';
 import { request } from '../state/bridge.js';
 import { makeTransform, normalizeSpec, TRANSFORM_LABELS, formatValue } from '../../core/transforms.js';
@@ -14,6 +14,8 @@ const KIND_ORDER = ['scatter', 'fluor', 'mass', 'time', 'other', 'derived'];
 export function AxisMenu({ anchor, axis, plot, sampleId, onClose }) {
   const doc = useSel((s) => s.doc);
   const [q, setQ] = useState('');
+  const [relabel, setRelabel] = useState(null);
+  const [relabelVal, setRelabelVal] = useState('');
   const listRef = useRef();
   const chans = allChannels(doc);
   const current = axis === 'x' ? plot.x : plot.y;
@@ -70,28 +72,80 @@ export function AxisMenu({ anchor, axis, plot, sampleId, onClose }) {
           {groups.map(([kind, list]) => (
             <div class="axis-group" key={kind}>
               <div class="axis-group-title">{KIND_LABEL[kind]}</div>
-              {list.map((c) => (
-                <button type="button" role="option" aria-selected={c.name === current ? 'true' : 'false'} class={`axis-opt ${c.name === current ? 'is-on' : ''}`} onClick={() => pick(c.name)} key={c.name}>
-                  <span class="axis-check">{c.name === current ? <Icon name="check" size={13} /> : null}</span>
-                  <b>{c.label || c.name}</b>
-                  {c.label ? <span>{c.name}</span> : c.expr ? <span>{c.expr}</span> : null}
-                  {sampleId && isCompensated(state, sampleId, c.name) ? <i class="comp-badge" title="Compensated">comp</i> : null}
-                  {c.kind === 'derived' ? (
-                    <i
-                      class="axis-del"
-                      role="button"
-                      tabIndex={0}
-                      title={`Remove the ratio ${c.name}`}
-                      onClick={(e) => {
+              {list.map((c) =>
+                relabel === c.name ? (
+                  <form
+                    class="axis-relabel-form"
+                    key={c.name}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setChannelLabel(c.name, relabelVal);
+                      setRelabel(null);
+                    }}
+                  >
+                    <input
+                      class="field field-sm"
+                      autoFocus
+                      ref={(el) => el && setTimeout(() => el.focus({ preventScroll: true }), 0)}
+                      placeholder={c.name}
+                      value={relabelVal}
+                      onInput={(e) => setRelabelVal(e.currentTarget.value)}
+                      onKeyDown={(e) => {
+                        // Stop Enter/Escape (and anything else) from reaching the
+                        // picker's own keydown handler, which otherwise treats
+                        // Enter as "pick the first filtered parameter".
                         e.stopPropagation();
-                        removeDerived(c.name);
+                        if (e.key === 'Escape') setRelabel(null);
                       }}
-                    >
-                      <Icon name="close" size={12} />
-                    </i>
-                  ) : null}
-                </button>
-              ))}
+                      aria-label={`Label for ${c.name}`}
+                    />
+                    <button type="submit" class="icon-btn" title="Save label">
+                      <Icon name="check" size={13} />
+                    </button>
+                    <button type="button" class="icon-btn" title="Cancel" onClick={() => setRelabel(null)}>
+                      <Icon name="close" size={13} />
+                    </button>
+                  </form>
+                ) : (
+                  <div class="axis-row" key={c.name}>
+                    <button type="button" role="option" aria-selected={c.name === current ? 'true' : 'false'} class={`axis-opt ${c.name === current ? 'is-on' : ''}`} onClick={() => pick(c.name)}>
+                      <span class="axis-check">{c.name === current ? <Icon name="check" size={13} /> : null}</span>
+                      <b>{c.label || c.name}</b>
+                      {c.label ? <span>{c.name}</span> : c.expr ? <span>{c.expr}</span> : null}
+                      {sampleId && isCompensated(state, sampleId, c.name) ? <i class="comp-badge" title="Compensated">comp</i> : null}
+                      {c.kind === 'derived' ? (
+                        <i
+                          class="axis-del"
+                          role="button"
+                          tabIndex={0}
+                          title={`Remove the ratio ${c.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeDerived(c.name);
+                          }}
+                        >
+                          <Icon name="close" size={12} />
+                        </i>
+                      ) : null}
+                    </button>
+                    {c.kind !== 'derived' ? (
+                      <i
+                        class="axis-relabel"
+                        role="button"
+                        tabIndex={0}
+                        title={`Relabel ${c.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRelabel(c.name);
+                          setRelabelVal(c.label || '');
+                        }}
+                      >
+                        <Icon name="pencil" size={12} />
+                      </i>
+                    ) : null}
+                  </div>
+                ),
+              )}
             </div>
           ))}
           {!filtered.length ? <div class="axis-none">No parameter matches “{q}”.</div> : null}
@@ -225,7 +279,8 @@ function changeType(channel, spec) {
 export function ScaleEditor({ channel, sampleId, pop }) {
   const doc = useSel((s) => s.doc);
   const spec = normalizeSpec(doc.transforms[channel]);
-  const kind = (allChannels(doc).find((c) => c.name === channel) || {}).kind;
+  const info = allChannels(doc).find((c) => c.name === channel) || {};
+  const kind = info.kind;
   const [busy, setBusy] = useState(false);
   const set = (patch) => setTransform(channel, { ...spec, ...patch });
   const auto = async () => {
@@ -247,6 +302,11 @@ export function ScaleEditor({ channel, sampleId, pop }) {
     <div class="scale-editor">
       <div class="scale-head">
         <span class="eyebrow">Scale for {channel}</span>
+        {info.fileLabel !== undefined ? (
+          <button type="button" class="link-btn" onClick={() => setChannelLabel(channel, '')} title={info.fileLabel ? `Revert to the file's own label (${info.fileLabel})` : "Revert to no label"}>
+            Reset label
+          </button>
+        ) : null}
       </div>
       <Segmented
         label="Scale type"

@@ -22,20 +22,35 @@ If GitHub Pages is enabled for the repository, the included workflow publishes t
 
 The page loads three Google Fonts and makes no other network requests. Offline, it falls back to system fonts.
 
+## Open workspace files by double-clicking (Windows)
+
+Kestrel has no installer and no file association of its own — by default, opening a saved `.kestrel.json` workspace means opening `kestrel.html` first and then dropping the file onto the window. A small included script lets Windows do the second part for you: double-click a `.kestrel.json` file and it opens straight into Kestrel, the same as a drag-and-drop would.
+
+This needs [Node.js](https://nodejs.org) installed and this repository present on disk (it's what actually reads the file and hands it to the browser — a web page can't read an arbitrary local file on its own). One-time setup:
+
+1. Right-click any `.kestrel.json` file → **Open with** → **Choose another app**.
+2. Choose **More apps** → **Look for another app on this PC**. If the file picker only shows `.exe` files, switch its filter (bottom-right of the dialog) to **All files**.
+3. Browse to `scripts\open-kestrel-workspace.bat` inside this repository.
+4. Tick **Always use this app to open .kestrel.json files**, or leave it unticked to be asked each time — either way, Windows is only associating the exact `.kestrel.json` extension, not every `.json` file.
+
+After that, double-clicking a workspace opens a browser tab with it loaded. Nothing is installed in the background: the helper script serves the page and the file from a local, temporary server and exits a few seconds later. It also prints the page's URL to the console window it briefly opens, in case your default browser doesn't launch automatically — just paste that URL into a browser yourself. See `scripts/open-workspace.mjs` for how it works, or to adapt it for `.template.json` files or another OS (swap the `.bat` for a `.command`/shell script on macOS and Linux — the Node script itself already runs on any of them).
+
+If you move or rename this folder, redo step 3 pointing at the new location.
+
 ## Features
 
 | Area | What you get |
 | --- | --- |
 | **Data** | FCS 2.0, 3.0, 3.1 and 3.2. Integer, float, double and ASCII data in any byte order, including mixed per-parameter types (`$PnDATATYPE`). Bit masks, `$PnE` log decoding, `$PnG` gain, supplemental TEXT and files with several data sets. CSV/TSV event tables are also read. Files are cached in the browser, so a reopened workspace comes back with its data. |
 | **Compensation** | Acquisition matrix from each file (`$SPILLOVER`, `SPILL`). Compute a matrix from single-stain controls (median-based, with an unstained control or internal negatives) and edit it cell by cell. Matrices import and export as CSV. Each sample gets its own matrix assignment, and an N×N check-plot grid shows the result. Only parameters present in the workspace's files are shown. |
-| **Scales** | Linear, log, Logicle (biexponential, with automatic width from the data), Hyperlog and arcsinh. Scales are set per channel and shared by every plot and sample. Ratio parameters such as `FSC-A / FSC-H` behave like any other channel. |
+| **Scales** | Linear, log, Logicle (biexponential, with automatic width from the data), Hyperlog and arcsinh. Scales are set per channel and shared by every plot and sample. Ratio parameters such as `FSC-A / FSC-H` behave like any other channel. Each parameter can also be given (or given a different) display label from the axis picker's rename button — useful when the FCS file's own `$PnS` field is blank or wrong, e.g. naming `FITC-A` "CD4". |
 | **Gating** | Rectangle, polygon, ellipse, quadrant, range and split gates, plus Boolean AND / OR / NOT gates, in a hierarchy. Drag to move or reshape. Double-click a gate to drill down into its population. Right-click to convert it to a polygon, recolour it, adjust it for one sample, or export its events. Undo and redo cover every edit. |
 | **Backgating and batch** | A gating-path strip along the bottom of the Gating view shows every step from the ungated FSC-A × SSC-A plot to the selected population, each with its gate and frequency. The Batch tab shows every gating plot for every sample, with that sample's gates and frequencies; click one to open it. |
-| **Plots** | Pseudocolour density, dot, contour and histogram plots, with five colour maps. Click an axis title to choose its parameter and scale. Plots export as PNG or vector SVG. |
+| **Plots** | Pseudocolour density, dot, contour and histogram plots, with five colour maps. Click an axis title to choose its parameter and scale. Dot size is typeable and can be set per plot, overriding the default. Concatenate (pool) any set of samples into one plot of any type. Plots export as PNG or vector SVG. |
 | **Statistics** | Count; % of parent, grandparent and total; median; mean; geometric mean; SD; CV; robust SD and CV; mode; min; max; and any percentile. FCS keywords can be added as columns. Export as CSV or copy into a spreadsheet. |
-| **Layouts** | Batch figures (samples × plots grids) and histogram overlays across samples, exported as PNG or SVG. |
+| **Layouts** | Batch figures (samples × plots grids) and histogram overlays across samples, exported as PNG or SVG. Plot titles and axis labels can be toggled off per panel for a tighter grid. |
 | **Samples** | Groups, grouping by keyword, a keyword browser, and a comparison of keywords across samples. |
-| **Saving** | Autosave to the browser on every change and view switch, plus a workspace library. Workspaces save as `.kestrel.json` files and analyses as `.template.json` workflow templates. Gates also save as Gating-ML 2.0. |
+| **Saving** | Autosave to the browser on every change and view switch, plus a workspace library. Workspaces save as `.kestrel.json` files and analyses as `.template.json` workflow templates. Gates also save as Gating-ML 2.0. On Windows, a `.kestrel.json` file can be set to open in Kestrel on double-click; see [Open workspace files by double-clicking](#open-workspace-files-by-double-clicking-windows). |
 | **Automation** | A command-line batch runner that applies a template to a folder of FCS files, and a JavaScript library for the analysis core. See [Command line and library](#command-line-and-library). |
 
 <table>

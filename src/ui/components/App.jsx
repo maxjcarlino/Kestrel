@@ -21,7 +21,13 @@ function hasFiles(e) {
   return e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
 }
 
-async function routeDropped(files) {
+/**
+ * Handle dropped (or otherwise obtained) files the way the app's own drop
+ * zone does: workspace/template JSON, Gating-ML XML, or FCS/CSV data.
+ * `files` only needs `.name` and an async `.text()` — a real `File`, or
+ * anything shaped like one (see main.jsx's query-string workspace opener).
+ */
+export async function routeDropped(files) {
   const data = [];
   for (const f of files) {
     if (/\.json$/i.test(f.name)) {

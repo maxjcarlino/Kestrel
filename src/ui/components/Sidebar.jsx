@@ -8,15 +8,63 @@ import { frequency, compChoice, popName } from '../state/derived.js';
 import { drillDown, gateMenuItems, exportPopulation } from '../state/gating.js';
 import { formatStat } from '../../core/stats.js';
 import { ROOT } from '../../core/gates.js';
-import { Icon, IconButton, openMenu, rectOf, openDialog, TextField } from './ui.jsx';
+import { Icon, IconButton, openMenu, rectOf, openDialog, TextField, FitText } from './ui.jsx';
 import { pickFiles } from '../util/download.js';
+import { setKV } from '../state/persist.js';
+
+const SIDEBAR_DEFAULT = 304;
+const SIDEBAR_MIN = 220;
+const SIDEBAR_MAX = 560;
 
 export function Sidebar() {
+  const width = useSel((s) => s.ui.sidebarWidth || SIDEBAR_DEFAULT);
+  const setWidth = (w) => {
+    const clamped = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, w));
+    setUI({ sidebarWidth: clamped });
+    return clamped;
+  };
+  const onResizeStart = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = width;
+    const move = (ev) => setWidth(startW + (ev.clientX - startX));
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      setKV('sidebarWidth', store.get().ui.sidebarWidth || startW);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+  const onResizeKey = (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const w = setWidth(width + (e.key === 'ArrowRight' ? 16 : -16));
+      setKV('sidebarWidth', w);
+    }
+  };
+  const reset = () => setKV('sidebarWidth', setWidth(SIDEBAR_DEFAULT));
   return (
-    <aside class="sidebar" aria-label="Samples and populations">
-      <SamplesPanel />
-      <PopulationTree />
-    </aside>
+    <>
+      <aside class="sidebar" aria-label="Samples and populations" style={{ '--sidebar-w': `${width}px` }}>
+        <SamplesPanel />
+        <PopulationTree />
+      </aside>
+      <div
+        class="sidebar-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the sidebar"
+        aria-valuenow={Math.round(width)}
+        aria-valuemin={SIDEBAR_MIN}
+        aria-valuemax={SIDEBAR_MAX}
+        tabIndex={0}
+        title="Drag to resize. Double-click to reset."
+        onMouseDown={onResizeStart}
+        onDblClick={reset}
+        onKeyDown={onResizeKey}
+      />
+    </>
   );
 }
 
@@ -184,8 +232,8 @@ function SamplesPanel() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <span class="sample-name" onDblClick={() => setUI({ renamingSample: smp.id })}>
-                        {smp.name}
+                      <span class="sample-name" onDblClick={() => setUI({ renamingSample: smp.id })} title={smp.name}>
+                        <FitText text={smp.name} minSize={8} />
                       </span>
                     )}
                     <span class="sample-groups">

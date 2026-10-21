@@ -9,10 +9,11 @@ import { makeTransform, transformKey, formatValue } from '../../core/transforms.
 import { rectFromScale, rangeFromScale, vertexFromScale, ellipseFromBox, translateGeometry, quadCenter, splitThreshold } from '../../core/gate-geometry.js';
 import { ROOT, ancestors } from '../../core/gates.js';
 import { plotArea, toPx, toScale, hitTest } from './render.js';
-import { buildLayer, paintPlot, overlayIds } from './paint.js';
+import { buildLayer, paintPlot, overlayIds, mergeResults } from './paint.js';
 import { createGate, createQuadrant, createSplit, drillDown, gateMenuItems, overriddenSet } from '../state/gating.js';
-import { Icon, IconButton, openMenu, rectOf, TextField } from '../components/ui.jsx';
+import { Icon, IconButton, openMenu, rectOf, TextField, Popover, NumberField } from '../components/ui.jsx';
 import { AxisMenu } from './AxisMenu.jsx';
+import { ConcatMenu } from './ConcatMenu.jsx';
 import { useTheme } from '../theme.js';
 import { exportPlotImage } from './export.js';
 
@@ -57,6 +58,7 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
   }));
   const counts = useSel((s) => (s.counts[sampleId] || {}).counts || null);
   const meta = useSel((s) => s.meta[sampleId] || null);
+  const metaAll = useSel((s) => s.meta);
   const theme = useTheme();
   const cardRef = useRef();
   const wrapRef = useRef();
@@ -76,21 +78,35 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
   const missingChannel = status === 'ready' ? [plot.x, is2D ? plot.y : null].filter((c) => c && !sampleHasChannel(doc, sampleChannels, c)) : [];
   const popExists = plot.pop === ROOT || !!doc.gates[plot.pop];
 
+  // Concatenation: pool several samples' binned counts into one plot.
+  const concatIds = plot.concatIds && plot.concatIds.length ? plot.concatIds : null;
+  const concatReady = concatIds
+    ? concatIds.filter((id) => {
+        const m = metaAll[id];
+        if (!m || m.status !== 'ready') return false;
+        const chans = m.channels ? m.channels.map((c) => c.name) : [];
+        return [plot.x, is2D ? plot.y : null].every((c) => !c || sampleHasChannel(doc, chans, c));
+      })
+    : null;
+  const sigFor = (id) => [popSig(state, id, plot.pop), ovIds.map((o) => popSig(state, id, o)).join(','), compKey(state, id)].join(',');
+
   const key =
-    sampleId && status === 'ready' && W > 40 && popExists && !missingChannel.length
+    (concatReady ? concatReady.length > 0 : sampleId && status === 'ready' && !missingChannel.length) && W > 40 && popExists
       ? [
-          sampleId, plot.pop, plot.x, is2D ? plot.y : '-', is2D ? `${bw}x${bh}` : histBins,
-          popSig(state, sampleId, plot.pop),
-          ovIds.map((id) => popSig(state, sampleId, id)).join(','),
+          concatReady ? `concat:${concatReady.join(',')}:${concatReady.map(sigFor).join(';')}` : `${sampleId}:${sigFor(sampleId)}`,
+          plot.pop, plot.x, is2D ? plot.y : '-', is2D ? `${bw}x${bh}` : histBins,
           transformKey(doc.transforms[plot.x]), is2D ? transformKey(doc.transforms[plot.y]) : '',
-          compKey(state, sampleId),
         ].join('|')
       : null;
 
   // ---------------------------------------------------------------- data
   const [data, setData] = useState(null);
   const latest = useRef(null);
-  latest.current = { key, sampleId, req: is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: bw, h: bh, overlays: ovIds } : { pop: plot.pop, x: plot.x, bins: histBins, overlays: ovIds } };
+  latest.current = {
+    key,
+    ids: concatReady || (sampleId ? [sampleId] : []),
+    req: is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: bw, h: bh, overlays: ovIds } : { pop: plot.pop, x: plot.x, bins: histBins, overlays: ovIds },
+  };
   const reqState = useRef({ inflight: false, want: false });
   useEffect(() => {
     if (!key) return;
@@ -100,40 +116,41 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
       if (r.inflight || !r.want) return;
       r.want = false;
       const cur = latest.current;
-      if (!cur.key) return;
+      if (!cur.key || !cur.ids.length) return;
       r.inflight = true;
-      request(cur.sampleId, 'plot', { req: cur.req }).then(
-        (res) => {
-          r.inflight = false;
-          setData({ key: cur.key, res });
-          run();
-        },
-        (err) => {
-          r.inflight = false;
-          setData({ key: cur.key, error: err.message });
-          run();
-        },
-      );
+      Promise.all(cur.ids.map((id) => request(id, 'plot', { req: cur.req }).catch((err) => ({ missing: [err.message] })))).then((list) => {
+        r.inflight = false;
+        const res = list.length > 1 ? mergeResults(list) : list[0];
+        setData({ key: cur.key, res });
+        run();
+      });
     };
     run();
   }, [key]);
 
   const layer = useMemo(() => {
     if (!data || !data.res) return null;
-    return buildLayer(data.res, { type: plot.type, settings: doc.settings, theme, overlayColors: ovColors });
-  }, [data, plot.type, doc.settings.colormap, doc.settings.dotSize, doc.settings.smooth, doc.settings.histSmooth, theme, ovColors.join(',')]);
+    return buildLayer(data.res, { type: plot.type, settings: { ...doc.settings, dotSize: plot.dotSize ?? doc.settings.dotSize }, theme, overlayColors: ovColors });
+  }, [data, plot.type, plot.dotSize, doc.settings.colormap, doc.settings.dotSize, doc.settings.smooth, doc.settings.histSmooth, theme, ovColors.join(',')]);
 
   const stale = data && data.key !== key;
 
   let message = null;
-  if (!sampleId) message = 'Add a data file to start.';
-  else if (status === 'loading') message = 'Loading data…';
-  else if (status === 'missing') message = 'This data file is not loaded. Add it from the Samples panel.';
-  else if (status === 'error') message = `Could not read this file: ${meta.error}`;
-  else if (!popExists) message = 'This population was deleted.';
-  else if (missingChannel.length) message = `${missingChannel.join(' and ')} ${missingChannel.length > 1 ? 'are' : 'is'} not in this sample.`;
-  else if (data && data.error) message = data.error;
-  else if (layer && layer.n === 0 && !stale) message = 'No events in this population for this sample.';
+  if (concatIds) {
+    if (!concatReady.length) message = 'None of the samples chosen for concatenation have this data yet.';
+    else if (!popExists) message = 'This population was deleted.';
+    else if (data && data.error) message = data.error;
+    else if (layer && layer.n === 0 && !stale) message = 'No events in this population across the concatenated samples.';
+  } else {
+    if (!sampleId) message = 'Add a data file to start.';
+    else if (status === 'loading') message = 'Loading data…';
+    else if (status === 'missing') message = 'This data file is not loaded. Add it from the Samples panel.';
+    else if (status === 'error') message = `Could not read this file: ${meta.error}`;
+    else if (!popExists) message = 'This population was deleted.';
+    else if (missingChannel.length) message = `${missingChannel.join(' and ')} ${missingChannel.length > 1 ? 'are' : 'is'} not in this sample.`;
+    else if (data && data.error) message = data.error;
+    else if (layer && layer.n === 0 && !stale) message = 'No events in this population for this sample.';
+  }
 
   // ---------------------------------------------------------------- interaction state
   const gates = useMemo(() => gatesForPlot(doc, plot), [doc.gates, plot.pop, plot.x, plot.y, plot.type]);
@@ -599,6 +616,11 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
   const [axisMenu, setAxisMenu] = useState(null);
   const openAxis = (axis, ev) => setAxisMenu({ axis, anchor: rectOf(ev.currentTarget) });
 
+  // ---------------------------------------------------------------- concatenate & dot size
+  const [concatMenu, setConcatMenu] = useState(null);
+  const [dotMenu, setDotMenu] = useState(null);
+  const defaultDot = doc.settings.dotSize || 1;
+
   const setType = (t) => {
     if (t === 'hist') updatePlot(plot.id, { type: 'hist', lastY: plot.y || plot.lastY || null, y: null });
     else if (!plot.y) {
@@ -641,6 +663,10 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
               </button>
             ))}
           </div>
+          {is2D ? (
+            <IconButton icon="dot" label="Dot size" active={plot.dotSize != null} onClick={(e) => setDotMenu(rectOf(e.currentTarget))} />
+          ) : null}
+          <IconButton icon="layers" label="Concatenate samples" active={!!concatIds} onClick={(e) => setConcatMenu(rectOf(e.currentTarget))} />
           <IconButton icon="more" label="Plot options" onClick={(e) => openMenu(rectOf(e.currentTarget), plotMenuItems(), { title: 'Plot' })} />
         </div>
       </header>
@@ -697,7 +723,10 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
         </button>
       </div>
       <footer class="plot-foot">
-        <span class="num">{n === null ? '…' : `${n.toLocaleString('en-US')} events`}</span>
+        <span class="num">
+          {n === null ? '…' : `${n.toLocaleString('en-US')} events`}
+          {concatIds && concatReady.length ? ` · pooled from ${concatReady.length} sample${concatReady.length > 1 ? 's' : ''}` : ''}
+        </span>
         <span class="num readout" ref={readoutRef} aria-hidden="true" />
         {hidden.length ? (
           <button
@@ -723,6 +752,30 @@ export function PlotCard({ plot, sampleId, index = 0, total = 1 }) {
           sampleId={sampleId}
           onClose={() => setAxisMenu(null)}
         />
+      ) : null}
+      {concatMenu ? <ConcatMenu anchor={concatMenu} plot={plot} onClose={() => setConcatMenu(null)} /> : null}
+      {dotMenu ? (
+        <Popover anchor={dotMenu} onClose={() => setDotMenu(null)}>
+          <div class="dotsize-pop">
+            <label class="dotsize-row">
+              <span>Dot size</span>
+              <NumberField
+                class="field-sm dotsize-field"
+                value={plot.dotSize ?? defaultDot}
+                step="1"
+                autoFocus
+                onCommit={(v) => updatePlot(plot.id, { dotSize: Math.max(1, Math.min(20, Math.round(v))) })}
+                aria-label="Dot size for this plot"
+              />
+              <span class="muted">px</span>
+            </label>
+            {plot.dotSize != null ? (
+              <button type="button" class="link-btn dotsize-reset" onClick={() => updatePlot(plot.id, { dotSize: null })}>
+                Use default ({defaultDot} px)
+              </button>
+            ) : null}
+          </div>
+        </Popover>
       ) : null}
     </section>
   );

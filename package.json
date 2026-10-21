@@ -28,7 +28,7 @@
     "build:min": "node scripts/build.mjs --minify",
     "dev": "node scripts/build.mjs --watch",
     "test": "node --test test/*.test.js",
-    "e2e": "node e2e/run.mjs && node e2e/run-more.mjs",
+    "e2e": "node e2e/run.mjs && node e2e/run-more.mjs && node e2e/open-workspace.mjs",
     "compliance": "node scripts/gatingml-compliance.mjs",
     "perf": "node e2e/perf.mjs",
     "demo-data": "node scripts/make-demo-fcs.mjs",

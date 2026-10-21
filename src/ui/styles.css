@@ -620,12 +620,39 @@ select.field {
 
 /* ------------------------------------------------------------------ panels */
 .sidebar {
-  width: 304px;
+  width: var(--sidebar-w, 304px);
   flex: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
+}
+.sidebar-resizer {
+  flex: none;
+  width: 10px;
+  margin: 0 -5px;
+  cursor: col-resize;
+  position: relative;
+  border-radius: 4px;
+  z-index: 1;
+}
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  bottom: 6%;
+  width: 3px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.1s;
+}
+.sidebar-resizer:hover::after, .sidebar-resizer:focus-visible::after {
+  background: var(--accent);
+}
+.sidebar-resizer:focus-visible {
+  outline: none;
 }
 .panel, .card {
   background: var(--panel);
@@ -715,6 +742,12 @@ select.field {
   font-weight: 600;
 }
 .sample-name {
+  min-width: 0;
+}
+.fit-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1301,6 +1334,52 @@ select.field {
   color: var(--bad);
   background: var(--sunken);
 }
+.axis-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.axis-row .axis-opt {
+  min-width: 0;
+}
+.axis-relabel {
+  font-style: normal;
+  display: inline-flex;
+  padding: 5px;
+  margin-right: 4px;
+  border-radius: 4px;
+  color: var(--fg-3);
+  opacity: 0;
+}
+.axis-row:hover .axis-relabel, .axis-relabel:focus-visible {
+  opacity: 1;
+}
+.axis-relabel:hover {
+  color: var(--accent);
+  background: var(--sunken);
+}
+.axis-relabel-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}
+.axis-relabel-form .field {
+  flex: 1;
+  min-width: 0;
+}
+.axis-relabel-form .icon-btn {
+  display: inline-flex;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--fg-3);
+}
+.axis-relabel-form .icon-btn:hover {
+  color: var(--accent);
+  background: var(--sunken);
+}
 .ratio-row {
   border-top: 1px solid var(--line);
   padding: 7px 10px;
@@ -1337,6 +1416,15 @@ select.field {
 }
 .scale-editor .seg {
   align-self: flex-start;
+}
+.scale-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.scale-head .link-btn {
+  font-size: 11.5px;
 }
 .scale-grid {
   display: grid;
@@ -1784,6 +1872,41 @@ select.field {
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+.concat-menu {
+  padding: 10px;
+}
+.concat-head p {
+  margin: 4px 0 8px;
+}
+.concat-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dotsize-pop {
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+}
+.dotsize-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+.dotsize-field {
+  width: 46px;
+  padding: 3px 4px;
+}
+.dotsize-reset {
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 .ws-list {
   list-style: none;
@@ -2561,6 +2684,9 @@ canvas.mini.is-hl {
   }
   .sidebar {
     width: 240px;
+  }
+  .sidebar-resizer {
+    display: none;
   }
   .scope-label {
     display: none;

@@ -28,6 +28,31 @@ export function overlayIds(doc, plot) {
 }
 
 /**
+ * Pool several engine 'plot' results (one per sample, same req) into one by
+ * summing their binned counts. Used to concatenate samples into one plot.
+ */
+export function mergeResults(list) {
+  const valid = (list || []).filter((r) => r && !r.missing);
+  if (!valid.length) return (list || []).find((r) => r && r.missing) || null;
+  const first = valid[0];
+  const counts = new Uint32Array(first.counts.length);
+  const overlays = (first.overlays || []).map((o) => ({ id: o.id, counts: new Uint32Array(o.counts.length), n: 0 }));
+  let n = 0;
+  let total = 0;
+  for (const r of valid) {
+    for (let i = 0; i < counts.length; i++) counts[i] += r.counts[i] || 0;
+    n += r.n || 0;
+    total += r.total || 0;
+    (r.overlays || []).forEach((o, i) => {
+      if (!overlays[i]) return;
+      for (let j = 0; j < overlays[i].counts.length; j++) overlays[i].counts[j] += o.counts[j] || 0;
+      overlays[i].n += o.n || 0;
+    });
+  }
+  return { ...first, counts, overlays, n, total };
+}
+
+/**
  * Turn an engine plot result into a drawable layer.
  * @returns {{kind, canvas?, levels?, series?, overlays?, ymax?, n}}
  */

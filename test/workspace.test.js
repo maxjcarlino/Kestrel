@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { store } from '../src/ui/state/store.js';
-import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform } from '../src/ui/state/doc.js';
+import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform, setChannelLabel } from '../src/ui/state/doc.js';
 import { makeTemplate, applyTemplate, migrateDoc, migrateTemplate, workspaceFile } from '../src/ui/state/loader.js';
 import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey } from '../src/ui/state/derived.js';
 import { buildDemoTemplate } from '../src/ui/state/demo-template.js';
@@ -138,4 +138,32 @@ test('derived helpers: frequencies, signatures, axis suggestions', () => {
   assert.equal(allChannels(s.doc).length, 12);
   assert.equal(effectiveComp(s, 's1'), null);
   assert.equal(compKey(s, 's1'), 'none');
+});
+
+test('channel relabeling overrides the file label, round trips, and undoes', () => {
+  const doc = freshDemo();
+  assert.equal(allChannels(doc).find((c) => c.name === 'FITC-A').label, '', 'no file label on the demo channels');
+  setChannelLabel('FITC-A', 'CD4');
+  assert.equal(allChannels(store.get().doc).find((c) => c.name === 'FITC-A').label, 'CD4');
+  undo();
+  assert.equal(allChannels(store.get().doc).find((c) => c.name === 'FITC-A').label, '', 'undo clears the relabel');
+  redo();
+  assert.equal(allChannels(store.get().doc).find((c) => c.name === 'FITC-A').label, 'CD4');
+  // clearing (empty label) removes the override rather than storing an empty string
+  setChannelLabel('FITC-A', '  ');
+  assert.equal(store.get().doc.channelLabels['FITC-A'], undefined);
+
+  setChannelLabel('PE-A', 'CD8');
+  const d = store.get().doc;
+  // workspace round trip
+  const file = JSON.parse(JSON.stringify(workspaceFile(d)));
+  const back = migrateDoc(file);
+  assert.equal(back.channelLabels['PE-A'], 'CD8');
+  // template round trip onto a different workspace
+  const tpl = JSON.parse(JSON.stringify(makeTemplate(d, 'T')));
+  const other = emptyDoc('Other');
+  other.samples = [{ id: 'x', name: 'X', fileName: 'X.fcs', nEvents: 1, groupIds: [], channels: [] }];
+  store.set({ ...initialState(), doc: other });
+  applyTemplate(tpl);
+  assert.equal(store.get().doc.channelLabels['PE-A'], 'CD8');
 });

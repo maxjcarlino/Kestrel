@@ -16,19 +16,26 @@ const EMPTY_LIST = [];
 export function allChannels(doc) {
   const derived = doc.derived || EMPTY_LIST;
   let m = chanMemo.get(doc.samples);
-  if (m && m.derived === derived) return m.out;
-  const seen = new Map();
-  for (const s of doc.samples) {
-    for (const c of s.channels || []) {
-      if (!seen.has(c.name)) seen.set(c.name, { name: c.name, label: c.label || '', kind: c.kind || 'fluor', range: c.range });
-      else if (!seen.get(c.name).label && c.label) seen.get(c.name).label = c.label;
+  if (!m || m.derived !== derived) {
+    const seen = new Map();
+    for (const s of doc.samples) {
+      for (const c of s.channels || []) {
+        if (!seen.has(c.name)) seen.set(c.name, { name: c.name, label: c.label || '', kind: c.kind || 'fluor', range: c.range });
+        else if (!seen.get(c.name).label && c.label) seen.get(c.name).label = c.label;
+      }
     }
+    for (const d of derived) {
+      if (!seen.has(d.name)) seen.set(d.name, { name: d.name, label: '', kind: 'derived', derived: d, expr: ratioExpr(d) });
+    }
+    m = { derived, out: [...seen.values()] };
+    chanMemo.set(doc.samples, m);
   }
-  for (const d of derived) {
-    if (!seen.has(d.name)) seen.set(d.name, { name: d.name, label: '', kind: 'derived', derived: d, expr: ratioExpr(d) });
+  // A user-set label (doc.channelLabels) overrides whatever the file itself carries.
+  const overrides = doc.channelLabels;
+  if (overrides && Object.keys(overrides).length) {
+    return m.out.map((c) => (overrides[c.name] ? { ...c, label: overrides[c.name], fileLabel: c.label } : c));
   }
-  const out = [...seen.values()];
-  chanMemo.set(doc.samples, { derived, out });
+  const out = m.out;
   return out;
 }
 

@@ -7,6 +7,7 @@ import { popName, popSig, compKey, channelInfo, allChannels } from '../state/der
 import { transformKey } from '../../core/transforms.js';
 import { newId } from '../../core/gate-geometry.js';
 import { fetchLayer, drawPanel, SvgContext, fetchOverlay, drawOverlay, SERIES_COLORS } from '../plot/export.js';
+import { watchCounts } from '../state/bridge.js';
 import { makeCanvas } from '../plot/paint.js';
 import { useTheme, exportTheme } from '../theme.js';
 import { IconButton, Button, Segmented, Empty, openMenu, rectOf } from './ui.jsx';
@@ -22,7 +23,7 @@ function plotLabel(doc, p) {
   return `${popName(doc, p.pop)} · ${x.label || x.name}${y && p.type !== 'hist' ? ` × ${y.label || y.name}` : ''}`;
 }
 
-export function StaticPanel({ plot, sampleId, size, title, subtitle }) {
+export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true }) {
   const ref = useRef();
   const doc = useSel((s) => s.doc);
   const status = useSel((s) => (s.meta[sampleId] || {}).status);
@@ -32,7 +33,12 @@ export function StaticPanel({ plot, sampleId, size, title, subtitle }) {
   const PW = size;
   const PH = size + 40;
   const key = status === 'ready'
-    ? [sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size, popSig(state, sampleId, plot.pop), transformKey(doc.transforms[plot.x]), plot.y ? transformKey(doc.transforms[plot.y]) : '', compKey(state, sampleId), doc.settings.colormap, doc.settings.dotSize].join('|')
+    ? [
+        sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size,
+        popSig(state, sampleId, plot.pop), transformKey(doc.transforms[plot.x]), plot.y ? transformKey(doc.transforms[plot.y]) : '',
+        compKey(state, sampleId), doc.settings.colormap, doc.settings.dotSize, plot.dotSize,
+        (plot.concatIds || []).join(','),
+      ].join('|')
     : null;
   const [layer, setLayer] = useState(null);
   useEffect(() => {
@@ -53,8 +59,8 @@ export function StaticPanel({ plot, sampleId, size, title, subtitle }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, PW, PH);
     if (!layer) return;
-    drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === 'ready' ? layer.message : 'Not loaded', theme, title, subtitle, ox: 0, oy: 0, PW, PH });
-  }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle]);
+    drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === 'ready' ? layer.message : 'Not loaded', theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels });
+  }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels]);
   return <canvas ref={ref} class="static-panel" style={{ width: `${PW}px`, height: `${PH}px` }} role="img" aria-label={`${title}${subtitle ? `, ${subtitle}` : ''}`} />;
 }
 
@@ -69,6 +75,13 @@ export function LayoutView() {
   const togglePlot = (id) => setLayout({ plotIds: L.plotIds.includes(id) ? L.plotIds.filter((x) => x !== id) : [...L.plotIds, id] });
   const rows = L.transpose ? plots : samples;
   const cols = L.transpose ? samples : plots;
+
+  // Keep every sample shown in the grid current, not just the active one.
+  const sampleIdsKey = samples.map((x) => x.id).join(',');
+  useEffect(() => {
+    watchCounts(sampleIdsKey ? sampleIdsKey.split(',') : []);
+    return () => watchCounts([]);
+  }, [sampleIdsKey]);
 
   const exportGrid = async (format) => {
     if (!plots.length || !samples.length) return;
@@ -101,7 +114,7 @@ export function LayoutView() {
             const smp = L.transpose ? c : r;
             const x = headW + ci * (PW + 12);
             const lr = layers.get(`${p.id}|${smp.id}`);
-            drawPanel(ctx, { plot: p, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p.pop), subtitle: L.transpose ? smp.name : '', ox: x, oy: y, PW, PH });
+            drawPanel(ctx, { plot: p, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p.pop), subtitle: L.transpose ? smp.name : '', ox: x, oy: y, PW, PH, showTitle: L.showTitles !== false, showAxisLabels: L.showAxisLabels !== false });
           });
         });
       };
@@ -165,6 +178,15 @@ export function LayoutView() {
             <span>Panel size</span>
             <input type="range" min="160" max="360" step="10" value={size} onInput={(e) => setLayout({ size: parseInt(e.currentTarget.value, 10) })} />
           </label>
+          <div class="eyebrow">Show on each panel</div>
+          <label class="check-row">
+            <input type="checkbox" checked={L.showTitles !== false} onChange={(e) => setLayout({ showTitles: e.currentTarget.checked })} />
+            <span>Plot title</span>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" checked={L.showAxisLabels !== false} onChange={(e) => setLayout({ showAxisLabels: e.currentTarget.checked })} />
+            <span>Axis labels</span>
+          </label>
           <div class="card-actions">
             <Button icon="download" variant="primary" disabled={exporting || !plots.length || !samples.length} onClick={() => exportGrid('png')}>
               {exporting ? 'Exporting…' : 'Export PNG'}
@@ -195,7 +217,18 @@ export function LayoutView() {
                 {cols.map((c) => {
                   const p = L.transpose ? r : c;
                   const smp = L.transpose ? c : r;
-                  return <StaticPanel key={`${p.id}|${smp.id}`} plot={p} sampleId={smp.id} size={size} title={popName(doc, p.pop)} subtitle={L.transpose ? '' : ''} />;
+                  return (
+                    <StaticPanel
+                      key={`${p.id}|${smp.id}`}
+                      plot={p}
+                      sampleId={smp.id}
+                      size={size}
+                      title={popName(doc, p.pop)}
+                      subtitle={L.transpose ? '' : ''}
+                      showTitle={L.showTitles !== false}
+                      showAxisLabels={L.showAxisLabels !== false}
+                    />
+                  );
                 })}
               </>
             ))}

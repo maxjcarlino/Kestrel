@@ -323,8 +323,15 @@ function SampleInspector() {
         </label>
         <div class="setting row">
           <span>Dot size</span>
-          <Segmented size="sm" label="Dot size" value={st.dotSize || 1} onChange={(v) => updateSettings({ dotSize: v })} options={[{ value: 1, label: '1 px' }, { value: 2, label: '2 px' }]} />
+          <NumberField
+            class="field-sm dotsize-field"
+            value={st.dotSize || 1}
+            step="1"
+            onCommit={(v) => updateSettings({ dotSize: Math.max(1, Math.min(20, Math.round(v))) })}
+            aria-label="Default dot size in pixels"
+          />
         </div>
+        <p class="muted small">Applies to plots with no dot size of their own. Set one on a plot from its options menu to override it there.</p>
         <div class="setting row">
           <span>Gate labels show</span>
           <Segmented

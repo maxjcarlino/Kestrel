@@ -18,7 +18,7 @@ export const APP = {
   homepage: typeof __APP_HOMEPAGE__ === 'string' ? __APP_HOMEPAGE__ : '',
 };
 export const SCHEMA = 1;
-export const ANALYSIS_KEYS = ['transforms', 'comp', 'derived', 'gates', 'gateOrder', 'overrides', 'plots', 'table', 'layout', 'settings', 'groups'];
+export const ANALYSIS_KEYS = ['transforms', 'comp', 'derived', 'gates', 'gateOrder', 'overrides', 'plots', 'table', 'layout', 'settings', 'groups', 'channelLabels'];
 
 export const DEFAULT_SETTINGS = {
   colormap: 'classic',
@@ -46,6 +46,7 @@ export function emptyDoc(name = 'Untitled workspace') {
     gates: {},
     gateOrder: [],
     overrides: {},
+    channelLabels: {},
     plots: [],
     table: { columns: [], groupId: null },
     layout: { plotIds: [], groupId: null, size: 220, transpose: false, overlays: [] },
@@ -68,6 +69,7 @@ export function initialState() {
       flashPlot: null,
       inspector: true,
       sidebar: true,
+      sidebarWidth: 304,
       dialog: null,
       menu: null,
       editingName: null,
@@ -209,6 +211,24 @@ export function renameWorkspace(name) {
 export function setTransform(channel, spec, opts = {}) {
   const s = normalizeSpec(spec);
   updateDoc((d) => ({ ...d, transforms: { ...d.transforms, [channel]: s } }), { coalesce: `t:${channel}`, ...opts });
+}
+
+// ------------------------------------------------------------------ channel labels
+
+/** Give a parameter a display label, overriding whatever (if anything) its FCS files carry in $PnS. An empty label clears the override. */
+export function setChannelLabel(name, label, opts = {}) {
+  const v = String(label || '').trim();
+  updateDoc((d) => {
+    const cur = d.channelLabels || {};
+    if (v) {
+      if (cur[name] === v) return d;
+      return { ...d, channelLabels: { ...cur, [name]: v } };
+    }
+    if (!(name in cur)) return d;
+    const next = { ...cur };
+    delete next[name];
+    return { ...d, channelLabels: next };
+  }, { coalesce: `label:${name}`, ...opts });
 }
 
 // ------------------------------------------------------------------ gates

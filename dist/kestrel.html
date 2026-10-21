@@ -631,12 +631,39 @@ select.field {
 
 /* ------------------------------------------------------------------ panels */
 .sidebar {
-  width: 304px;
+  width: var(--sidebar-w, 304px);
   flex: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
+}
+.sidebar-resizer {
+  flex: none;
+  width: 10px;
+  margin: 0 -5px;
+  cursor: col-resize;
+  position: relative;
+  border-radius: 4px;
+  z-index: 1;
+}
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  bottom: 6%;
+  width: 3px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.1s;
+}
+.sidebar-resizer:hover::after, .sidebar-resizer:focus-visible::after {
+  background: var(--accent);
+}
+.sidebar-resizer:focus-visible {
+  outline: none;
 }
 .panel, .card {
   background: var(--panel);
@@ -726,6 +753,12 @@ select.field {
   font-weight: 600;
 }
 .sample-name {
+  min-width: 0;
+}
+.fit-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1312,6 +1345,52 @@ select.field {
   color: var(--bad);
   background: var(--sunken);
 }
+.axis-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.axis-row .axis-opt {
+  min-width: 0;
+}
+.axis-relabel {
+  font-style: normal;
+  display: inline-flex;
+  padding: 5px;
+  margin-right: 4px;
+  border-radius: 4px;
+  color: var(--fg-3);
+  opacity: 0;
+}
+.axis-row:hover .axis-relabel, .axis-relabel:focus-visible {
+  opacity: 1;
+}
+.axis-relabel:hover {
+  color: var(--accent);
+  background: var(--sunken);
+}
+.axis-relabel-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}
+.axis-relabel-form .field {
+  flex: 1;
+  min-width: 0;
+}
+.axis-relabel-form .icon-btn {
+  display: inline-flex;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--fg-3);
+}
+.axis-relabel-form .icon-btn:hover {
+  color: var(--accent);
+  background: var(--sunken);
+}
 .ratio-row {
   border-top: 1px solid var(--line);
   padding: 7px 10px;
@@ -1348,6 +1427,15 @@ select.field {
 }
 .scale-editor .seg {
   align-self: flex-start;
+}
+.scale-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.scale-head .link-btn {
+  font-size: 11.5px;
 }
 .scale-grid {
   display: grid;
@@ -1795,6 +1883,41 @@ select.field {
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+.concat-menu {
+  padding: 10px;
+}
+.concat-head p {
+  margin: 4px 0 8px;
+}
+.concat-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dotsize-pop {
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+}
+.dotsize-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+.dotsize-field {
+  width: 46px;
+  padding: 3px 4px;
+}
+.dotsize-reset {
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 .ws-list {
   list-style: none;
@@ -2572,6 +2695,9 @@ canvas.mini.is-hl {
   }
   .sidebar {
     width: 240px;
+  }
+  .sidebar-resizer {
+    display: none;
   }
   .scope-label {
     display: none;
@@ -4531,6 +4657,7 @@ canvas.mini.is-hl {
     renameSample: () => renameSample,
     renameWorkspace: () => renameWorkspace,
     samplesInGroup: () => samplesInGroup,
+    setChannelLabel: () => setChannelLabel,
     setDefaultComp: () => setDefaultComp,
     setGeometry: () => setGeometry,
     setLayout: () => setLayout,
@@ -4565,6 +4692,7 @@ canvas.mini.is-hl {
       gates: {},
       gateOrder: [],
       overrides: {},
+      channelLabels: {},
       plots: [],
       table: { columns: [], groupId: null },
       layout: { plotIds: [], groupId: null, size: 220, transpose: false, overlays: [] },
@@ -4586,6 +4714,7 @@ canvas.mini.is-hl {
         flashPlot: null,
         inspector: true,
         sidebar: true,
+        sidebarWidth: 304,
         dialog: null,
         menu: null,
         editingName: null,
@@ -4701,6 +4830,20 @@ canvas.mini.is-hl {
   function setTransform(channel, spec, opts = {}) {
     const s3 = normalizeSpec(spec);
     updateDoc((d3) => ({ ...d3, transforms: { ...d3.transforms, [channel]: s3 } }), { coalesce: `t:${channel}`, ...opts });
+  }
+  function setChannelLabel(name, label, opts = {}) {
+    const v3 = String(label || "").trim();
+    updateDoc((d3) => {
+      const cur = d3.channelLabels || {};
+      if (v3) {
+        if (cur[name] === v3) return d3;
+        return { ...d3, channelLabels: { ...cur, [name]: v3 } };
+      }
+      if (!(name in cur)) return d3;
+      const next = { ...cur };
+      delete next[name];
+      return { ...d3, channelLabels: next };
+    }, { coalesce: `label:${name}`, ...opts });
   }
   function gateList(doc) {
     const order = doc.gateOrder.filter((id) => doc.gates[id]);
@@ -5129,7 +5272,7 @@ canvas.mini.is-hl {
         homepage: true ? "" : ""
       };
       SCHEMA = 1;
-      ANALYSIS_KEYS = ["transforms", "comp", "derived", "gates", "gateOrder", "overrides", "plots", "table", "layout", "settings", "groups"];
+      ANALYSIS_KEYS = ["transforms", "comp", "derived", "gates", "gateOrder", "overrides", "plots", "table", "layout", "settings", "groups", "channelLabels"];
       DEFAULT_SETTINGS = {
         colormap: "classic",
         smooth: 1,
@@ -7041,184 +7184,29 @@ canvas.mini.is-hl {
     }
   });
 
-  // src/engine/client.js
-  var EngineClient;
-  var init_client = __esm({
-    "src/engine/client.js"() {
-      init_engine();
-      EngineClient = class {
-        /**
-         * @param {{workerSource?: string, maxWorkers?: number, forceLocal?: boolean}} opts
-         */
-        constructor({ workerSource = "", maxWorkers = 8, forceLocal = false } = {}) {
-          this.workers = [];
-          this.pending = /* @__PURE__ */ new Map();
-          this.rid = 0;
-          this.assignments = /* @__PURE__ */ new Map();
-          this.loads = [];
-          this.local = null;
-          this.readyPromise = this.start(workerSource, maxWorkers, forceLocal);
-          this.listeners = /* @__PURE__ */ new Set();
-          this.inflight = 0;
-        }
-        async start(src, maxWorkers, forceLocal) {
-          const cores = typeof navigator !== "undefined" && navigator.hardwareConcurrency || 4;
-          const n2 = Math.max(1, Math.min(maxWorkers, cores > 2 ? cores - 1 : cores));
-          if (!forceLocal && src && typeof Worker !== "undefined") {
-            try {
-              const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
-              const ready = [];
-              for (let i4 = 0; i4 < n2; i4++) {
-                const w3 = new Worker(url);
-                ready.push(
-                  new Promise((resolve) => {
-                    const timer2 = setTimeout(() => resolve(false), 4e3);
-                    w3.onmessage = (e3) => {
-                      if (e3.data && e3.data.ready) {
-                        clearTimeout(timer2);
-                        w3.onmessage = (ev) => this.onMessage(ev.data);
-                        resolve(true);
-                      }
-                    };
-                    w3.onerror = () => {
-                      clearTimeout(timer2);
-                      resolve(false);
-                    };
-                  })
-                );
-                this.workers.push(w3);
-                this.loads.push(0);
-              }
-              const ok = await Promise.all(ready);
-              if (!ok.every(Boolean)) throw new Error("worker start failed");
-            } catch (e3) {
-              for (const w3 of this.workers) {
-                try {
-                  w3.terminate();
-                } catch (err) {
-                }
-              }
-              this.workers = [];
-              this.loads = [];
-            }
-          }
-          if (this.workers.length === 0) this.local = new Engine();
-          return this.describe();
-        }
-        ready() {
-          return this.readyPromise;
-        }
-        describe() {
-          return this.local ? { mode: "main", workers: 0 } : { mode: "workers", workers: this.workers.length };
-        }
-        onBusy(fn2) {
-          this.listeners.add(fn2);
-          return () => this.listeners.delete(fn2);
-        }
-        emitBusy() {
-          for (const fn2 of this.listeners) fn2(this.inflight);
-        }
-        onMessage(msg) {
-          const p3 = this.pending.get(msg.rid);
-          if (!p3) return;
-          this.pending.delete(msg.rid);
-          this.inflight--;
-          this.emitBusy();
-          if (msg.ok) p3.resolve(msg.result);
-          else p3.reject(new Error(msg.error));
-        }
-        /** Choose the least-loaded worker for a new sample. */
-        assign(sampleId, weight = 1) {
-          if (this.assignments.has(sampleId)) return this.assignments.get(sampleId);
-          if (this.local) {
-            this.assignments.set(sampleId, 0);
-            return 0;
-          }
-          let best = 0;
-          for (let i4 = 1; i4 < this.loads.length; i4++) if (this.loads[i4] < this.loads[best]) best = i4;
-          this.loads[best] += weight;
-          this.assignments.set(sampleId, best);
-          return best;
-        }
-        release(sampleId, weight = 1) {
-          const w3 = this.assignments.get(sampleId);
-          if (w3 === void 0) return;
-          this.assignments.delete(sampleId);
-          if (!this.local) this.loads[w3] = Math.max(0, this.loads[w3] - weight);
-        }
-        workerFor(sampleId) {
-          const w3 = this.assignments.get(sampleId);
-          if (w3 === void 0) throw new Error("Sample is not assigned to a worker.");
-          return w3;
-        }
-        post(workerIndex, type, payload, transfer = []) {
-          this.inflight++;
-          this.emitBusy();
-          if (this.local) {
-            return new Promise((resolve, reject) => {
-              setTimeout(() => {
-                try {
-                  const { result } = this.local.handle(type, payload);
-                  this.inflight--;
-                  this.emitBusy();
-                  resolve(result);
-                } catch (e3) {
-                  this.inflight--;
-                  this.emitBusy();
-                  reject(e3);
-                }
-              }, 0);
-            });
-          }
-          const rid = ++this.rid;
-          return new Promise((resolve, reject) => {
-            this.pending.set(rid, { resolve, reject });
-            try {
-              this.workers[workerIndex].postMessage({ rid, type, payload }, transfer);
-            } catch (e3) {
-              this.pending.delete(rid);
-              this.inflight--;
-              this.emitBusy();
-              reject(e3);
-            }
-          });
-        }
-        /** Send a command to the worker that owns a sample. */
-        call(sampleId, type, payload = {}, transfer = []) {
-          return this.post(this.workerFor(sampleId), type, { id: sampleId, ...payload }, transfer);
-        }
-        /** Send the same command to every worker. */
-        broadcast(type, payload = {}) {
-          if (this.local) return this.post(0, type, payload).then((r3) => [r3]);
-          return Promise.all(this.workers.map((_3, i4) => this.post(i4, type, payload)));
-        }
-        /** Any worker (round robin); for stateless jobs such as generating data. */
-        any(type, payload = {}) {
-          if (this.local) return this.post(0, type, payload);
-          const i4 = this.rid % this.workers.length;
-          return this.post(i4, type, payload);
-        }
-      };
-    }
-  });
-
   // src/ui/state/derived.js
   function allChannels(doc) {
     const derived = doc.derived || EMPTY_LIST;
     let m3 = chanMemo.get(doc.samples);
-    if (m3 && m3.derived === derived) return m3.out;
-    const seen = /* @__PURE__ */ new Map();
-    for (const s3 of doc.samples) {
-      for (const c3 of s3.channels || []) {
-        if (!seen.has(c3.name)) seen.set(c3.name, { name: c3.name, label: c3.label || "", kind: c3.kind || "fluor", range: c3.range });
-        else if (!seen.get(c3.name).label && c3.label) seen.get(c3.name).label = c3.label;
+    if (!m3 || m3.derived !== derived) {
+      const seen = /* @__PURE__ */ new Map();
+      for (const s3 of doc.samples) {
+        for (const c3 of s3.channels || []) {
+          if (!seen.has(c3.name)) seen.set(c3.name, { name: c3.name, label: c3.label || "", kind: c3.kind || "fluor", range: c3.range });
+          else if (!seen.get(c3.name).label && c3.label) seen.get(c3.name).label = c3.label;
+        }
       }
+      for (const d3 of derived) {
+        if (!seen.has(d3.name)) seen.set(d3.name, { name: d3.name, label: "", kind: "derived", derived: d3, expr: ratioExpr(d3) });
+      }
+      m3 = { derived, out: [...seen.values()] };
+      chanMemo.set(doc.samples, m3);
     }
-    for (const d3 of derived) {
-      if (!seen.has(d3.name)) seen.set(d3.name, { name: d3.name, label: "", kind: "derived", derived: d3, expr: ratioExpr(d3) });
+    const overrides = doc.channelLabels;
+    if (overrides && Object.keys(overrides).length) {
+      return m3.out.map((c3) => overrides[c3.name] ? { ...c3, label: overrides[c3.name], fileLabel: c3.label } : c3);
     }
-    const out = [...seen.values()];
-    chanMemo.set(doc.samples, { derived, out });
+    const out = m3.out;
     return out;
   }
   function ratioExpr(d3) {
@@ -7424,6 +7412,167 @@ canvas.mini.is-hl {
     }
   });
 
+  // src/engine/client.js
+  var EngineClient;
+  var init_client = __esm({
+    "src/engine/client.js"() {
+      init_engine();
+      EngineClient = class {
+        /**
+         * @param {{workerSource?: string, maxWorkers?: number, forceLocal?: boolean}} opts
+         */
+        constructor({ workerSource = "", maxWorkers = 8, forceLocal = false } = {}) {
+          this.workers = [];
+          this.pending = /* @__PURE__ */ new Map();
+          this.rid = 0;
+          this.assignments = /* @__PURE__ */ new Map();
+          this.loads = [];
+          this.local = null;
+          this.readyPromise = this.start(workerSource, maxWorkers, forceLocal);
+          this.listeners = /* @__PURE__ */ new Set();
+          this.inflight = 0;
+        }
+        async start(src, maxWorkers, forceLocal) {
+          const cores = typeof navigator !== "undefined" && navigator.hardwareConcurrency || 4;
+          const n2 = Math.max(1, Math.min(maxWorkers, cores > 2 ? cores - 1 : cores));
+          if (!forceLocal && src && typeof Worker !== "undefined") {
+            try {
+              const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
+              const ready = [];
+              for (let i4 = 0; i4 < n2; i4++) {
+                const w3 = new Worker(url);
+                ready.push(
+                  new Promise((resolve) => {
+                    const timer2 = setTimeout(() => resolve(false), 4e3);
+                    w3.onmessage = (e3) => {
+                      if (e3.data && e3.data.ready) {
+                        clearTimeout(timer2);
+                        w3.onmessage = (ev) => this.onMessage(ev.data);
+                        resolve(true);
+                      }
+                    };
+                    w3.onerror = () => {
+                      clearTimeout(timer2);
+                      resolve(false);
+                    };
+                  })
+                );
+                this.workers.push(w3);
+                this.loads.push(0);
+              }
+              const ok = await Promise.all(ready);
+              if (!ok.every(Boolean)) throw new Error("worker start failed");
+            } catch (e3) {
+              for (const w3 of this.workers) {
+                try {
+                  w3.terminate();
+                } catch (err) {
+                }
+              }
+              this.workers = [];
+              this.loads = [];
+            }
+          }
+          if (this.workers.length === 0) this.local = new Engine();
+          return this.describe();
+        }
+        ready() {
+          return this.readyPromise;
+        }
+        describe() {
+          return this.local ? { mode: "main", workers: 0 } : { mode: "workers", workers: this.workers.length };
+        }
+        onBusy(fn2) {
+          this.listeners.add(fn2);
+          return () => this.listeners.delete(fn2);
+        }
+        emitBusy() {
+          for (const fn2 of this.listeners) fn2(this.inflight);
+        }
+        onMessage(msg) {
+          const p3 = this.pending.get(msg.rid);
+          if (!p3) return;
+          this.pending.delete(msg.rid);
+          this.inflight--;
+          this.emitBusy();
+          if (msg.ok) p3.resolve(msg.result);
+          else p3.reject(new Error(msg.error));
+        }
+        /** Choose the least-loaded worker for a new sample. */
+        assign(sampleId, weight = 1) {
+          if (this.assignments.has(sampleId)) return this.assignments.get(sampleId);
+          if (this.local) {
+            this.assignments.set(sampleId, 0);
+            return 0;
+          }
+          let best = 0;
+          for (let i4 = 1; i4 < this.loads.length; i4++) if (this.loads[i4] < this.loads[best]) best = i4;
+          this.loads[best] += weight;
+          this.assignments.set(sampleId, best);
+          return best;
+        }
+        release(sampleId, weight = 1) {
+          const w3 = this.assignments.get(sampleId);
+          if (w3 === void 0) return;
+          this.assignments.delete(sampleId);
+          if (!this.local) this.loads[w3] = Math.max(0, this.loads[w3] - weight);
+        }
+        workerFor(sampleId) {
+          const w3 = this.assignments.get(sampleId);
+          if (w3 === void 0) throw new Error("Sample is not assigned to a worker.");
+          return w3;
+        }
+        post(workerIndex, type, payload, transfer = []) {
+          this.inflight++;
+          this.emitBusy();
+          if (this.local) {
+            return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                try {
+                  const { result } = this.local.handle(type, payload);
+                  this.inflight--;
+                  this.emitBusy();
+                  resolve(result);
+                } catch (e3) {
+                  this.inflight--;
+                  this.emitBusy();
+                  reject(e3);
+                }
+              }, 0);
+            });
+          }
+          const rid = ++this.rid;
+          return new Promise((resolve, reject) => {
+            this.pending.set(rid, { resolve, reject });
+            try {
+              this.workers[workerIndex].postMessage({ rid, type, payload }, transfer);
+            } catch (e3) {
+              this.pending.delete(rid);
+              this.inflight--;
+              this.emitBusy();
+              reject(e3);
+            }
+          });
+        }
+        /** Send a command to the worker that owns a sample. */
+        call(sampleId, type, payload = {}, transfer = []) {
+          return this.post(this.workerFor(sampleId), type, { id: sampleId, ...payload }, transfer);
+        }
+        /** Send the same command to every worker. */
+        broadcast(type, payload = {}) {
+          if (this.local) return this.post(0, type, payload).then((r3) => [r3]);
+          return Promise.all(this.workers.map((_3, i4) => this.post(i4, type, payload)));
+        }
+        /** Any worker (round robin); for stateless jobs such as generating data. */
+        any(type, payload = {}) {
+          if (this.local) return this.post(0, type, payload);
+          const i4 = this.rid % this.workers.length;
+          return this.post(i4, type, payload);
+        }
+      };
+    }
+  });
+
   // src/ui/state/bridge.js
   function initEngine(workerSource) {
     client = new EngineClient({ workerSource });
@@ -7508,6 +7657,11 @@ canvas.mini.is-hl {
     if (!client) return Promise.reject(new Error("Engine not ready"));
     flush();
     return client.call(sampleId, type, payload, transfer);
+  }
+  function watchCounts(ids) {
+    countsWatch.clear();
+    for (const id of ids) countsWatch.add(id);
+    refreshCounts();
   }
   function ensureCounts(sampleId) {
     if (!sampleId || !loaded.has(sampleId)) return;
@@ -8972,6 +9126,32 @@ canvas.mini.is-hl {
       }
     );
   }
+  function FitText({ text, class: cls = "", minSize = 9, ...rest }) {
+    const ref = A2();
+    _2(() => {
+      const el = ref.current;
+      if (!el) return void 0;
+      const fit = () => {
+        const base = parseFloat(el.dataset.fitBase || getComputedStyle(el).fontSize);
+        el.dataset.fitBase = base;
+        el.style.fontSize = `${base}px`;
+        const avail = el.clientWidth;
+        const needed = el.scrollWidth;
+        if (!avail || needed <= avail + 0.5) return;
+        let size = Math.max(minSize, Math.floor(base * avail / needed * 0.96 * 10) / 10);
+        el.style.fontSize = `${size}px`;
+        for (let i4 = 0; i4 < 4 && el.scrollWidth > el.clientWidth + 0.5 && size > minSize; i4++) {
+          size = Math.max(minSize, size - 0.5);
+          el.style.fontSize = `${size}px`;
+        }
+      };
+      fit();
+      const ro = new ResizeObserver(fit);
+      ro.observe(el.parentElement || el);
+      return () => ro.disconnect();
+    }, [text, minSize]);
+    return /* @__PURE__ */ u3("span", { ref, class: `fit-text ${cls}`, ...rest, children: text });
+  }
   function NumberField({ value, onCommit, step = "any", allowEmpty = false, placeholder = "", class: cls = "", format = (x3) => x3, ...rest }) {
     const show = value === null || value === void 0 || !Number.isFinite(value) ? "" : String(format(value));
     const [v3, setV] = h2(show);
@@ -9519,6 +9699,7 @@ canvas.mini.is-hl {
   init_preact_module();
   init_store();
   init_doc();
+  init_derived();
   init_bridge();
 
   // src/ui/state/persist.js
@@ -9934,7 +10115,13 @@ canvas.mini.is-hl {
       }
     }
     const base = initialState();
-    store.set({ ...base, engine: old ? old.engine : base.engine, persist: old ? { ...old.persist, status: "idle" } : base.persist, doc, ui: { ...base.ui, view: old ? old.ui.view : "gating" } });
+    store.set({
+      ...base,
+      engine: old ? old.engine : base.engine,
+      persist: old ? { ...old.persist, status: "idle" } : base.persist,
+      doc,
+      ui: { ...base.ui, view: old ? old.ui.view : "gating", sidebarWidth: old ? old.ui.sidebarWidth : base.ui.sidebarWidth }
+    });
   }
   async function openDemo({ name = "Demo \xB7 7-colour PBMC panel" } = {}) {
     const doc = emptyDoc(name);
@@ -10069,7 +10256,8 @@ canvas.mini.is-hl {
       table: { columns: doc.table.columns },
       layout: { plotIds: doc.layout.plotIds, size: doc.layout.size, transpose: doc.layout.transpose, overlays: doc.layout.overlays || [] },
       settings: doc.settings,
-      groups: doc.groups.map((g4) => ({ id: g4.id, name: g4.name }))
+      groups: doc.groups.map((g4) => ({ id: g4.id, name: g4.name })),
+      channelLabels: doc.channelLabels || {}
     };
   }
   function workspaceFile(doc) {
@@ -10098,6 +10286,7 @@ canvas.mini.is-hl {
       next.table = { ...d3.table, columns: t3.table && t3.table.columns || [] };
       next.layout = { ...d3.layout, ...t3.layout || {} };
       next.settings = { ...DEFAULT_SETTINGS, ...t3.settings || {} };
+      next.channelLabels = { ...d3.channelLabels, ...t3.channelLabels || {} };
       const groups = d3.groups.slice();
       for (const g4 of t3.groups || []) if (!groups.some((x3) => x3.name === g4.name)) groups.push({ id: g4.id || newId("grp"), name: g4.name });
       next.groups = groups;
@@ -10120,7 +10309,8 @@ canvas.mini.is-hl {
       table: raw.table || { columns: [] },
       layout: raw.layout || {},
       settings: raw.settings || {},
-      groups: raw.groups || []
+      groups: raw.groups || [],
+      channelLabels: raw.channelLabels || {}
     };
   }
   function migrateDoc(raw) {
@@ -11189,10 +11379,59 @@ canvas.mini.is-hl {
   init_ui();
   init_download();
   init_jsxRuntime_module();
+  var SIDEBAR_DEFAULT = 304;
+  var SIDEBAR_MIN = 220;
+  var SIDEBAR_MAX = 560;
   function Sidebar() {
-    return /* @__PURE__ */ u3("aside", { class: "sidebar", "aria-label": "Samples and populations", children: [
-      /* @__PURE__ */ u3(SamplesPanel, {}),
-      /* @__PURE__ */ u3(PopulationTree, {})
+    const width = useSel((s3) => s3.ui.sidebarWidth || SIDEBAR_DEFAULT);
+    const setWidth = (w3) => {
+      const clamped = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, w3));
+      setUI({ sidebarWidth: clamped });
+      return clamped;
+    };
+    const onResizeStart = (e3) => {
+      e3.preventDefault();
+      const startX = e3.clientX;
+      const startW = width;
+      const move = (ev) => setWidth(startW + (ev.clientX - startX));
+      const up = () => {
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+        setKV("sidebarWidth", store.get().ui.sidebarWidth || startW);
+      };
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", up);
+    };
+    const onResizeKey = (e3) => {
+      if (e3.key === "ArrowLeft" || e3.key === "ArrowRight") {
+        e3.preventDefault();
+        const w3 = setWidth(width + (e3.key === "ArrowRight" ? 16 : -16));
+        setKV("sidebarWidth", w3);
+      }
+    };
+    const reset = () => setKV("sidebarWidth", setWidth(SIDEBAR_DEFAULT));
+    return /* @__PURE__ */ u3(k, { children: [
+      /* @__PURE__ */ u3("aside", { class: "sidebar", "aria-label": "Samples and populations", style: { "--sidebar-w": `${width}px` }, children: [
+        /* @__PURE__ */ u3(SamplesPanel, {}),
+        /* @__PURE__ */ u3(PopulationTree, {})
+      ] }),
+      /* @__PURE__ */ u3(
+        "div",
+        {
+          class: "sidebar-resizer",
+          role: "separator",
+          "aria-orientation": "vertical",
+          "aria-label": "Resize the sidebar",
+          "aria-valuenow": Math.round(width),
+          "aria-valuemin": SIDEBAR_MIN,
+          "aria-valuemax": SIDEBAR_MAX,
+          tabIndex: 0,
+          title: "Drag to resize. Double-click to reset.",
+          onMouseDown: onResizeStart,
+          onDblClick: reset,
+          onKeyDown: onResizeKey
+        }
+      )
     ] });
   }
   var STATUS_LABEL = { loading: "Loading", ready: "Loaded", missing: "Data file not loaded", error: "Could not read file" };
@@ -11345,7 +11584,7 @@ canvas.mini.is-hl {
                     },
                     onClick: (e3) => e3.stopPropagation()
                   }
-                ) : /* @__PURE__ */ u3("span", { class: "sample-name", onDblClick: () => setUI({ renamingSample: smp.id }), children: smp.name }),
+                ) : /* @__PURE__ */ u3("span", { class: "sample-name", onDblClick: () => setUI({ renamingSample: smp.id }), title: smp.name, children: /* @__PURE__ */ u3(FitText, { text: smp.name, minSize: 8 }) }),
                 /* @__PURE__ */ u3("span", { class: "sample-groups", children: (smp.groupIds || []).slice(0, 2).map((g4) => /* @__PURE__ */ u3("i", { class: "mini-chip", children: groupName(g4) }, g4)) }),
                 /* @__PURE__ */ u3("span", { class: "num sample-n", children: st === "ready" ? compact(smp.nEvents) : st === "loading" ? "\u2026" : "" }),
                 /* @__PURE__ */ u3(
@@ -11515,6 +11754,26 @@ canvas.mini.is-hl {
       return Object.values(doc.gates).filter((g4) => (g4.parent || ROOT) === plot.pop).map((g4) => g4.id);
     }
     return doc.gates[plot.overlay] ? [plot.overlay] : [];
+  }
+  function mergeResults(list) {
+    const valid = (list || []).filter((r3) => r3 && !r3.missing);
+    if (!valid.length) return (list || []).find((r3) => r3 && r3.missing) || null;
+    const first = valid[0];
+    const counts = new Uint32Array(first.counts.length);
+    const overlays = (first.overlays || []).map((o3) => ({ id: o3.id, counts: new Uint32Array(o3.counts.length), n: 0 }));
+    let n2 = 0;
+    let total = 0;
+    for (const r3 of valid) {
+      for (let i4 = 0; i4 < counts.length; i4++) counts[i4] += r3.counts[i4] || 0;
+      n2 += r3.n || 0;
+      total += r3.total || 0;
+      (r3.overlays || []).forEach((o3, i4) => {
+        if (!overlays[i4]) return;
+        for (let j4 = 0; j4 < overlays[i4].counts.length; j4++) overlays[i4].counts[j4] += o3.counts[j4] || 0;
+        overlays[i4].n += o3.n || 0;
+      });
+    }
+    return { ...first, counts, overlays, n: n2, total };
   }
   function buildLayer(res, { type, settings, theme, overlayColors = [] }) {
     if (!res || res.missing) return null;
@@ -11705,6 +11964,8 @@ canvas.mini.is-hl {
   function AxisMenu({ anchor, axis, plot, sampleId, onClose }) {
     const doc = useSel((s3) => s3.doc);
     const [q4, setQ] = h2("");
+    const [relabel, setRelabel] = h2(null);
+    const [relabelVal, setRelabelVal] = h2("");
     const listRef = A2();
     const chans = allChannels(doc);
     const current = axis === "x" ? plot.x : plot.y;
@@ -11756,26 +12017,76 @@ canvas.mini.is-hl {
         ] }) : null,
         groups.map(([kind, list]) => /* @__PURE__ */ u3("div", { class: "axis-group", children: [
           /* @__PURE__ */ u3("div", { class: "axis-group-title", children: KIND_LABEL[kind] }),
-          list.map((c3) => /* @__PURE__ */ u3("button", { type: "button", role: "option", "aria-selected": c3.name === current ? "true" : "false", class: `axis-opt ${c3.name === current ? "is-on" : ""}`, onClick: () => pick(c3.name), children: [
-            /* @__PURE__ */ u3("span", { class: "axis-check", children: c3.name === current ? /* @__PURE__ */ u3(Icon, { name: "check", size: 13 }) : null }),
-            /* @__PURE__ */ u3("b", { children: c3.label || c3.name }),
-            c3.label ? /* @__PURE__ */ u3("span", { children: c3.name }) : c3.expr ? /* @__PURE__ */ u3("span", { children: c3.expr }) : null,
-            sampleId && isCompensated(state, sampleId, c3.name) ? /* @__PURE__ */ u3("i", { class: "comp-badge", title: "Compensated", children: "comp" }) : null,
-            c3.kind === "derived" ? /* @__PURE__ */ u3(
-              "i",
+          list.map(
+            (c3) => relabel === c3.name ? /* @__PURE__ */ u3(
+              "form",
               {
-                class: "axis-del",
-                role: "button",
-                tabIndex: 0,
-                title: `Remove the ratio ${c3.name}`,
-                onClick: (e3) => {
-                  e3.stopPropagation();
-                  removeDerived(c3.name);
+                class: "axis-relabel-form",
+                onSubmit: (e3) => {
+                  e3.preventDefault();
+                  setChannelLabel(c3.name, relabelVal);
+                  setRelabel(null);
                 },
-                children: /* @__PURE__ */ u3(Icon, { name: "close", size: 12 })
-              }
-            ) : null
-          ] }, c3.name))
+                children: [
+                  /* @__PURE__ */ u3(
+                    "input",
+                    {
+                      class: "field field-sm",
+                      autoFocus: true,
+                      ref: (el) => el && setTimeout(() => el.focus({ preventScroll: true }), 0),
+                      placeholder: c3.name,
+                      value: relabelVal,
+                      onInput: (e3) => setRelabelVal(e3.currentTarget.value),
+                      onKeyDown: (e3) => {
+                        e3.stopPropagation();
+                        if (e3.key === "Escape") setRelabel(null);
+                      },
+                      "aria-label": `Label for ${c3.name}`
+                    }
+                  ),
+                  /* @__PURE__ */ u3("button", { type: "submit", class: "icon-btn", title: "Save label", children: /* @__PURE__ */ u3(Icon, { name: "check", size: 13 }) }),
+                  /* @__PURE__ */ u3("button", { type: "button", class: "icon-btn", title: "Cancel", onClick: () => setRelabel(null), children: /* @__PURE__ */ u3(Icon, { name: "close", size: 13 }) })
+                ]
+              },
+              c3.name
+            ) : /* @__PURE__ */ u3("div", { class: "axis-row", children: [
+              /* @__PURE__ */ u3("button", { type: "button", role: "option", "aria-selected": c3.name === current ? "true" : "false", class: `axis-opt ${c3.name === current ? "is-on" : ""}`, onClick: () => pick(c3.name), children: [
+                /* @__PURE__ */ u3("span", { class: "axis-check", children: c3.name === current ? /* @__PURE__ */ u3(Icon, { name: "check", size: 13 }) : null }),
+                /* @__PURE__ */ u3("b", { children: c3.label || c3.name }),
+                c3.label ? /* @__PURE__ */ u3("span", { children: c3.name }) : c3.expr ? /* @__PURE__ */ u3("span", { children: c3.expr }) : null,
+                sampleId && isCompensated(state, sampleId, c3.name) ? /* @__PURE__ */ u3("i", { class: "comp-badge", title: "Compensated", children: "comp" }) : null,
+                c3.kind === "derived" ? /* @__PURE__ */ u3(
+                  "i",
+                  {
+                    class: "axis-del",
+                    role: "button",
+                    tabIndex: 0,
+                    title: `Remove the ratio ${c3.name}`,
+                    onClick: (e3) => {
+                      e3.stopPropagation();
+                      removeDerived(c3.name);
+                    },
+                    children: /* @__PURE__ */ u3(Icon, { name: "close", size: 12 })
+                  }
+                ) : null
+              ] }),
+              c3.kind !== "derived" ? /* @__PURE__ */ u3(
+                "i",
+                {
+                  class: "axis-relabel",
+                  role: "button",
+                  tabIndex: 0,
+                  title: `Relabel ${c3.name}`,
+                  onClick: (e3) => {
+                    e3.stopPropagation();
+                    setRelabel(c3.name);
+                    setRelabelVal(c3.label || "");
+                  },
+                  children: /* @__PURE__ */ u3(Icon, { name: "pencil", size: 12 })
+                }
+              ) : null
+            ] }, c3.name)
+          )
         ] }, kind)),
         !filtered.length ? /* @__PURE__ */ u3("div", { class: "axis-none", children: [
           "No parameter matches \u201C",
@@ -11876,7 +12187,8 @@ canvas.mini.is-hl {
   function ScaleEditor({ channel, sampleId, pop }) {
     const doc = useSel((s3) => s3.doc);
     const spec = normalizeSpec(doc.transforms[channel]);
-    const kind = (allChannels(doc).find((c3) => c3.name === channel) || {}).kind;
+    const info = allChannels(doc).find((c3) => c3.name === channel) || {};
+    const kind = info.kind;
     const [busy, setBusy] = h2(false);
     const set = (patch) => setTransform(channel, { ...spec, ...patch });
     const auto = async () => {
@@ -11895,10 +12207,13 @@ canvas.mini.is-hl {
       }
     };
     return /* @__PURE__ */ u3("div", { class: "scale-editor", children: [
-      /* @__PURE__ */ u3("div", { class: "scale-head", children: /* @__PURE__ */ u3("span", { class: "eyebrow", children: [
-        "Scale for ",
-        channel
-      ] }) }),
+      /* @__PURE__ */ u3("div", { class: "scale-head", children: [
+        /* @__PURE__ */ u3("span", { class: "eyebrow", children: [
+          "Scale for ",
+          channel
+        ] }),
+        info.fileLabel !== void 0 ? /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => setChannelLabel(channel, ""), title: info.fileLabel ? `Revert to the file's own label (${info.fileLabel})` : "Revert to no label", children: "Reset label" }) : null
+      ] }),
       /* @__PURE__ */ u3(
         Segmented,
         {
@@ -12016,6 +12331,31 @@ canvas.mini.is-hl {
     if (!Number.isFinite(v3)) return v3;
     if (Math.abs(v3) >= 1e3) return Math.round(v3);
     return Number(v3.toPrecision(5));
+  }
+
+  // src/ui/plot/ConcatMenu.jsx
+  init_store();
+  init_doc();
+  init_ui();
+  init_jsxRuntime_module();
+  function ConcatMenu({ anchor, plot, onClose }) {
+    const doc = useSel((s3) => s3.doc);
+    const ids = plot.concatIds || [];
+    const toggle = (id) => updatePlot(plot.id, { concatIds: ids.includes(id) ? ids.filter((x3) => x3 !== id) : [...ids, id] });
+    return /* @__PURE__ */ u3(Popover, { anchor, onClose, class: "concat-menu", width: 260, children: [
+      /* @__PURE__ */ u3("div", { class: "concat-head", children: [
+        /* @__PURE__ */ u3("span", { class: "eyebrow", children: "Concatenate samples" }),
+        /* @__PURE__ */ u3("p", { class: "muted small", children: "Pool events from several samples into this one plot. Gates still follow the current sample." })
+      ] }),
+      /* @__PURE__ */ u3("div", { class: "concat-actions", children: [
+        /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => updatePlot(plot.id, { concatIds: doc.samples.map((s3) => s3.id) }), children: "Select all" }),
+        /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", disabled: !ids.length, onClick: () => updatePlot(plot.id, { concatIds: [] }), children: "Clear" })
+      ] }),
+      doc.samples.length ? /* @__PURE__ */ u3("div", { class: "check-list short", children: doc.samples.map((s3) => /* @__PURE__ */ u3("label", { class: "check-row", children: [
+        /* @__PURE__ */ u3("input", { type: "checkbox", checked: ids.includes(s3.id), onChange: () => toggle(s3.id) }),
+        /* @__PURE__ */ u3("span", { children: s3.name })
+      ] }, s3.id)) }) : /* @__PURE__ */ u3("p", { class: "muted small", children: "No samples in this workspace yet." })
+    ] });
   }
 
   // src/ui/plot/export.js
@@ -12194,13 +12534,16 @@ canvas.mini.is-hl {
     const area = plotArea(W2, H3);
     const ov = overlayIds(doc, plot);
     const req2 = is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: Math.round(area.w), h: Math.round(area.h), overlays: ov } : { pop: plot.pop, x: plot.x, bins: Math.max(64, Math.min(512, Math.round(area.w / 1.25))), overlays: ov };
-    const res = await request(sampleId, "plot", { req: req2 });
-    if (res.missing) return { layer: null, message: `${res.missing.join(" and ")} not in this sample` };
-    const layer = buildLayer(res, { type: plot.type, settings: doc.settings, theme, overlayColors: ov.map((id) => doc.gates[id] ? doc.gates[id].color : theme.accent) });
+    const ids = plot.concatIds && plot.concatIds.length ? plot.concatIds.filter((id) => (s3.meta[id] || {}).status === "ready") : [sampleId];
+    if (!ids.length) return { layer: null, message: "None of the samples chosen for concatenation have this data yet." };
+    const results = await Promise.all(ids.map((id) => request(id, "plot", { req: req2 }).catch((err) => ({ missing: [err.message] }))));
+    const res = results.length > 1 ? mergeResults(results) : results[0];
+    if (!res || res.missing) return { layer: null, message: `${(res && res.missing || ["Data"]).join(" and ")} not in ${ids.length > 1 ? "these samples" : "this sample"}` };
+    const layer = buildLayer(res, { type: plot.type, settings: { ...doc.settings, dotSize: plot.dotSize ?? doc.settings.dotSize }, theme, overlayColors: ov.map((id) => doc.gates[id] ? doc.gates[id].color : theme.accent) });
     return { layer, message: layer && layer.n === 0 ? "No events" : null };
   }
   function drawPanel(ctx, o3) {
-    const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH } = o3;
+    const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH, showTitle = true, showAxisLabels = true } = o3;
     const s3 = store.get();
     const doc = s3.doc;
     const counts = (s3.counts[sampleId] || {}).counts || null;
@@ -12209,16 +12552,18 @@ canvas.mini.is-hl {
     ctx.save();
     if (!ctx.isSvgRecorder) ctx.translate(ox, oy);
     const off = ctx.isSvgRecorder ? [ox, oy] : [0, 0];
-    ctx.fillStyle = theme.labelFg;
-    ctx.font = `600 12px ${theme.fontUI}`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
-    if (subtitle) {
-      ctx.font = `400 10.5px ${theme.fontUI}`;
-      ctx.fillStyle = theme.tick;
-      ctx.textAlign = "right";
-      ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+    if (showTitle) {
+      ctx.fillStyle = theme.labelFg;
+      ctx.font = `600 12px ${theme.fontUI}`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
+      if (subtitle) {
+        ctx.font = `400 10.5px ${theme.fontUI}`;
+        ctx.fillStyle = theme.tick;
+        ctx.textAlign = "right";
+        ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+      }
     }
     const inner = ctx.isSvgRecorder ? new SvgContext(W2, H3) : null;
     const target = inner || ctx;
@@ -12229,20 +12574,22 @@ canvas.mini.is-hl {
     paintPlot(target, { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, gates: o3.gates || gatesForPlot(doc, plot), selected: o3.selected || null, hover: null, readOnly: true, overridden: /* @__PURE__ */ new Set(), message, noClear: true });
     if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
     else ctx.restore();
-    const area = plotArea(W2, H3);
-    const xi = channelInfo(doc, plot.x);
-    const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
-    ctx.fillStyle = theme.labelFg;
-    ctx.font = `500 11px ${theme.fontUI}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H3 + XT_H / 2);
-    let yt = "Count";
-    if (plot.y && plot.type !== "hist") {
-      const yi = channelInfo(doc, plot.y);
-      yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
+    if (showAxisLabels) {
+      const area = plotArea(W2, H3);
+      const xi = channelInfo(doc, plot.x);
+      const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
+      ctx.fillStyle = theme.labelFg;
+      ctx.font = `500 11px ${theme.fontUI}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H3 + XT_H / 2);
+      let yt = "Count";
+      if (plot.y && plot.type !== "hist") {
+        const yi = channelInfo(doc, plot.y);
+        yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
+      }
+      rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
     }
-    rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
     ctx.restore();
   }
   async function exportPlotImage(plot, sampleId, format) {
@@ -12396,6 +12743,7 @@ canvas.mini.is-hl {
     }));
     const counts = useSel((s3) => (s3.counts[sampleId] || {}).counts || null);
     const meta = useSel((s3) => s3.meta[sampleId] || null);
+    const metaAll = useSel((s3) => s3.meta);
     const theme = useTheme();
     const cardRef = A2();
     const wrapRef = A2();
@@ -12413,21 +12761,30 @@ canvas.mini.is-hl {
     const sampleChannels = meta && meta.channels ? meta.channels.map((c3) => c3.name) : [];
     const missingChannel = status === "ready" ? [plot.x, is2D ? plot.y : null].filter((c3) => c3 && !sampleHasChannel(doc, sampleChannels, c3)) : [];
     const popExists = plot.pop === ROOT || !!doc.gates[plot.pop];
-    const key = sampleId && status === "ready" && W2 > 40 && popExists && !missingChannel.length ? [
-      sampleId,
+    const concatIds = plot.concatIds && plot.concatIds.length ? plot.concatIds : null;
+    const concatReady = concatIds ? concatIds.filter((id) => {
+      const m3 = metaAll[id];
+      if (!m3 || m3.status !== "ready") return false;
+      const chans = m3.channels ? m3.channels.map((c3) => c3.name) : [];
+      return [plot.x, is2D ? plot.y : null].every((c3) => !c3 || sampleHasChannel(doc, chans, c3));
+    }) : null;
+    const sigFor = (id) => [popSig(state, id, plot.pop), ovIds.map((o3) => popSig(state, id, o3)).join(","), compKey(state, id)].join(",");
+    const key = (concatReady ? concatReady.length > 0 : sampleId && status === "ready" && !missingChannel.length) && W2 > 40 && popExists ? [
+      concatReady ? `concat:${concatReady.join(",")}:${concatReady.map(sigFor).join(";")}` : `${sampleId}:${sigFor(sampleId)}`,
       plot.pop,
       plot.x,
       is2D ? plot.y : "-",
       is2D ? `${bw}x${bh}` : histBins,
-      popSig(state, sampleId, plot.pop),
-      ovIds.map((id) => popSig(state, sampleId, id)).join(","),
       transformKey(doc.transforms[plot.x]),
-      is2D ? transformKey(doc.transforms[plot.y]) : "",
-      compKey(state, sampleId)
+      is2D ? transformKey(doc.transforms[plot.y]) : ""
     ].join("|") : null;
     const [data, setData] = h2(null);
     const latest = A2(null);
-    latest.current = { key, sampleId, req: is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: bw, h: bh, overlays: ovIds } : { pop: plot.pop, x: plot.x, bins: histBins, overlays: ovIds } };
+    latest.current = {
+      key,
+      ids: concatReady || (sampleId ? [sampleId] : []),
+      req: is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: bw, h: bh, overlays: ovIds } : { pop: plot.pop, x: plot.x, bins: histBins, overlays: ovIds }
+    };
     const reqState = A2({ inflight: false, want: false });
     y2(() => {
       if (!key) return;
@@ -12437,37 +12794,38 @@ canvas.mini.is-hl {
         if (r3.inflight || !r3.want) return;
         r3.want = false;
         const cur = latest.current;
-        if (!cur.key) return;
+        if (!cur.key || !cur.ids.length) return;
         r3.inflight = true;
-        request(cur.sampleId, "plot", { req: cur.req }).then(
-          (res) => {
-            r3.inflight = false;
-            setData({ key: cur.key, res });
-            run();
-          },
-          (err) => {
-            r3.inflight = false;
-            setData({ key: cur.key, error: err.message });
-            run();
-          }
-        );
+        Promise.all(cur.ids.map((id) => request(id, "plot", { req: cur.req }).catch((err) => ({ missing: [err.message] })))).then((list) => {
+          r3.inflight = false;
+          const res = list.length > 1 ? mergeResults(list) : list[0];
+          setData({ key: cur.key, res });
+          run();
+        });
       };
       run();
     }, [key]);
     const layer = T2(() => {
       if (!data || !data.res) return null;
-      return buildLayer(data.res, { type: plot.type, settings: doc.settings, theme, overlayColors: ovColors });
-    }, [data, plot.type, doc.settings.colormap, doc.settings.dotSize, doc.settings.smooth, doc.settings.histSmooth, theme, ovColors.join(",")]);
+      return buildLayer(data.res, { type: plot.type, settings: { ...doc.settings, dotSize: plot.dotSize ?? doc.settings.dotSize }, theme, overlayColors: ovColors });
+    }, [data, plot.type, plot.dotSize, doc.settings.colormap, doc.settings.dotSize, doc.settings.smooth, doc.settings.histSmooth, theme, ovColors.join(",")]);
     const stale = data && data.key !== key;
     let message = null;
-    if (!sampleId) message = "Add a data file to start.";
-    else if (status === "loading") message = "Loading data\u2026";
-    else if (status === "missing") message = "This data file is not loaded. Add it from the Samples panel.";
-    else if (status === "error") message = `Could not read this file: ${meta.error}`;
-    else if (!popExists) message = "This population was deleted.";
-    else if (missingChannel.length) message = `${missingChannel.join(" and ")} ${missingChannel.length > 1 ? "are" : "is"} not in this sample.`;
-    else if (data && data.error) message = data.error;
-    else if (layer && layer.n === 0 && !stale) message = "No events in this population for this sample.";
+    if (concatIds) {
+      if (!concatReady.length) message = "None of the samples chosen for concatenation have this data yet.";
+      else if (!popExists) message = "This population was deleted.";
+      else if (data && data.error) message = data.error;
+      else if (layer && layer.n === 0 && !stale) message = "No events in this population across the concatenated samples.";
+    } else {
+      if (!sampleId) message = "Add a data file to start.";
+      else if (status === "loading") message = "Loading data\u2026";
+      else if (status === "missing") message = "This data file is not loaded. Add it from the Samples panel.";
+      else if (status === "error") message = `Could not read this file: ${meta.error}`;
+      else if (!popExists) message = "This population was deleted.";
+      else if (missingChannel.length) message = `${missingChannel.join(" and ")} ${missingChannel.length > 1 ? "are" : "is"} not in this sample.`;
+      else if (data && data.error) message = data.error;
+      else if (layer && layer.n === 0 && !stale) message = "No events in this population for this sample.";
+    }
     const gates = T2(() => gatesForPlot(doc, plot), [doc.gates, plot.pop, plot.x, plot.y, plot.type]);
     const overridden = T2(() => overriddenSet(doc, sampleId), [doc.overrides, sampleId]);
     const inter = A2({ drag: null, draw: null, hover: null, shapes: [], labelBoxes: [], area });
@@ -12915,6 +13273,9 @@ canvas.mini.is-hl {
     }
     const [axisMenu, setAxisMenu] = h2(null);
     const openAxis = (axis, ev) => setAxisMenu({ axis, anchor: rectOf(ev.currentTarget) });
+    const [concatMenu, setConcatMenu] = h2(null);
+    const [dotMenu, setDotMenu] = h2(null);
+    const defaultDot = doc.settings.dotSize || 1;
     const setType = (t3) => {
       if (t3 === "hist") updatePlot(plot.id, { type: "hist", lastY: plot.y || plot.lastY || null, y: null });
       else if (!plot.y) {
@@ -12946,6 +13307,8 @@ canvas.mini.is-hl {
         ] }),
         /* @__PURE__ */ u3("div", { class: "plot-head-tools", children: [
           /* @__PURE__ */ u3("div", { class: "mini-seg", role: "radiogroup", "aria-label": "Plot type", children: PLOT_TYPES.map((t3) => /* @__PURE__ */ u3("button", { type: "button", role: "radio", "aria-checked": plot.type === t3.value ? "true" : "false", class: plot.type === t3.value ? "is-on" : "", title: t3.label, "aria-label": t3.label, onClick: () => setType(t3.value), children: /* @__PURE__ */ u3(Icon, { name: t3.icon, size: 14 }) }, t3.value)) }),
+          is2D ? /* @__PURE__ */ u3(IconButton, { icon: "dot", label: "Dot size", active: plot.dotSize != null, onClick: (e3) => setDotMenu(rectOf(e3.currentTarget)) }) : null,
+          /* @__PURE__ */ u3(IconButton, { icon: "layers", label: "Concatenate samples", active: !!concatIds, onClick: (e3) => setConcatMenu(rectOf(e3.currentTarget)) }),
           /* @__PURE__ */ u3(IconButton, { icon: "more", label: "Plot options", onClick: (e3) => openMenu(rectOf(e3.currentTarget), plotMenuItems(), { title: "Plot" }) })
         ] })
       ] }),
@@ -12998,7 +13361,10 @@ canvas.mini.is-hl {
         ] })
       ] }),
       /* @__PURE__ */ u3("footer", { class: "plot-foot", children: [
-        /* @__PURE__ */ u3("span", { class: "num", children: n2 === null ? "\u2026" : `${n2.toLocaleString("en-US")} events` }),
+        /* @__PURE__ */ u3("span", { class: "num", children: [
+          n2 === null ? "\u2026" : `${n2.toLocaleString("en-US")} events`,
+          concatIds && concatReady.length ? ` \xB7 pooled from ${concatReady.length} sample${concatReady.length > 1 ? "s" : ""}` : ""
+        ] }),
         /* @__PURE__ */ u3("span", { class: "num readout", ref: readoutRef, "aria-hidden": "true" }),
         hidden.length ? /* @__PURE__ */ u3(
           "button",
@@ -13028,7 +13394,30 @@ canvas.mini.is-hl {
           sampleId,
           onClose: () => setAxisMenu(null)
         }
-      ) : null
+      ) : null,
+      concatMenu ? /* @__PURE__ */ u3(ConcatMenu, { anchor: concatMenu, plot, onClose: () => setConcatMenu(null) }) : null,
+      dotMenu ? /* @__PURE__ */ u3(Popover, { anchor: dotMenu, onClose: () => setDotMenu(null), children: /* @__PURE__ */ u3("div", { class: "dotsize-pop", children: [
+        /* @__PURE__ */ u3("label", { class: "dotsize-row", children: [
+          /* @__PURE__ */ u3("span", { children: "Dot size" }),
+          /* @__PURE__ */ u3(
+            NumberField,
+            {
+              class: "field-sm dotsize-field",
+              value: plot.dotSize ?? defaultDot,
+              step: "1",
+              autoFocus: true,
+              onCommit: (v3) => updatePlot(plot.id, { dotSize: Math.max(1, Math.min(20, Math.round(v3))) }),
+              "aria-label": "Dot size for this plot"
+            }
+          ),
+          /* @__PURE__ */ u3("span", { class: "muted", children: "px" })
+        ] }),
+        plot.dotSize != null ? /* @__PURE__ */ u3("button", { type: "button", class: "link-btn dotsize-reset", onClick: () => updatePlot(plot.id, { dotSize: null }), children: [
+          "Use default (",
+          defaultDot,
+          " px)"
+        ] }) : null
+      ] }) }) : null
     ] });
   }
   function clamp01(v3) {
@@ -13468,8 +13857,18 @@ canvas.mini.is-hl {
         ] }),
         /* @__PURE__ */ u3("div", { class: "setting row", children: [
           /* @__PURE__ */ u3("span", { children: "Dot size" }),
-          /* @__PURE__ */ u3(Segmented, { size: "sm", label: "Dot size", value: st.dotSize || 1, onChange: (v3) => updateSettings({ dotSize: v3 }), options: [{ value: 1, label: "1 px" }, { value: 2, label: "2 px" }] })
+          /* @__PURE__ */ u3(
+            NumberField,
+            {
+              class: "field-sm dotsize-field",
+              value: st.dotSize || 1,
+              step: "1",
+              onCommit: (v3) => updateSettings({ dotSize: Math.max(1, Math.min(20, Math.round(v3))) }),
+              "aria-label": "Default dot size in pixels"
+            }
+          )
         ] }),
+        /* @__PURE__ */ u3("p", { class: "muted small", children: "Applies to plots with no dot size of their own. Set one on a plot from its options menu to override it there." }),
         /* @__PURE__ */ u3("div", { class: "setting row", children: [
           /* @__PURE__ */ u3("span", { children: "Gate labels show" }),
           /* @__PURE__ */ u3(
@@ -14399,6 +14798,7 @@ canvas.mini.is-hl {
   init_derived();
   init_transforms();
   init_gate_geometry();
+  init_bridge();
   init_ui();
   init_download();
   init_gating();
@@ -14409,7 +14809,7 @@ canvas.mini.is-hl {
     const y3 = p3.y ? channelInfo(doc, p3.y) : null;
     return `${popName(doc, p3.pop)} \xB7 ${x3.label || x3.name}${y3 && p3.type !== "hist" ? ` \xD7 ${y3.label || y3.name}` : ""}`;
   }
-  function StaticPanel({ plot, sampleId, size, title, subtitle }) {
+  function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true }) {
     const ref = A2();
     const doc = useSel((s3) => s3.doc);
     const status = useSel((s3) => (s3.meta[sampleId] || {}).status);
@@ -14418,7 +14818,23 @@ canvas.mini.is-hl {
     const state = store.get();
     const PW = size;
     const PH = size + 40;
-    const key = status === "ready" ? [sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size, popSig(state, sampleId, plot.pop), transformKey(doc.transforms[plot.x]), plot.y ? transformKey(doc.transforms[plot.y]) : "", compKey(state, sampleId), doc.settings.colormap, doc.settings.dotSize].join("|") : null;
+    const key = status === "ready" ? [
+      sampleId,
+      plot.pop,
+      plot.x,
+      plot.y,
+      plot.type,
+      plot.overlay,
+      size,
+      popSig(state, sampleId, plot.pop),
+      transformKey(doc.transforms[plot.x]),
+      plot.y ? transformKey(doc.transforms[plot.y]) : "",
+      compKey(state, sampleId),
+      doc.settings.colormap,
+      doc.settings.dotSize,
+      plot.dotSize,
+      (plot.concatIds || []).join(",")
+    ].join("|") : null;
     const [layer, setLayer] = h2(null);
     y2(() => {
       if (!key) return;
@@ -14439,8 +14855,8 @@ canvas.mini.is-hl {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, PW, PH);
       if (!layer) return;
-      drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === "ready" ? layer.message : "Not loaded", theme, title, subtitle, ox: 0, oy: 0, PW, PH });
-    }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle]);
+      drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === "ready" ? layer.message : "Not loaded", theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels });
+    }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels]);
     return /* @__PURE__ */ u3("canvas", { ref, class: "static-panel", style: { width: `${PW}px`, height: `${PH}px` }, role: "img", "aria-label": `${title}${subtitle ? `, ${subtitle}` : ""}` });
   }
   function LayoutView() {
@@ -14454,6 +14870,11 @@ canvas.mini.is-hl {
     const togglePlot = (id) => setLayout({ plotIds: L2.plotIds.includes(id) ? L2.plotIds.filter((x3) => x3 !== id) : [...L2.plotIds, id] });
     const rows = L2.transpose ? plots : samples;
     const cols = L2.transpose ? samples : plots;
+    const sampleIdsKey = samples.map((x3) => x3.id).join(",");
+    y2(() => {
+      watchCounts(sampleIdsKey ? sampleIdsKey.split(",") : []);
+      return () => watchCounts([]);
+    }, [sampleIdsKey]);
     const exportGrid = async (format) => {
       if (!plots.length || !samples.length) return;
       setExporting(true);
@@ -14485,7 +14906,7 @@ canvas.mini.is-hl {
               const smp = L2.transpose ? c3 : r3;
               const x3 = headW + ci * (PW + 12);
               const lr = layers.get(`${p3.id}|${smp.id}`);
-              drawPanel(ctx, { plot: p3, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p3.pop), subtitle: L2.transpose ? smp.name : "", ox: x3, oy: y3, PW, PH });
+              drawPanel(ctx, { plot: p3, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p3.pop), subtitle: L2.transpose ? smp.name : "", ox: x3, oy: y3, PW, PH, showTitle: L2.showTitles !== false, showAxisLabels: L2.showAxisLabels !== false });
             });
           });
         };
@@ -14533,6 +14954,15 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("span", { children: "Panel size" }),
             /* @__PURE__ */ u3("input", { type: "range", min: "160", max: "360", step: "10", value: size, onInput: (e3) => setLayout({ size: parseInt(e3.currentTarget.value, 10) }) })
           ] }),
+          /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Show on each panel" }),
+          /* @__PURE__ */ u3("label", { class: "check-row", children: [
+            /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.showTitles !== false, onChange: (e3) => setLayout({ showTitles: e3.currentTarget.checked }) }),
+            /* @__PURE__ */ u3("span", { children: "Plot title" })
+          ] }),
+          /* @__PURE__ */ u3("label", { class: "check-row", children: [
+            /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.showAxisLabels !== false, onChange: (e3) => setLayout({ showAxisLabels: e3.currentTarget.checked }) }),
+            /* @__PURE__ */ u3("span", { children: "Axis labels" })
+          ] }),
           /* @__PURE__ */ u3("div", { class: "card-actions", children: [
             /* @__PURE__ */ u3(Button, { icon: "download", variant: "primary", disabled: exporting || !plots.length || !samples.length, onClick: () => exportGrid("png"), children: exporting ? "Exporting\u2026" : "Export PNG" }),
             /* @__PURE__ */ u3(Button, { icon: "download", disabled: exporting || !plots.length || !samples.length, onClick: () => exportGrid("svg"), children: "Export SVG" })
@@ -14549,7 +14979,19 @@ canvas.mini.is-hl {
             cols.map((c3) => {
               const p3 = L2.transpose ? r3 : c3;
               const smp = L2.transpose ? c3 : r3;
-              return /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: popName(doc, p3.pop), subtitle: L2.transpose ? "" : "" }, `${p3.id}|${smp.id}`);
+              return /* @__PURE__ */ u3(
+                StaticPanel,
+                {
+                  plot: p3,
+                  sampleId: smp.id,
+                  size,
+                  title: popName(doc, p3.pop),
+                  subtitle: L2.transpose ? "" : "",
+                  showTitle: L2.showTitles !== false,
+                  showAxisLabels: L2.showAxisLabels !== false
+                },
+                `${p3.id}|${smp.id}`
+              );
             })
           ] }))
         ] }),
@@ -14706,9 +15148,11 @@ canvas.mini.is-hl {
   }
 
   // src/ui/components/BatchView.jsx
+  init_hooks_module();
   init_store();
   init_doc();
   init_derived();
+  init_bridge();
   init_ui();
   init_jsxRuntime_module();
   function axesLabel(doc, p3) {
@@ -14725,6 +15169,11 @@ canvas.mini.is-hl {
     const ready = samples.filter((x3) => (meta[x3.id] || {}).status === "ready");
     const plots = doc.plots;
     const open = (sampleId, plotId) => setUI({ view: "gating", sampleId, focusPlot: plotId, flashPlot: plotId });
+    const readyIds = ready.map((x3) => x3.id).join(",");
+    y2(() => {
+      watchCounts(readyIds ? readyIds.split(",") : []);
+      return () => watchCounts([]);
+    }, [readyIds]);
     return /* @__PURE__ */ u3("div", { class: "batch-view", children: [
       /* @__PURE__ */ u3("div", { class: "batch-bar", children: [
         /* @__PURE__ */ u3("h2", { children: "Batch" }),
@@ -15391,9 +15840,12 @@ canvas.mini.is-hl {
   window.kestrel = {
     version: APP.version,
     state: () => store.get(),
-    addFiles: (files) => addFiles(files)
+    addFiles: (files) => addFiles(files),
+    countsVersion: (state, sampleId) => countsVersion(state, sampleId)
   };
   (async () => {
+    const savedWidth = await getKV("sidebarWidth");
+    if (Number.isFinite(savedWidth)) setUI({ sidebarWidth: savedWidth });
     prewarmDownloads();
     const info = await initEngine(WORKER_SOURCE);
     installSync();
@@ -15404,6 +15856,18 @@ canvas.mini.is-hl {
       await restoreLast();
     } catch (e3) {
       toast(`Could not open the last workspace: ${e3.message}`, { kind: "error" });
+    }
+    if (new URLSearchParams(location.search).get("openWorkspace") === "1") {
+      try {
+        const res = await fetch("/__workspace");
+        if (!res.ok) throw new Error(`the launcher's local server returned ${res.status}`);
+        const text = await res.text();
+        const name = res.headers.get("X-Kestrel-Filename") || "workspace.kestrel.json";
+        await routeDropped([{ name, text: async () => text }]);
+      } catch (e3) {
+        toast(`Could not open the file: ${e3.message}`, { kind: "error" });
+      }
+      history.replaceState(null, "", location.pathname + location.hash);
     }
     scheduleSync();
     if (info.mode === "main") toast("Background threads are not available here, so large files will be slower.", { kind: "warn" });

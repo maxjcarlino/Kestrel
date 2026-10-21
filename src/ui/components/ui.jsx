@@ -141,6 +141,43 @@ export function TextField({ value, onCommit, placeholder, class: cls = '', autoF
   );
 }
 
+/**
+ * A label that shrinks its own font size, down to `minSize`, to fit the
+ * width it's given rather than truncating with an ellipsis — so a long
+ * sample or parameter name stays fully readable even in a narrow column.
+ * Only falls back to an ellipsis if it's still too wide at `minSize`.
+ */
+export function FitText({ text, class: cls = '', minSize = 9, ...rest }) {
+  const ref = useRef();
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const fit = () => {
+      const base = parseFloat(el.dataset.fitBase || getComputedStyle(el).fontSize);
+      el.dataset.fitBase = base;
+      el.style.fontSize = `${base}px`;
+      const avail = el.clientWidth;
+      const needed = el.scrollWidth;
+      if (!avail || needed <= avail + 0.5) return;
+      let size = Math.max(minSize, Math.floor(((base * avail) / needed) * 0.96 * 10) / 10);
+      el.style.fontSize = `${size}px`;
+      for (let i = 0; i < 4 && el.scrollWidth > el.clientWidth + 0.5 && size > minSize; i++) {
+        size = Math.max(minSize, size - 0.5);
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el.parentElement || el);
+    return () => ro.disconnect();
+  }, [text, minSize]);
+  return (
+    <span ref={ref} class={`fit-text ${cls}`} {...rest}>
+      {text}
+    </span>
+  );
+}
+
 /** Numeric field; empty input commits null when `allowEmpty`. */
 export function NumberField({ value, onCommit, step = 'any', allowEmpty = false, placeholder = '', class: cls = '', format = (x) => x, ...rest }) {
   const show = value === null || value === undefined || !Number.isFinite(value) ? '' : String(format(value));

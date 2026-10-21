@@ -153,7 +153,16 @@ export function resetState(doc) {
     }
   }
   const base = initialState();
-  store.set({ ...base, engine: old ? old.engine : base.engine, persist: old ? { ...old.persist, status: 'idle' } : base.persist, doc, ui: { ...base.ui, view: old ? old.ui.view : 'gating' } });
+  // View preferences (which tab is open, how wide the sidebar is) are the
+  // person's own setting, not part of any one workspace, so they survive
+  // opening a different workspace or template.
+  store.set({
+    ...base,
+    engine: old ? old.engine : base.engine,
+    persist: old ? { ...old.persist, status: 'idle' } : base.persist,
+    doc,
+    ui: { ...base.ui, view: old ? old.ui.view : 'gating', sidebarWidth: old ? old.ui.sidebarWidth : base.ui.sidebarWidth },
+  });
 }
 
 /** Build the demo workspace: simulated PBMC panel with a full gating template. */
@@ -308,6 +317,7 @@ export function makeTemplate(doc, name) {
     layout: { plotIds: doc.layout.plotIds, size: doc.layout.size, transpose: doc.layout.transpose, overlays: doc.layout.overlays || [] },
     settings: doc.settings,
     groups: doc.groups.map((g) => ({ id: g.id, name: g.name })),
+    channelLabels: doc.channelLabels || {},
   };
 }
 
@@ -339,6 +349,7 @@ export function applyTemplate(tpl) {
     next.table = { ...d.table, columns: (t.table && t.table.columns) || [] };
     next.layout = { ...d.layout, ...(t.layout || {}) };
     next.settings = { ...DEFAULT_SETTINGS, ...(t.settings || {}) };
+    next.channelLabels = { ...d.channelLabels, ...(t.channelLabels || {}) };
     const groups = d.groups.slice();
     for (const g of t.groups || []) if (!groups.some((x) => x.name === g.name)) groups.push({ id: g.id || newId('grp'), name: g.name });
     next.groups = groups;
@@ -363,6 +374,7 @@ export function migrateTemplate(raw) {
     layout: raw.layout || {},
     settings: raw.settings || {},
     groups: raw.groups || [],
+    channelLabels: raw.channelLabels || {},
   };
 }
 
