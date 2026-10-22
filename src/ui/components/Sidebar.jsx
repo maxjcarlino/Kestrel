@@ -185,10 +185,10 @@ function SamplesPanel() {
             <div class="notice">
               <Icon name="warn" size={14} />
               <span>
-                {missing.length} data file{missing.length > 1 ? 's are' : ' is'} not loaded. Add {missing.length > 1 ? 'them' : 'it'} to see the data; files are matched by name.
+                {missing.length} data file{missing.length > 1 ? 's are' : ' is'} not loaded. Choose the folder {missing.length > 1 ? 'they’re' : 'it’s'} in, or drop {missing.length > 1 ? 'them' : 'it'} here; files are matched by name.
               </span>
-              <button type="button" class="link-btn" onClick={chooseFiles}>
-                Add files
+              <button type="button" class="link-btn" onClick={() => openDialog('locateFiles', {})}>
+                Find them…
               </button>
             </div>
           ) : null}

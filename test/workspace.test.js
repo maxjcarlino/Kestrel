@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { store } from '../src/ui/state/store.js';
-import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, setTransform, setChannelLabel, addPlot } from '../src/ui/state/doc.js';
+import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, applyGateToSamples, setTransform, setChannelLabel, addPlot } from '../src/ui/state/doc.js';
 import { makeTemplate, applyTemplate, migrateDoc, migrateTemplate, workspaceFile } from '../src/ui/state/loader.js';
 import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey, hierarchyRows } from '../src/ui/state/derived.js';
 import { buildDemoTemplate } from '../src/ui/state/demo-template.js';
@@ -211,4 +211,33 @@ test('hierarchyRows flattens the gate tree in display order, from any root, and 
   const backPlot = back.plots.find((p) => p.id === id);
   assert.equal(backPlot.type, 'tree');
   assert.deepEqual(backPlot.statCols, ['count', 'freqParent']);
+});
+
+test("applyGateToSamples copies one sample's gate onto chosen samples only, leaving others and the shared gate untouched", () => {
+  const doc = freshDemo();
+  updateDoc((d) => ({
+    ...d,
+    samples: [...d.samples, { id: 's3', name: 'C', fileName: 'C.fcs', nEvents: 100, groupIds: ['g1'], channels: CH.map((name) => ({ name, label: '', kind: kind(name), range: 262144 })) }],
+  }));
+  const live = Object.values(doc.gates).find((g) => g.name === 'Live');
+  makeOverride(live.id, 's1');
+  setGeometry(live.id, { rect: { ...live.rect, x1: 7777 } }, { sampleId: 's1', scope: 'all' });
+  assert.equal(store.get().doc.overrides.s1[live.id].rect.x1, 7777);
+
+  // the source sample itself in the target list is ignored
+  applyGateToSamples(live.id, 's1', ['s1', 's3']);
+  const d2 = store.get().doc;
+  assert.equal(d2.overrides.s3[live.id].rect.x1, 7777, "s3 got s1's geometry as its own override");
+  assert.equal(d2.overrides.s2, undefined, 's2 (not selected) is untouched');
+  assert.equal(d2.gates[live.id].rect.x1, live.rect.x1, 'the shared gate itself is unchanged');
+
+  undo();
+  assert.equal(store.get().doc.overrides.s3, undefined, 'undo removes the applied override');
+  redo();
+  assert.equal(store.get().doc.overrides.s3[live.id].rect.x1, 7777);
+
+  // no other targets (only the source itself was passed, or none at all) is a no-op
+  const before = store.get().doc;
+  applyGateToSamples(live.id, 's1', ['s1']);
+  assert.equal(store.get().doc, before, 'no-op when there are no other targets');
 });

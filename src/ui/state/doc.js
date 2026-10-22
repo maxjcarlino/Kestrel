@@ -470,6 +470,29 @@ export function applyOverrideToAll(id, sampleId) {
   });
 }
 
+/**
+ * Copy one sample's version of a gate (and any gates linked to it, e.g. a
+ * quadrant's four parts) onto a chosen set of other samples, as each
+ * target's own per-sample override. Unlike applyOverrideToAll, this doesn't
+ * touch the shared gate definition or any sample not in `targetSampleIds`.
+ */
+export function applyGateToSamples(id, sourceSampleId, targetSampleIds) {
+  const d = store.get().doc;
+  const members = linkedMembers(d, id);
+  const targets = (targetSampleIds || []).filter((sid) => sid && sid !== sourceSampleId);
+  if (!targets.length) return;
+  updateDoc((doc) => {
+    const geoms = members.map((m) => [m.id, geometryOf(effectiveGate(doc, sourceSampleId, m.id))]);
+    const overrides = { ...doc.overrides };
+    for (const sid of targets) {
+      const ov = { ...(overrides[sid] || {}) };
+      for (const [mid, geom] of geoms) ov[mid] = geom;
+      overrides[sid] = ov;
+    }
+    return { ...doc, overrides };
+  });
+}
+
 export function newGateBase(doc, { parent, x, y, type, name }) {
   return { id: newId('g'), name, parent: parent || ROOT, type, x, y: y || null, color: nextColor(doc.gates) };
 }

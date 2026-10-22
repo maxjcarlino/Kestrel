@@ -265,6 +265,46 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   const cur = await p2.$$eval('.bg-item.is-current .bg-cap', (els) => els.map((e) => e.textContent));
   check('gating path runs from ungated FSC-A × SSC-A to the selected population', caps.length === 6 && caps[0] === 'All events→Cells' && cur[0] === 'T cells→CD4+ CD8−', caps.join(' | '));
 
+  // ---- "Apply gate to other samples": copy one sample's version of a gate
+  // onto chosen samples only, as their own adjustment (not the shared gate,
+  // and not every other sample).
+  const sourceSample = await p2.$eval('.sample-pick-name', (e) => e.textContent);
+  await p2.click('.tree-row:has(.tree-label:text-is("Cells"))', { button: 'right' });
+  await p2.waitForSelector('.menu', { timeout: 3000 });
+  const applyItem = await p2.$('.menu-item:has-text("to other samples")');
+  const applyItemText = applyItem ? await applyItem.textContent() : '';
+  check('gate menu offers "Apply … to other samples…"', applyItemText.includes(sourceSample), applyItemText);
+  await applyItem.click();
+  await p2.waitForSelector('.dialog:has-text("Apply")', { timeout: 3000 });
+  const targetNames = await p2.$$eval('.dialog .check-list .check-row span', (els) => els.map((e) => e.textContent));
+  check('the dialog lists every other sample as a candidate, not the source sample', targetNames.length > 1 && !targetNames.includes(sourceSample), targetNames.join(','));
+  const target = targetNames[0];
+  const other = targetNames[1];
+  await p2.click(`.dialog .check-row:has-text("${target}") input`);
+  await p2.click('.dialog .btn-primary');
+  await p2.waitForTimeout(700);
+  const dialogGone = !(await p2.$('.dialog'));
+  check('applying closes the dialog', dialogGone);
+
+  const gotoSample = async (name) => {
+    await p2.click('.sample-pick');
+    await p2.waitForSelector('.menu', { timeout: 3000 });
+    await p2.click(`.menu-item:has-text("${name}")`);
+    await p2.waitForTimeout(700);
+  };
+  const cellsIsAdjusted = () => p2.$$eval('.tree-row', (rows) => rows.some((r) => {
+    const label = r.querySelector('.tree-label');
+    return label && label.textContent === 'Cells' && !!r.querySelector('.adj-pill');
+  }));
+
+  await gotoSample(target);
+  check('the chosen sample now has its own adjusted "Cells" gate', await cellsIsAdjusted());
+
+  await gotoSample(other);
+  check('a sample that was not selected keeps the shared gate', !(await cellsIsAdjusted()));
+
+  await gotoSample(sourceSample);
+
   // ---- the sidebar can be dragged wider/narrower, and the choice persists
   const sidebarBox = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
   const handleBox = await p2.$eval('.sidebar-resizer', (el) => el.getBoundingClientRect());
@@ -292,11 +332,19 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   const longName = 'PBMC Donor 01 (unstained control)';
   const renameTo = async (name) => {
     await p2.$eval('.sample-row', (el) => el.querySelector('.row-more').click());
-    await p2.waitForTimeout(150);
+    await p2.waitForSelector('.menu-item:has-text("Rename")', { timeout: 3000 });
     await p2.click('.menu-item:has-text("Rename")');
+    await p2.waitForSelector('.row-input', { timeout: 3000 });
     await p2.fill('.row-input', name);
     await p2.press('.row-input', 'Enter');
-    await p2.waitForTimeout(500);
+    await p2.waitForFunction(
+      (n) => {
+        const el = document.querySelector('.sample-row .fit-text');
+        return el && el.textContent === n;
+      },
+      name,
+      { timeout: 5000 },
+    );
   };
   await renameTo(longName);
   const fit = await p2.$eval('.sample-row .fit-text', (el) => ({

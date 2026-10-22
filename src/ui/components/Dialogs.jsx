@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { useSel } from '../state/store.js';
-import { setUI, addGates, newGateBase, addGroup, removeGroup, groupByKeyword, updateDoc, addMatrix, toast, APP } from '../state/doc.js';
+import { setUI, addGates, newGateBase, addGroup, removeGroup, groupByKeyword, updateDoc, addMatrix, toast, APP, applyGateToSamples } from '../state/doc.js';
 import { openSavedWorkspace, newWorkspace, openDemo } from '../state/loader.js';
 import { listWorkspaces, deleteWorkspace, saveNow, storageEstimate } from '../state/persist.js';
 import { request } from '../state/bridge.js';
 import { allChannels, popName } from '../state/derived.js';
 import { spilloverFromMedians } from '../../core/compensation.js';
+import { missingSamples, loadMatching, pickFolderMatches } from '../state/locate.js';
+import { pickFiles } from '../util/download.js';
 import { ROOT } from '../../core/gates.js';
 import { GATE_COLORS } from '../../core/gate-geometry.js';
 import { Dialog, Button, Icon, closeDialog, Segmented } from './ui.jsx';
@@ -17,7 +19,7 @@ import { TOOLS } from './GatingView.jsx';
 export function DialogHost() {
   const d = useSel((s) => s.ui.dialog);
   if (!d) return null;
-  const C = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, help: HelpDialog }[d.name];
+  const C = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, applyGate: ApplyGateDialog, locateFiles: LocateFilesDialog, help: HelpDialog }[d.name];
   return C ? <C {...(d.props || {})} /> : null;
 }
 
@@ -159,6 +161,151 @@ function BooleanDialog({ parent = ROOT, seed }) {
         <span>Name</span>
         <input class="field" value={name} placeholder={auto || 'Name'} onInput={(e) => setName(e.currentTarget.value)} />
       </label>
+    </Dialog>
+  );
+}
+
+// ------------------------------------------------------------------ apply gate to samples
+
+function ApplyGateDialog({ gateId, sourceSampleId }) {
+  const doc = useSel((s) => s.doc);
+  const g = doc.gates[gateId];
+  const sourceName = (doc.samples.find((x) => x.id === sourceSampleId) || {}).name || 'This sample';
+  const candidates = doc.samples.filter((s) => s.id !== sourceSampleId);
+  const [sel, setSel] = useState(() => new Set());
+  const toggle = (id) => {
+    const n = new Set(sel);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    setSel(n);
+  };
+  const allChecked = candidates.length > 0 && candidates.every((s) => sel.has(s.id));
+  const apply = () => {
+    applyGateToSamples(gateId, sourceSampleId, [...sel]);
+    closeDialog();
+    toast(`Applied ${sourceName}'s "${g ? g.name : 'gate'}" to ${sel.size} sample${sel.size === 1 ? '' : 's'}.`);
+  };
+  if (!g) return null;
+  return (
+    <Dialog
+      title={`Apply "${g.name}" to other samples`}
+      onClose={closeDialog}
+      width={460}
+      footer={
+        <>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button variant="primary" disabled={!sel.size} onClick={apply}>
+            Apply to {sel.size || 0} sample{sel.size === 1 ? '' : 's'}
+          </Button>
+        </>
+      }
+    >
+      <p class="muted small">
+        Copies {sourceName}'s position and shape for “{g.name}” (and any gates linked to it, such as quadrant parts) onto each sample checked below, as that sample's own adjustment — the same as “Adjust for {sourceName} only”, applied in bulk. Each one keeps its own copy and can be reset to the shared gate individually afterward.
+      </p>
+      <div class="eyebrow-row">
+        <div class="eyebrow">Samples</div>
+        {candidates.length ? (
+          <button type="button" class="link-btn" onClick={() => setSel(allChecked ? new Set() : new Set(candidates.map((s) => s.id)))}>
+            {allChecked ? 'Deselect all' : 'Select all'}
+          </button>
+        ) : null}
+      </div>
+      {candidates.length ? (
+        <div class="check-list">
+          {candidates.map((s) => (
+            <label class="check-row" key={s.id}>
+              <input type="checkbox" checked={sel.has(s.id)} onChange={() => toggle(s.id)} />
+              <span>{s.name}</span>
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p class="muted small">No other samples in this workspace.</p>
+      )}
+    </Dialog>
+  );
+}
+
+// ------------------------------------------------------------------ locate data files
+
+/**
+ * A workspace opened from a file lists its samples' data files by name but
+ * doesn't carry them. Ask for the folder they're in (subfolders are searched
+ * too) and load whatever matches. Closes itself once nothing is missing,
+ * however the files arrived (this dialog, a drop, or "Add files").
+ */
+function LocateFilesDialog({ dir = null }) {
+  const doc = useSel((s) => s.doc);
+  const meta = useSel((s) => s.meta);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [initial] = useState(() => missingSamples().length);
+  const missing = doc.samples.filter((x) => (meta[x.id] || {}).status === 'missing' && !(x.source && x.source.type === 'demo'));
+
+  useEffect(() => {
+    if (missing.length === 0) {
+      closeDialog();
+      if (initial > 0) toast(initial > 1 ? `All ${initial} data files found.` : 'Data file found.');
+    }
+  }, [missing.length]);
+
+  const run = async (getFiles) => {
+    setNote('');
+    const before = missingSamples().length;
+    const files = await getFiles();
+    if (files === null) return; // cancelled
+    setBusy(true);
+    try {
+      const n = await loadMatching(files);
+      const left = before - n;
+      if (n === 0) setNote('None of the missing files are in that folder. Try another one.');
+      else if (left > 0) setNote(`Found ${n}. ${left} still missing — choose another folder for ${left > 1 ? 'those' : 'that one'}.`);
+    } catch (e) {
+      setNote(`Could not read that folder: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!missing.length) return null;
+  return (
+    <Dialog
+      title="Find this workspace's data files"
+      onClose={closeDialog}
+      width={520}
+      class="locate-dialog"
+      footer={
+        <>
+          <Button onClick={closeDialog}>Not now</Button>
+          <Button disabled={busy} onClick={() => run(() => pickFiles({ accept: '.fcs,.lmd,.csv,.tsv,.txt' }).then((f) => (f.length ? f : null)))}>
+            Choose files…
+          </Button>
+          <Button variant="primary" icon="folder" disabled={busy} onClick={() => run(() => pickFolderMatches())}>
+            {busy ? 'Loading…' : 'Choose folder…'}
+          </Button>
+        </>
+      }
+    >
+      <p class="small">
+        {dir ? (
+          <>
+            {missing.length === 1 ? 'One data file wasn’t' : `${missing.length} data files weren’t`} found next to the workspace, in <code class="locate-dir">{dir}</code>.
+          </>
+        ) : (
+          <>{missing.length === 1 ? 'One data file isn’t' : `${missing.length} data files aren’t`} loaded: a workspace file lists its samples’ data files but doesn’t contain them.</>
+        )}{' '}
+        Choose the folder they’re in — files are matched by name, and its subfolders are searched too.
+      </p>
+      <ul class="locate-list">
+        {missing.map((smp) => (
+          <li key={smp.id}>
+            <Icon name="warn" size={13} />
+            <span>{smp.fileName}</span>
+          </li>
+        ))}
+      </ul>
+      {note ? <p class="muted small locate-note">{note}</p> : null}
     </Dialog>
   );
 }

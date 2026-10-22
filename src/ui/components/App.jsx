@@ -15,7 +15,7 @@ import { LayoutView } from './LayoutView.jsx';
 import { BatchView } from './BatchView.jsx';
 import { KeywordsView } from './KeywordsView.jsx';
 import { DialogHost } from './Dialogs.jsx';
-import { MenuHost, Toasts, Icon } from './ui.jsx';
+import { MenuHost, Toasts, Icon, openDialog } from './ui.jsx';
 
 function hasFiles(e) {
   return e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
@@ -27,7 +27,7 @@ function hasFiles(e) {
  * `files` only needs `.name` and an async `.text()` — a real `File`, or
  * anything shaped like one (see main.jsx's query-string workspace opener).
  */
-export async function routeDropped(files) {
+export async function routeDropped(files, { locate = true } = {}) {
   const data = [];
   for (const f of files) {
     if (/\.json$/i.test(f.name)) {
@@ -39,7 +39,9 @@ export async function routeDropped(files) {
         } else if (obj.format === 'kestrel-workspace') {
           await saveNow();
           const { missing } = await openWorkspaceDoc(obj, { fromLibrary: false });
-          toast(missing.length ? `Opened workspace. Add its ${missing.length} data file${missing.length > 1 ? 's' : ''} to see the data.` : 'Opened workspace');
+          toast('Opened workspace');
+          // a workspace file doesn't carry its data: ask where the files are
+          if (missing.length && locate) openDialog('locateFiles', {});
         } else toast(`${f.name} is not a Kestrel workspace or template.`, { kind: 'warn' });
       } catch (e) {
         toast(`${f.name}: ${e.message}`, { kind: 'error' });

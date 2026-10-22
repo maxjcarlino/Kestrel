@@ -114,6 +114,13 @@ export function gateMenuItems(id) {
       ? { label: `Use the shared gate for ${sampleName}`, icon: 'link', onClick: () => clearOverride(id, sampleId) }
       : { label: `Adjust for ${sampleName} only`, icon: 'sliders', disabled: !sampleId || g.type === 'boolean', onClick: () => makeOverride(id, sampleId) },
     own ? { label: `Apply ${sampleName}'s version to all samples`, icon: 'copy', onClick: () => applyOverrideToAll(id, sampleId) } : null,
+    {
+      label: `Apply ${sampleName}'s version to other samples…`,
+      icon: 'copy',
+      disabled: !sampleId || doc.samples.length < 2 || g.type === 'boolean',
+      why: g.type === 'boolean' ? 'Boolean gates follow their referenced populations' : doc.samples.length < 2 ? 'No other samples in this workspace' : undefined,
+      onClick: () => openDialog('applyGate', { gateId: id, sourceSampleId: sampleId }),
+    },
     { label: 'New boolean gate…', icon: 'gates', onClick: () => openDialog('boolean', { parent: g.parent || ROOT, seed: id }) },
     {
       label: 'Export events',
