@@ -1,4 +1,4 @@
-// Verifies the "double-click a .kestrel.json to open it" workflow end to
+// Verifies the "double-click a .kestrel workspace to open it" workflow end to
 // end: runs the real launcher script against a real workspace file, then
 // drives a real (headless) browser to the URL it prints, the way Windows
 // opening a browser tab would, and checks that:
@@ -14,7 +14,7 @@
 
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { writeFile, mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { writeFile, readFile, mkdtemp, mkdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,7 +49,7 @@ await writeFile(path.join(wsDir, 'donor_a.FCS'), fcs('PBMC_Donor01', 11));
 await writeFile(path.join(wsDir, 'fcs', 'Donor_B.fcs'), fcs('PBMC_Donor02', 12));
 await writeFile(path.join(elsewhere, 'Donor_C.fcs'), fcs('PBMC_Donor03', 13));
 await writeFile(path.join(elsewhere, 'unrelated.fcs'), fcs('PBMC_Donor03', 14));
-const wsPath = path.join(wsDir, 'My double-click test.kestrel.json');
+const wsPath = path.join(wsDir, 'My double-click test.kestrel');
 await writeFile(wsPath, JSON.stringify(workspaceFile(doc)));
 
 const child = spawn('node', [path.join(root, 'scripts', 'open-workspace.mjs'), wsPath], {
@@ -126,6 +126,21 @@ await page.waitForFunction(() => {
 }, null, { timeout: 15000 }).catch(() => {});
 const st2 = await status();
 check('…and loads the missing file from it, ignoring unrelated ones', Object.values(st2).every((v) => v === 'ready') && Object.keys(st2).length === 3, JSON.stringify(st2));
+// Saving the workspace again gives a .kestrel file (its own file type on
+// Windows, so it can have Kestrel's icon), with JSON inside.
+await page.click('.ws-menu');
+const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.menu-item:has-text("Save workspace file")')]);
+const savedName = dl.suggestedFilename();
+const savedPath = path.join(tmp, savedName);
+await dl.saveAs(savedPath);
+let savedOk = false;
+try {
+  const j = JSON.parse(await readFile(savedPath, 'utf8'));
+  savedOk = j.format === 'kestrel-workspace' && j.samples.length === 3;
+} catch (e) {
+  savedOk = false;
+}
+check('"Save workspace file" saves a .kestrel file containing the workspace JSON', savedName === 'My double-click test.kestrel' && savedOk, savedName);
 check('no page errors while opening', errors.length === 0, errors.join(' | '));
 
 await browser.close();

@@ -122,7 +122,7 @@ function workspaceMenu(anchor) {
     { label: 'Duplicate this workspace', icon: 'copy', onClick: () => duplicateWorkspace() },
     { label: 'Rename', icon: 'pencil', onClick: () => document.querySelector('.ws-name') && document.querySelector('.ws-name').click() },
     { divider: true },
-    { label: 'Save workspace file (.json)', icon: 'download', onClick: () => saveWorkspaceFile() },
+    { label: 'Save workspace file (.kestrel)', icon: 'download', onClick: () => saveWorkspaceFile() },
     { label: 'Open workspace file…', icon: 'upload', onClick: () => importWorkspaceFile() },
     { divider: true },
     { heading: 'Workflow template' },

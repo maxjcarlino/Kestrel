@@ -1,5 +1,5 @@
 @echo off
-REM Registered as the "Open with" app for .kestrel.json (see README.md,
+REM An "Open with" helper for Kestrel workspace files (see README.md,
 REM "Open workspace files by double-clicking (Windows)"). Windows passes the
 REM double-clicked file's path as %1; this hands it to the Node launcher,
 REM which serves it (and any data files found next to it) to a browser tab

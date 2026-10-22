@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Lets Windows (or macOS/Linux) "Open with" a .kestrel.json or
-// .template.json file by double-clicking it: this script serves
+// Lets Windows (or macOS/Linux) open a .kestrel workspace (or a
+// .template.json file) by double-clicking it: this script serves
 // dist/kestrel.html, the file itself, and the workspace's data files (when
 // they sit next to it) from a short-lived local server, opens it in the
 // default browser, and exits once the page has everything.
@@ -113,7 +113,7 @@ export async function findDataFiles(dir, wanted) {
 async function main() {
   const target = process.argv[2];
   if (!target) {
-    console.error('Usage: node open-workspace.mjs <path-to-.kestrel.json>');
+    console.error('Usage: node open-workspace.mjs <path-to-workspace.kestrel>');
     process.exit(1);
   }
   const ok = await stat(target).then((s) => s.isFile(), () => false);

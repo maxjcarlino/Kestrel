@@ -24,24 +24,26 @@ The page loads three Google Fonts and makes no other network requests. Offline, 
 
 ## Open workspace files by double-clicking (Windows)
 
-Kestrel has no installer and no file association of its own — by default, opening a saved `.kestrel.json` workspace means opening `kestrel.html` first and then dropping the file onto the window. A small included script lets Windows do the second part for you: double-click a `.kestrel.json` file and it opens straight into Kestrel, the same as a drag-and-drop would.
+<img src="docs/images/kestrel-icon.png" alt="Kestrel file icon" width="64" align="right">
 
-This needs [Node.js](https://nodejs.org) installed and this repository present on disk (it's what actually reads the file and hands it to the browser — a web page can't read an arbitrary local file on its own). One-time setup:
+Kestrel has no installer of its own: by default, opening a saved workspace means opening `kestrel.html` and dropping the file onto the window. An included helper lets Windows do that for you. Workspace files (`.kestrel`) get Kestrel's icon in Explorer, and double-clicking one opens it straight into Kestrel.
 
-1. Right-click any `.kestrel.json` file → **Open with** → **Choose another app**.
-2. Choose **More apps** → **Look for another app on this PC**. If the file picker only shows `.exe` files, switch its filter (bottom-right of the dialog) to **All files**.
-3. Browse to `scripts\open-kestrel-workspace.bat` inside this repository.
-4. Tick **Always use this app to open .kestrel.json files**, or leave it unticked to be asked each time — either way, Windows is only associating the exact `.kestrel.json` extension, not every `.json` file.
+This needs [Node.js](https://nodejs.org) installed and this repository on disk. Node is what actually reads the file and hands it to the browser, since a web page can't read an arbitrary local file on its own.
+
+**One-time setup:** double-click `scripts\install-windows.bat`. It registers the `.kestrel` file type for your user account only, with no administrator rights needed, and points it at this folder. If you move the folder, run it again. To undo, run `install-windows.bat -Uninstall` from a command prompt.
+
+**Older `.kestrel.json` files:** Windows assigns icons and default apps by the *last* extension only. That means a `.kestrel.json` file is just a `.json` file to Windows, and can't get its own icon without taking over every `.json` file. Workspaces are now saved as `.kestrel`, which is still JSON inside. Rename older files from `name.kestrel.json` to `name.kestrel` to get the icon and double-click. Without renaming, the installer also adds Kestrel to the *Open with* menu for `.json` files, without making it the default.
+
+> If you previously associated Kestrel through *Open with → Always use this app* on a `.kestrel.json` file, Windows applied that to **all** `.json` files. To undo it, right-click any `.json` file → *Open with* → *Choose another app*, pick your usual editor, and tick *Always*.
 
 After that, double-clicking a workspace opens a browser tab with it loaded:
 
 - **Its data files load too.** A workspace file lists its samples' data files by name but doesn't contain them, so the helper looks for them in the workspace's own folder and its immediate subfolders (names match regardless of case) and loads whatever it finds.
 - **Anything it can't find, it asks for.** A *Find this workspace's data files* dialog lists the missing ones; choose the folder they're in (its subfolders are searched too) and they load. The dialog closes itself once nothing is missing, whether the files came from the folder you picked, *Choose files…*, or a drag-and-drop. The same dialog is available later from the *Find them…* link in the Samples panel, and comes up whenever you drop a workspace file whose data isn't loaded.
-- **Nothing lingers.** The helper's console window opens minimized and closes by itself as soon as the browser has the files; if something goes wrong (Node.js missing, the file moved), you get a message box instead of a window waiting for a key press. Nothing is installed or left running.
+- **Nothing lingers.** No console window appears, and the helper exits as soon as the browser has the files. If something goes wrong (Node.js missing, the file moved), you get a message box. Nothing keeps running in the background.
 
-The helper prints the page's URL in that (minimized) window, in case your default browser doesn't launch — paste it into a browser yourself. See `scripts/open-workspace.mjs` for how it works, or to adapt it for another OS (swap the `.bat` for a `.command`/shell script on macOS and Linux — the Node script itself already runs on any of them).
+See `scripts/open-workspace.mjs` for how it works. On macOS or Linux, run `node scripts/open-workspace.mjs <file>` directly: it prints the page's URL and opens your browser. The Node script itself runs on any OS. `scripts/open-kestrel-workspace.bat` is an alternative for Windows *Open with*; it runs in a minimized window that closes itself.
 
-If you move or rename this folder, redo step 3 pointing at the new location.
 
 ## Features
 
@@ -56,7 +58,7 @@ If you move or rename this folder, redo step 3 pointing at the new location.
 | **Statistics** | Count; % of parent, grandparent and total; median; mean; geometric mean; SD; CV; robust SD and CV; mode; min; max; and any percentile. FCS keywords can be added as columns. Export as CSV or copy into a spreadsheet. |
 | **Layouts** | Batch figures (samples × plots grids) and histogram overlays across samples, exported as PNG or SVG. Plot titles and axis labels can be toggled off per panel for a tighter grid. A gating-hierarchy panel ("Add gating hierarchy") shows every population under a chosen root with configurable columns (count, % parent, % grandparent, % total), one per sample, also visible in Batch. |
 | **Samples** | Groups, grouping by keyword, a keyword browser, and a comparison of keywords across samples. |
-| **Saving** | Autosave to the browser on every change and view switch, plus a workspace library. Workspaces save as `.kestrel.json` files and analyses as `.template.json` workflow templates. Gates also save as Gating-ML 2.0. On Windows, a `.kestrel.json` file can be set to open in Kestrel on double-click; see [Open workspace files by double-clicking](#open-workspace-files-by-double-clicking-windows). |
+| **Saving** | Autosave to the browser on every change and view switch, plus a workspace library. Workspaces save as `.kestrel` files (JSON) and analyses as `.template.json` workflow templates. Gates also save as Gating-ML 2.0. On Windows, `.kestrel` files can get Kestrel's icon and open on double-click; see [Open workspace files by double-clicking](#open-workspace-files-by-double-clicking-windows). |
 | **Automation** | A command-line batch runner that applies a template to a folder of FCS files, and a JavaScript library for the analysis core. See [Command line and library](#command-line-and-library). |
 
 <table>

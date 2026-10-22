@@ -3,10 +3,10 @@
 // statistics table as CSV, without opening the app.
 //
 //   node scripts/kestrel-batch.mjs --template panel.template.json data/*.fcs > stats.csv
-//   node scripts/kestrel-batch.mjs -t workspace.kestrel.json -o stats.csv data/
+//   node scripts/kestrel-batch.mjs -t workspace.kestrel -o stats.csv data/
 //
 // Options
-//   -t, --template FILE   template (.template.json) or workspace (.kestrel.json)
+//   -t, --template FILE   template (.template.json) or workspace (.kestrel)
 //   -o, --out FILE        write CSV here instead of standard output
 //       --tsv             tab-separated output
 //   -q, --quiet           no progress messages

@@ -10537,6 +10537,7 @@ canvas.mini.is-hl {
   init_doc();
   init_derived();
   init_download();
+  init_ui();
   init_gating();
 
   // src/core/gatingml.js
@@ -11148,7 +11149,8 @@ canvas.mini.is-hl {
     await saveNow();
     const doc = S3().doc;
     const json = JSON.stringify(workspaceFile(doc), null, 2);
-    report(await saveFile(`${safeName(doc.name)}.kestrel.json`, json), "Workspace file saved");
+    const ext = hostedArtifact() ? ".kestrel.json" : ".kestrel";
+    report(await saveFile(`${safeName(doc.name)}${ext}`, json), "Workspace file saved");
   }
   async function saveTemplateFile() {
     const doc = S3().doc;
@@ -11167,7 +11169,7 @@ canvas.mini.is-hl {
   }
   async function importWorkspaceFile() {
     try {
-      const f5 = await readJsonFile();
+      const f5 = await readJsonFile(".kestrel,.json,application/json");
       if (!f5) return;
       if (f5.data && f5.data.format === "kestrel-template") {
         applyTemplate(f5.data);
@@ -11176,8 +11178,8 @@ canvas.mini.is-hl {
       }
       await saveNow();
       const { missing } = await openWorkspaceDoc(f5.data, { fromLibrary: false });
-      if (missing.length) toast(`Opened "${S3().doc.name}". Add its ${missing.length} data file${missing.length > 1 ? "s" : ""} from the Samples panel to see the data.`, { timeout: 9e3 });
-      else toast(`Opened "${S3().doc.name}"`);
+      toast(`Opened "${S3().doc.name}"`);
+      if (missing.length) openDialog("locateFiles", {});
     } catch (e3) {
       toast(e3.message, { kind: "error", timeout: 8e3 });
     }
@@ -11460,7 +11462,7 @@ canvas.mini.is-hl {
       { label: "Duplicate this workspace", icon: "copy", onClick: () => duplicateWorkspace() },
       { label: "Rename", icon: "pencil", onClick: () => document.querySelector(".ws-name") && document.querySelector(".ws-name").click() },
       { divider: true },
-      { label: "Save workspace file (.json)", icon: "download", onClick: () => saveWorkspaceFile() },
+      { label: "Save workspace file (.kestrel)", icon: "download", onClick: () => saveWorkspaceFile() },
       { label: "Open workspace file\u2026", icon: "upload", onClick: () => importWorkspaceFile() },
       { divider: true },
       { heading: "Workflow template" },
@@ -16251,7 +16253,7 @@ canvas.mini.is-hl {
   async function routeDropped(files, { locate = true } = {}) {
     const data = [];
     for (const f5 of files) {
-      if (/\.json$/i.test(f5.name)) {
+      if (/\.(json|kestrel)$/i.test(f5.name)) {
         try {
           const obj = legacyFormat(JSON.parse(await f5.text()));
           if (obj.format === "kestrel-template") {
@@ -16338,7 +16340,7 @@ canvas.mini.is-hl {
       drag ? /* @__PURE__ */ u3("div", { class: "drop-overlay", "aria-hidden": "true", children: /* @__PURE__ */ u3("div", { class: "drop-card", children: [
         /* @__PURE__ */ u3(Icon, { name: "upload", size: 26 }),
         /* @__PURE__ */ u3("b", { children: "Drop to add" }),
-        /* @__PURE__ */ u3("span", { children: "FCS or CSV data, a workspace or template (.json), or Gating-ML (.xml)" })
+        /* @__PURE__ */ u3("span", { children: "FCS or CSV data, a workspace (.kestrel) or template (.json), or Gating-ML (.xml)" })
       ] }) }) : null,
       /* @__PURE__ */ u3(MenuHost, {}),
       /* @__PURE__ */ u3(DialogHost, {}),
@@ -16376,7 +16378,7 @@ canvas.mini.is-hl {
         const res = await fetch("/__workspace", { cache: "no-store" });
         if (!res.ok) throw new Error(`the launcher's local server returned ${res.status}`);
         const text = await res.text();
-        const name = decodeURIComponent(res.headers.get("X-Kestrel-Filename") || "workspace.kestrel.json");
+        const name = decodeURIComponent(res.headers.get("X-Kestrel-Filename") || "workspace.kestrel");
         let isWorkspace = false;
         try {
           const obj = JSON.parse(text);

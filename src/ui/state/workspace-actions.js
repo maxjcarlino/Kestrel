@@ -5,7 +5,8 @@ import { updateDoc, toast, addMatrix, setUI, RATIO_SPEC } from './doc.js';
 import { makeTemplate, workspaceFile, applyTemplate, openWorkspaceDoc, migrateTemplate, legacyFormat } from './loader.js';
 import { effectiveComp } from './derived.js';
 import { saveNow } from './persist.js';
-import { saveFile, safeName, pickFiles } from '../util/download.js';
+import { saveFile, safeName, pickFiles, hostedArtifact } from '../util/download.js';
+import { openDialog } from '../components/ui.jsx';
 import { report } from './gating.js';
 import { exportGatingML, importGatingML } from '../../core/gatingml.js';
 import { orderGates } from '../../core/gates.js';
@@ -18,7 +19,12 @@ export async function saveWorkspaceFile() {
   await saveNow();
   const doc = S().doc;
   const json = JSON.stringify(workspaceFile(doc), null, 2);
-  report(await saveFile(`${safeName(doc.name)}.kestrel.json`, json), 'Workspace file saved');
+  // .kestrel is its own file type, so Windows can give it Kestrel's icon and
+  // open it on double-click without taking over every .json file (see
+  // scripts/install-windows.ps1). It's JSON inside. A hosted page can only
+  // offer certain file types, so there it stays .kestrel.json.
+  const ext = hostedArtifact() ? '.kestrel.json' : '.kestrel';
+  report(await saveFile(`${safeName(doc.name)}${ext}`, json), 'Workspace file saved');
 }
 
 export async function saveTemplateFile() {
@@ -40,7 +46,7 @@ async function readJsonFile(accept = '.json,application/json') {
 
 export async function importWorkspaceFile() {
   try {
-    const f = await readJsonFile();
+    const f = await readJsonFile('.kestrel,.json,application/json');
     if (!f) return;
     if (f.data && f.data.format === 'kestrel-template') {
       applyTemplate(f.data);
@@ -49,8 +55,8 @@ export async function importWorkspaceFile() {
     }
     await saveNow();
     const { missing } = await openWorkspaceDoc(f.data, { fromLibrary: false });
-    if (missing.length) toast(`Opened "${S().doc.name}". Add its ${missing.length} data file${missing.length > 1 ? 's' : ''} from the Samples panel to see the data.`, { timeout: 9000 });
-    else toast(`Opened "${S().doc.name}"`);
+    toast(`Opened "${S().doc.name}"`);
+    if (missing.length) openDialog('locateFiles', {});
   } catch (e) {
     toast(e.message, { kind: 'error', timeout: 8000 });
   }

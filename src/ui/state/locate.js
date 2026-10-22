@@ -1,5 +1,5 @@
 // Finding a workspace's data files after the workspace itself was opened from
-// a file: a .kestrel.json lists its samples' file names, not their (large) data.
+// a file: a .kestrel workspace lists its samples' file names, not their (large) data.
 // Files are matched to samples by name, without regard to case.
 
 import { store } from './store.js';

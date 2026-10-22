@@ -51,7 +51,7 @@ window.kestrel = {
       const res = await fetch('/__workspace', { cache: 'no-store' });
       if (!res.ok) throw new Error(`the launcher's local server returned ${res.status}`);
       const text = await res.text();
-      const name = decodeURIComponent(res.headers.get('X-Kestrel-Filename') || 'workspace.kestrel.json');
+      const name = decodeURIComponent(res.headers.get('X-Kestrel-Filename') || 'workspace.kestrel');
       // Only skip loading the last workspace when this one will open; a
       // template, or a file that isn't valid, goes through the usual drop path.
       let isWorkspace = false;

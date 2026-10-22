@@ -30,7 +30,7 @@ function hasFiles(e) {
 export async function routeDropped(files, { locate = true } = {}) {
   const data = [];
   for (const f of files) {
-    if (/\.json$/i.test(f.name)) {
+    if (/\.(json|kestrel)$/i.test(f.name)) {
       try {
         const obj = legacyFormat(JSON.parse(await f.text()));
         if (obj.format === 'kestrel-template') {
@@ -126,7 +126,7 @@ export function App() {
           <div class="drop-card">
             <Icon name="upload" size={26} />
             <b>Drop to add</b>
-            <span>FCS or CSV data, a workspace or template (.json), or Gating-ML (.xml)</span>
+            <span>FCS or CSV data, a workspace (.kestrel) or template (.json), or Gating-ML (.xml)</span>
           </div>
         </div>
       ) : null}
