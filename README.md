@@ -2,7 +2,7 @@
 
 **Free, open-source flow cytometry analysis that runs in your browser.**
 
-Kestrel reads FCS files, compensates them, scales them (Logicle, Hyperlog, arcsinh, log, linear), and lets you gate them interactively. You can then build statistics tables and batch figures, and save the whole analysis as a workflow template to reuse on the next experiment. The app is a single HTML file of about 670 KB with no server, account, or installation. Your data never leaves your computer.
+Kestrel reads FCS files, compensates them, scales them (Logicle, Hyperlog, arcsinh, log, linear), and lets you gate them interactively. You can then build statistics tables and batch figures, and save the whole analysis as a workflow template to reuse on the next experiment. The app is a single HTML file of about 780 KB with no server, account, or installation. Your data never leaves your computer.
 
 ![Gating view with the bundled 7-colour PBMC demo](docs/images/gating.png)
 
