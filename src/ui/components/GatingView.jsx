@@ -4,11 +4,12 @@ import { useEffect } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
 import { setUI, addPlot, updateSettings } from '../state/doc.js';
 import { suggestAxes, allChannels } from '../state/derived.js';
+import { sortSamples } from '../state/sample-sort.js';
 import { ROOT } from '../../core/gates.js';
 import { PlotCard } from '../plot/PlotCard.jsx';
 import { BackgateStrip } from '../plot/Backgate.jsx';
 import { Inspector } from './Inspector.jsx';
-import { Icon, IconButton, openMenu, rectOf, Empty } from './ui.jsx';
+import { Icon, IconButton, openMenu, rectOf, Empty, openDialog } from './ui.jsx';
 import { chooseFiles } from './Sidebar.jsx';
 import { openDemo } from '../state/loader.js';
 
@@ -36,7 +37,7 @@ export function SampleNav() {
   const doc = useSel((s) => s.doc);
   const sampleId = useSel((s) => s.ui.sampleId);
   const meta = useSel((s) => s.meta);
-  const list = doc.samples;
+  const list = sortSamples(doc, meta, doc.samples);
   const i = list.findIndex((x) => x.id === sampleId);
   const go = (d) => {
     if (!list.length) return;
@@ -117,6 +118,10 @@ function Toolbar() {
           <Icon name="grid" size={14} />
           <input type="range" min="200" max="460" step="10" value={plotSize} onInput={(e) => updateSettings({ plotSize: parseInt(e.currentTarget.value, 10) })} aria-label="Plot size" />
         </label>
+        <button type="button" class="btn btn-default btn-sm auto-gate-btn" onClick={() => openDialog('autoGate')} title="Build Cells → Singlets → Live automatically from the data">
+          <Icon name="gates" size={14} />
+          <span>Auto-gate</span>
+        </button>
         <button type="button" class="btn btn-default btn-sm" onClick={addNew} title="Add a plot of the selected population">
           <Icon name="plus" size={14} />
           <span>Plot</span>
@@ -216,7 +221,7 @@ export function useGlobalKeys() {
         }
       }
       if (e.key === '[' || e.key === ']') {
-        const list = s.doc.samples;
+        const list = sortSamples(s.doc, s.meta, s.doc.samples);
         if (list.length < 2) return;
         const i = list.findIndex((x) => x.id === s.ui.sampleId);
         const j = (Math.max(0, i) + (e.key === ']' ? 1 : -1) + list.length) % list.length;

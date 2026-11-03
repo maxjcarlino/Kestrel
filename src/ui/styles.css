@@ -817,6 +817,49 @@ select.field {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.kw-chip {
+  max-width: 110px;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+  background: var(--panel-2);
+}
+.kw-chip.is-empty {
+  color: var(--fg-3);
+  background: none;
+}
+.sample-heading {
+  padding: 8px 8px 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  list-style: none;
+}
+.sample-heading:first-child,
+.sort-note + .sample-heading {
+  padding-top: 2px;
+}
+.sort-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 4px;
+  font-size: 11px;
+  color: var(--fg-3);
+  list-style: none;
+}
+.sort-note span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sort-note .link-btn {
+  font-size: 11px;
+  white-space: nowrap;
+}
 .st-dot {
   width: 8px;
   height: 8px;
@@ -3055,4 +3098,171 @@ canvas.mini.is-hl {
 }
 .locate-note {
   margin-top: 10px !important;
+}
+
+/* ------------------------------------------------------------------ automatic pre-gating */
+.autogate-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+}
+.autogate-step {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  grid-template-areas: 'name ch' '. what';
+  align-items: center;
+  gap: 2px 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+}
+.autogate-step + .autogate-step {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.autogate-name {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.autogate-ch {
+  grid-area: ch;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.autogate-ch select {
+  min-width: 0;
+  flex: 1;
+}
+.autogate-what {
+  grid-area: what;
+}
+.autogate-step.is-off .autogate-name {
+  color: var(--fg-3);
+}
+.autogate-error {
+  color: var(--bad);
+  margin: 8px 0 0;
+}
+@media (max-width: 560px) {
+  .autogate-step {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'name' 'ch' 'what';
+  }
+}
+
+/* ------------------------------------------------------------------ layout panel styles */
+.layout-grid > * {
+  align-self: start;
+}
+.panel-btn {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.panel-btn:hover,
+.panel-btn:focus-visible,
+.panel-btn.is-on {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.plot-pick {
+  padding-right: 2px;
+}
+.plot-pick .ibtn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+.panel-style-pop {
+  width: 310px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.panel-style-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+}
+.panel-style {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.panel-style .field-row {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+.range-val {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.range-val input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.range-val .num {
+  min-width: 34px;
+  text-align: right;
+  font-size: 11.5px;
+}
+.panel-style-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 6px;
+}
+.gate-labels-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+}
+.gate-labels-row .seg {
+  flex-wrap: wrap;
+}
+.panel-style .is-own > span:first-child,
+.panel-style .check-row.is-own label span {
+  color: var(--accent);
+  font-weight: 600;
+}
+.own-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.own-mark:hover {
+  background: var(--accent-soft);
+}
+.panel-style-reset {
+  font-size: 12px;
+  align-self: flex-start;
 }

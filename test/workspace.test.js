@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { store } from '../src/ui/state/store.js';
 import { initialState, emptyDoc, updateDoc, undo, redo, beginTxn, commitTxn, addGates, setGeometry, deleteGate, convertToPolygon, makeOverride, clearOverride, applyOverrideToAll, applyGateToSamples, setTransform, setChannelLabel, addPlot } from '../src/ui/state/doc.js';
 import { makeTemplate, applyTemplate, migrateDoc, migrateTemplate, workspaceFile } from '../src/ui/state/loader.js';
-import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey, hierarchyRows } from '../src/ui/state/derived.js';
+import { popSig, frequency, suggestAxes, defaultSpec, allChannels, effectiveComp, compKey, hierarchyRows, gatingPlots, gatesForPlot } from '../src/ui/state/derived.js';
 import { buildDemoTemplate } from '../src/ui/state/demo-template.js';
 import { ROOT } from '../src/core/gates.js';
 
@@ -240,4 +240,25 @@ test("applyGateToSamples copies one sample's gate onto chosen samples only, leav
   const before = store.get().doc;
   applyGateToSamples(live.id, 's1', ['s1']);
   assert.equal(store.get().doc, before, 'no-op when there are no other targets');
+});
+
+test('gatingPlots covers every gate even when one plot was stepped down the hierarchy', () => {
+  const doc = freshDemo();
+  const drawable = Object.values(doc.gates).filter((g) => g.type !== 'boolean').map((g) => g.id);
+  // the demo's own plots already show every gate: nothing extra is invented
+  assert.equal(gatingPlots(doc).filter((p) => p.auto).length, 0);
+  // keep only the last plot, as if one plot had been moved from population to population
+  const last = doc.plots[doc.plots.length - 1];
+  const d2 = { ...doc, plots: [last] };
+  const plots = gatingPlots(d2);
+  const shown = new Set(plots.flatMap((p) => gatesForPlot(d2, p).map((g) => g.id)));
+  assert.deepEqual(drawable.filter((id) => !shown.has(id)), [], 'every gate has a plot');
+  assert.ok(plots.includes(last), 'the real plot is kept');
+  assert.equal(plots[0].pop, ROOT, 'ordered by gating path, ungated first');
+  assert.ok(plots.filter((p) => p.auto).every((p) => p.id.startsWith('auto:')));
+  // ids are stable from one call to the next (Layout and Batch key panels by them)
+  assert.deepEqual(gatingPlots(d2).map((p) => p.id), plots.map((p) => p.id));
+  // the four parts of a quadrant gate share one plot
+  const quad = Object.values(doc.gates).find((g) => g.link && g.link.kind === 'quad');
+  assert.equal(plots.filter((p) => gatesForPlot(d2, p).some((g) => g.link && g.link.group === quad.link.group)).length, 1);
 });

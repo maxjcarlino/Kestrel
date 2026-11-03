@@ -828,6 +828,49 @@ select.field {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.kw-chip {
+  max-width: 110px;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+  background: var(--panel-2);
+}
+.kw-chip.is-empty {
+  color: var(--fg-3);
+  background: none;
+}
+.sample-heading {
+  padding: 8px 8px 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  list-style: none;
+}
+.sample-heading:first-child,
+.sort-note + .sample-heading {
+  padding-top: 2px;
+}
+.sort-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 4px;
+  font-size: 11px;
+  color: var(--fg-3);
+  list-style: none;
+}
+.sort-note span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sort-note .link-btn {
+  font-size: 11px;
+  white-space: nowrap;
+}
 .st-dot {
   width: 8px;
   height: 8px;
@@ -3068,6 +3111,173 @@ canvas.mini.is-hl {
   margin-top: 10px !important;
 }
 
+/* ------------------------------------------------------------------ automatic pre-gating */
+.autogate-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+}
+.autogate-step {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  grid-template-areas: 'name ch' '. what';
+  align-items: center;
+  gap: 2px 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+}
+.autogate-step + .autogate-step {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.autogate-name {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.autogate-ch {
+  grid-area: ch;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.autogate-ch select {
+  min-width: 0;
+  flex: 1;
+}
+.autogate-what {
+  grid-area: what;
+}
+.autogate-step.is-off .autogate-name {
+  color: var(--fg-3);
+}
+.autogate-error {
+  color: var(--bad);
+  margin: 8px 0 0;
+}
+@media (max-width: 560px) {
+  .autogate-step {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'name' 'ch' 'what';
+  }
+}
+
+/* ------------------------------------------------------------------ layout panel styles */
+.layout-grid > * {
+  align-self: start;
+}
+.panel-btn {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.panel-btn:hover,
+.panel-btn:focus-visible,
+.panel-btn.is-on {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.plot-pick {
+  padding-right: 2px;
+}
+.plot-pick .ibtn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+.panel-style-pop {
+  width: 310px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.panel-style-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+}
+.panel-style {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.panel-style .field-row {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+.range-val {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.range-val input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.range-val .num {
+  min-width: 34px;
+  text-align: right;
+  font-size: 11.5px;
+}
+.panel-style-checks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 6px;
+}
+.gate-labels-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--fg-2);
+}
+.gate-labels-row .seg {
+  flex-wrap: wrap;
+}
+.panel-style .is-own > span:first-child,
+.panel-style .check-row.is-own label span {
+  color: var(--accent);
+  font-weight: 600;
+}
+.own-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.own-mark:hover {
+  background: var(--accent-soft);
+}
+.panel-style-reset {
+  font-size: 12px;
+  align-self: flex-start;
+}
+
 </style>
 </head>
 <body>
@@ -4029,6 +4239,19 @@ canvas.mini.is-hl {
     const X2 = m3(xName);
     const Y2 = m3(yName);
     return [`${X2}\u2212 ${Y2}+`, `${X2}+ ${Y2}+`, `${X2}\u2212 ${Y2}\u2212`, `${X2}+ ${Y2}\u2212`];
+  }
+  function pointInPolygon(pt2, poly) {
+    let inside2 = false;
+    const [x3, y3] = pt2;
+    for (let a3 = 0, b2 = poly.length - 1; a3 < poly.length; b2 = a3++) {
+      const [xa, ya] = poly[a3];
+      const [xb, yb] = poly[b2];
+      if (ya > y3 !== yb > y3) {
+        const xi = xa + (y3 - ya) * (xb - xa) / (yb - ya);
+        if (x3 < xi) inside2 = !inside2;
+      }
+    }
+    return inside2;
   }
   var ELLIPSE_POLY_POINTS, counter, GATE_COLORS;
   var init_gate_geometry = __esm({
@@ -5264,8 +5487,8 @@ canvas.mini.is-hl {
   function setTable(patch) {
     updateDoc((d3) => ({ ...d3, table: { ...d3.table, ...patch } }));
   }
-  function setLayout(patch) {
-    updateDoc((d3) => ({ ...d3, layout: { ...d3.layout, ...patch } }));
+  function setLayout(patch, opts = {}) {
+    updateDoc((d3) => ({ ...d3, layout: { ...d3.layout, ...patch } }), opts);
   }
   function removeSamples(ids) {
     const set = new Set(ids);
@@ -6587,7 +6810,7 @@ canvas.mini.is-hl {
     });
   }
   function scatter(sim, cell, cols, k3, doublet) {
-    const clip = (v3) => v3 > MAX ? MAX : v3;
+    const clip2 = (v3) => v3 > MAX ? MAX : v3;
     const fscA = cell.fsc * (1 + 0.02 * sim.normal()) + 150 * sim.normal();
     const sscA = cell.ssc * (1 + 0.02 * sim.normal()) + 120 * sim.normal();
     let fscH;
@@ -6599,10 +6822,10 @@ canvas.mini.is-hl {
       fscH = fscA * (0.84 + 0.025 * sim.normal());
       sscH = sscA * (0.86 + 0.03 * sim.normal());
     }
-    cols[0][k3] = clip(fscA);
-    cols[1][k3] = clip(fscH);
-    cols[2][k3] = clip(sscA);
-    cols[3][k3] = clip(sscH);
+    cols[0][k3] = clip2(fscA);
+    cols[1][k3] = clip2(fscH);
+    cols[2][k3] = clip2(sscA);
+    cols[3][k3] = clip2(sscH);
   }
   function demoManifest({ donorEvents = 12e4, controlEvents = 15e3 } = {}) {
     const items = DONORS.map((d3) => ({ name: d3.name, kind: "cells", donor: d3.name, seed: d3.seed, events: donorEvents, group: "Samples" }));
@@ -7522,6 +7745,22 @@ canvas.mini.is-hl {
     }
     return out;
   }
+  function gatingPlots(doc) {
+    const shown = /* @__PURE__ */ new Set();
+    const all = doc.plots.slice();
+    for (const p3 of all) for (const g4 of gatesForPlot(doc, p3)) shown.add(g4.id);
+    for (const { gate: g4 } of hierarchyRows(doc, ROOT)) {
+      if (shown.has(g4.id) || g4.type === "boolean" || !g4.x) continue;
+      const pop = g4.parent || ROOT;
+      const y3 = g4.type === "range" ? null : g4.y || null;
+      const p3 = { id: `auto:${pop}|${g4.x}|${y3 || ""}`, auto: true, pop, x: g4.x, y: y3, type: y3 ? "pseudo" : "hist", overlay: "none" };
+      all.push(p3);
+      for (const s3 of gatesForPlot(doc, p3)) shown.add(s3.id);
+    }
+    const rank = new Map([[ROOT, -1], ...hierarchyRows(doc, ROOT).map((r3, i4) => [r3.gate.id, i4])]);
+    const at = (p3) => p3.type === "tree" ? 1e9 : rank.get(p3.pop) ?? 1e8;
+    return all.map((p3, i4) => [p3, i4]).sort((a3, b2) => at(a3[0]) - at(b2[0]) || a3[1] - b2[1]).map(([p3]) => p3);
+  }
   function hiddenChildren(doc, plot) {
     const shown = new Set(gatesForPlot(doc, plot).map((g4) => g4.id));
     return Object.values(doc.gates).filter((g4) => (g4.parent || ROOT) === plot.pop && !shown.has(g4.id) && g4.type !== "boolean");
@@ -8206,15 +8445,17 @@ canvas.mini.is-hl {
         lastPx = px;
         const len = t3.major ? 5 : 3;
         const x3 = Math.round(px) + 0.5;
-        ctx.beginPath();
-        ctx.moveTo(x3, area.y + area.h);
-        ctx.lineTo(x3, area.y + area.h + len);
-        ctx.stroke();
+        if (o3.ticks !== false) {
+          ctx.beginPath();
+          ctx.moveTo(x3, area.y + area.h);
+          ctx.lineTo(x3, area.y + area.h + len);
+          ctx.stroke();
+        }
         if (t3.label) items.push({ pos: px, text: t3.label, priority: t3.priority });
       }
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      for (const it of placeLabels(ctx, items, true)) {
+      for (const it of o3.labels === false ? [] : placeLabels(ctx, items, true)) {
         const half = ctx.measureText(it.text).width / 2;
         const px = Math.min(Math.max(it.pos, area.x + half - 4), area.x + area.w + (o3.marginRight ?? 8) - half);
         ctx.fillText(it.text, px, area.y + area.h + 7);
@@ -8234,13 +8475,15 @@ canvas.mini.is-hl {
         lastPx = py;
         const len = t3.major ? 5 : 3;
         const y3 = Math.round(py) + 0.5;
-        ctx.beginPath();
-        ctx.moveTo(area.x - len, y3);
-        ctx.lineTo(area.x, y3);
-        ctx.stroke();
+        if (o3.ticks !== false) {
+          ctx.beginPath();
+          ctx.moveTo(area.x - len, y3);
+          ctx.lineTo(area.x, y3);
+          ctx.stroke();
+        }
         if (t3.label) items.push({ pos: py, text: t3.label, priority: t3.priority });
       }
-      for (const it of placeLabels(ctx, items, false)) {
+      for (const it of o3.labels === false ? [] : placeLabels(ctx, items, false)) {
         const py = Math.min(Math.max(it.pos, area.y + 5), area.y + area.h + 4);
         ctx.fillText(it.text, area.x - 7, py);
       }
@@ -8249,12 +8492,14 @@ canvas.mini.is-hl {
       for (let v3 = 0; v3 <= o3.yMax * 1.0001; v3 += step) {
         const py = area.y + (1 - v3 / o3.yMax) * area.h;
         const y3 = Math.round(py) + 0.5;
-        ctx.beginPath();
-        ctx.moveTo(area.x - 5, y3);
-        ctx.lineTo(area.x, y3);
-        ctx.stroke();
+        if (o3.ticks !== false) {
+          ctx.beginPath();
+          ctx.moveTo(area.x - 5, y3);
+          ctx.lineTo(area.x, y3);
+          ctx.stroke();
+        }
         const label = o3.yLabelMode === "percent" ? `${Math.round(v3)}` : formatValue(v3, step);
-        ctx.fillText(label, area.x - 7, Math.min(Math.max(py, area.y + 5), area.y + area.h));
+        if (o3.labels !== false) ctx.fillText(label, area.x - 7, Math.min(Math.max(py, area.y + 5), area.y + area.h));
       }
     }
     ctx.restore();
@@ -8539,14 +8784,16 @@ canvas.mini.is-hl {
     }
     ctx.restore();
     if (o3.showLabels === false) return [];
-    const pad = 4;
-    const h3 = 17;
+    const parts = o3.labelParts || "both";
+    const h3 = o3.labelH || 17;
+    const pad = Math.max(3, Math.round(h3 * 4 / 17));
     const items = [];
     for (const sh of shapes) {
       const g4 = sh.gate;
       const info = o3.labels && o3.labels.get(g4.id);
-      let name = g4.name;
-      const value = info && info.value ? info.value : "";
+      let name = parts === "value" ? "" : g4.name;
+      const value = parts !== "name" && info && info.value ? info.value : "";
+      if (!name && !value) continue;
       const manual = g4.labelPos && sh.kind !== "quad" ? toPx(area, g4.labelPos[0], g4.labelPos[1]) : null;
       let { x: x3, y: y3, align, valign } = sh.label;
       if (manual) {
@@ -9629,6 +9876,7 @@ canvas.mini.is-hl {
         cloud: "M4.5 12.5h7a3 3 0 0 0 .3-6 4 4 0 0 0-7.6 1A2.5 2.5 0 0 0 4.5 12.5z",
         warn: "M8 2 14.5 13.5h-13zM8 6.5V9.5M8 11.5h.01",
         copy: "M5.5 5.5h7v8h-7zM3.5 10.5V2.5h7",
+        sort: "M5 2.5v11M2.5 11 5 13.5 7.5 11M11 13.5v-11M8.5 5 11 2.5 13.5 5",
         bolt: "M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z",
         sliders: "M2.5 4.5h7M12.5 4.5h1M2.5 11.5h2M7.5 11.5h6M9.5 3v3M5 10v3",
         palette: "M8 2a6 6 0 1 0 0 12c.8 0 1.2-.6 1-1.3-.3-.9.3-1.7 1.2-1.7H12a2.5 2.5 0 0 0 2-2.5C14 4.6 11.3 2 8 2zM5 7h.01M7.5 4.8h.01M10.5 5.2h.01",
@@ -9653,6 +9901,7 @@ canvas.mini.is-hl {
     exportPopulation: () => exportPopulation,
     exportPopulationAll: () => exportPopulationAll,
     gateMenuItems: () => gateMenuItems,
+    materializePlot: () => materializePlot,
     overriddenSet: () => overriddenSet,
     removeGate: () => removeGate,
     report: () => report
@@ -9703,6 +9952,12 @@ canvas.mini.is-hl {
     const host = doc.plots.find((p3) => gatesForPlot(doc, p3).some((g4) => g4.id === gateId));
     addPlot({ pop: gateId, x: x3, y: y3, type: y3 ? "pseudo" : "hist" }, { after: host ? host.id : doc.plots.length ? doc.plots[doc.plots.length - 1].id : null });
     setUI({ selectedGate: gateId, view: "gating" });
+  }
+  function materializePlot(p3, { focus = false } = {}) {
+    if (!p3.auto) return p3.id;
+    const doc = S2().doc;
+    const host = doc.plots.find((q4) => gatesForPlot(doc, q4).some((g4) => g4.id === p3.pop));
+    return addPlot({ pop: p3.pop, x: p3.x, y: p3.y, type: p3.type, overlay: "none" }, { after: host ? host.id : null, focus });
   }
   function removeGate(id) {
     const doc = S2().doc;
@@ -11518,6 +11773,97 @@ canvas.mini.is-hl {
   init_gates();
   init_ui();
   init_download();
+
+  // src/ui/state/sample-sort.js
+  init_store();
+  init_doc();
+  var DEFAULT_SORT = { by: "file", key: null, desc: false };
+  var collator = new Intl.Collator(void 0, { numeric: true, sensitivity: "base" });
+  function keyValue(v3) {
+    if (v3 === void 0 || v3 === null) return null;
+    const s3 = String(v3).trim();
+    if (!s3) return null;
+    if (/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s3)) return { n: parseFloat(s3), s: s3 };
+    const d3 = /^\d{1,2}-[a-z]{3}-\d{2,4}$/i.test(s3) ? Date.parse(s3.replace(/-/g, " ")) : /\d{4}-\d{2}-\d{2}/.test(s3) ? Date.parse(s3) : NaN;
+    if (Number.isFinite(d3)) return { n: d3, s: s3 };
+    return { s: s3 };
+  }
+  function cmpValues(a3, b2) {
+    if (a3 === null && b2 === null) return 0;
+    if (a3 === null) return 1;
+    if (b2 === null) return -1;
+    if (a3.n !== void 0 && b2.n !== void 0 && a3.n !== b2.n) return a3.n - b2.n;
+    if (a3.n !== void 0 && b2.n === void 0) return -1;
+    if (a3.n === void 0 && b2.n !== void 0) return 1;
+    return collator.compare(a3.s, b2.s);
+  }
+  function sortValue(doc, meta, smp, sort = currentSort(doc)) {
+    if (sort.by === "kw" && sort.key) {
+      const v3 = findKeyword((meta[smp.id] || {}).keywords || {}, sort.key);
+      return v3 === void 0 || v3 === null || String(v3).trim() === "" ? null : String(v3).trim();
+    }
+    return null;
+  }
+  function sortSamples(doc, meta, samples, sort = currentSort(doc)) {
+    const by = sort.by || "file";
+    const order = new Map(doc.samples.map((s3, i4) => [s3.id, i4]));
+    const groupRank = new Map(doc.groups.map((g4, i4) => [g4.id, i4]));
+    const firstGroup = (s3) => {
+      const ranks = (s3.groupIds || []).map((g4) => groupRank.get(g4)).filter((r3) => r3 !== void 0);
+      return ranks.length ? Math.min(...ranks) : null;
+    };
+    const value = (s3) => {
+      if (by === "name") return { s: s3.name || "" };
+      if (by === "events") return Number.isFinite(s3.nEvents) && s3.nEvents > 0 ? { n: s3.nEvents, s: "" } : null;
+      if (by === "group") {
+        const r3 = firstGroup(s3);
+        return r3 === null ? null : { n: r3, s: "" };
+      }
+      if (by === "kw") return keyValue(sortValue(doc, meta, s3, sort));
+      return { n: order.get(s3.id) ?? 0, s: "" };
+    };
+    const dir = sort.desc ? -1 : 1;
+    return samples.map((s3) => ({ s: s3, v: value(s3) })).sort((a3, b2) => {
+      let c3;
+      if (a3.v === null || b2.v === null) c3 = cmpValues(a3.v, b2.v);
+      else c3 = dir * cmpValues(a3.v, b2.v);
+      if (!c3 && by === "group") c3 = collator.compare(a3.s.name || "", b2.s.name || "");
+      return c3 || (order.get(a3.s.id) ?? 0) - (order.get(b2.s.id) ?? 0);
+    }).map((x3) => x3.s);
+  }
+  function sortGroupOf(doc, smp) {
+    for (const g4 of doc.groups) if ((smp.groupIds || []).includes(g4.id)) return g4;
+    return null;
+  }
+  var SKIP = /^\$?(P\d+[A-Z]+|BEGIN|END|NEXTDATA|BYTEORD|DATATYPE|MODE|PAR|SPILL|SPILLOVER|COMP|BEGINANALYSIS|ENDANALYSIS|BEGINDATA|ENDDATA|BEGINSTEXT|ENDSTEXT|R\d+[A-Z]|G\d+[A-Z]+|CYTSN|CSVBITS|CSTOT|CSMODE|CSV\d+FLAG|FLOWRATE|VOL|SYS|TIMESTEP|PLATEID|PLATENAME|UNICODE|LOST|ABRT|LAST_MODIFIED|LAST_MODIFIER|ORIGINALITY|WELLID)$/i;
+  var FIRST = ["$DATE", "$BTIM", "$ETIM", "TUBE NAME", "$SRC", "$FIL", "EXPERIMENT NAME", "SAMPLE ID", "$SMNO", "WELL ID", "$TOT", "$OP", "$INST", "$CYT", "$PROJ", "$COM"];
+  function sortableKeywords(doc, meta) {
+    const seen = /* @__PURE__ */ new Map();
+    for (const smp of doc.samples) {
+      for (const k3 of Object.keys((meta[smp.id] || {}).keywords || {})) {
+        const up = k3.toUpperCase();
+        if (SKIP.test(up) && !FIRST.includes(up)) continue;
+        if (!seen.has(up)) seen.set(up, k3);
+      }
+    }
+    const rank = (k3) => {
+      const i4 = FIRST.indexOf(k3.toUpperCase());
+      return i4 < 0 ? 1e3 : i4;
+    };
+    return [...seen.values()].sort((a3, b2) => rank(a3) - rank(b2) || collator.compare(a3.replace(/^\$/, ""), b2.replace(/^\$/, "")));
+  }
+  function currentSort(doc = store.get().doc) {
+    return { ...DEFAULT_SORT, ...doc.settings && doc.settings.sampleSort || {} };
+  }
+  function setSampleSort(patch) {
+    updateDoc((d3) => ({ ...d3, settings: { ...d3.settings, sampleSort: { ...currentSort(d3), ...patch } } }), { history: false });
+  }
+  function sortLabel(sort) {
+    if (sort.by === "kw") return sort.key || "Keyword";
+    return { file: "File order", name: "Name", group: "Group", events: "Events" }[sort.by] || "File order";
+  }
+
+  // src/ui/components/Sidebar.jsx
   init_jsxRuntime_module();
   var SIDEBAR_DEFAULT = 304;
   var SIDEBAR_MIN = 220;
@@ -11636,7 +11982,35 @@ canvas.mini.is-hl {
     const renaming = useSel((s3) => s3.ui.renamingSample);
     const [groupId, setGroupId] = h2(null);
     const [collapsed, setCollapsed] = h2(false);
-    const list = samplesInGroup(doc, groupId);
+    const sort = currentSort(doc);
+    const list = sortSamples(doc, meta, samplesInGroup(doc, groupId), sort);
+    const byGroup = sort.by === "group" && !groupId && doc.groups.length > 0;
+    const byKw = sort.by === "kw" && sort.key;
+    const sortMenu = (e3) => {
+      const kws = sortableKeywords(doc, meta);
+      const pick = (by, key = null) => setSampleSort({ by, key });
+      openMenu(
+        rectOf(e3.currentTarget),
+        [
+          { heading: "Sort samples by" },
+          { label: "File order", checked: sort.by === "file", onClick: () => pick("file") },
+          { label: "Name", checked: sort.by === "name", onClick: () => pick("name") },
+          { label: "Group", checked: sort.by === "group", disabled: !doc.groups.length, why: "No groups yet", onClick: () => pick("group") },
+          { label: "Event count", checked: sort.by === "events", onClick: () => pick("events") },
+          {
+            label: sort.by === "kw" ? `Keyword: ${sort.key}` : "Keyword",
+            icon: "tag",
+            disabled: !kws.length,
+            why: "Load data files to sort by their keywords",
+            submenu: kws.map((k3) => ({ label: k3, checked: sort.by === "kw" && sort.key === k3, onClick: () => pick("kw", k3) }))
+          },
+          { divider: true },
+          { label: "Ascending", icon: "up", checked: !sort.desc, onClick: () => setSampleSort({ desc: false }) },
+          { label: "Descending", icon: "down", checked: !!sort.desc, onClick: () => setSampleSort({ desc: true }) }
+        ],
+        { title: "Sample order" }
+      );
+    };
     const missing = doc.samples.filter((x3) => (meta[x3.id] || {}).status === "missing");
     const groupName = (id) => (doc.groups.find((g4) => g4.id === id) || {}).name;
     return /* @__PURE__ */ u3("section", { class: `panel samples ${collapsed ? "is-collapsed" : ""}`, "aria-label": "Samples", children: [
@@ -11661,6 +12035,16 @@ canvas.mini.is-hl {
                 { label: "Group by keyword\u2026", icon: "tag", onClick: () => openDialog("groupByKeyword") },
                 ...doc.groups.length ? [{ label: "Manage groups\u2026", icon: "gear", onClick: () => openDialog("groups") }] : []
               ])
+            }
+          ),
+          /* @__PURE__ */ u3(
+            IconButton,
+            {
+              icon: "sort",
+              label: `Sort samples (now: ${sortLabel(sort)}${sort.desc ? ", descending" : ""})`,
+              active: sort.by !== "file" || !!sort.desc,
+              class: "sort-btn",
+              onClick: sortMenu
             }
           ),
           /* @__PURE__ */ u3("button", { type: "button", class: "btn btn-primary btn-sm", onClick: chooseFiles, children: [
@@ -11696,57 +12080,75 @@ canvas.mini.is-hl {
             "."
           ] }),
           /* @__PURE__ */ u3("p", { class: "muted", children: "FCS 2.0 to 3.2 and CSV tables. Files stay on this computer." })
-        ] }) : /* @__PURE__ */ u3("ul", { class: "sample-list", role: "listbox", "aria-label": "Samples", children: list.map((smp) => {
-          const m3 = meta[smp.id] || {};
-          const st = m3.status || "missing";
-          return /* @__PURE__ */ u3(
-            "li",
-            {
-              role: "option",
-              "aria-selected": current === smp.id ? "true" : "false",
-              class: `sample-row ${current === smp.id ? "is-on" : ""} st-${st}`,
-              onClick: () => setUI({ sampleId: smp.id }),
-              onContextMenu: (e3) => {
-                e3.preventDefault();
-                sampleMenu({ x: e3.clientX, y: e3.clientY, w: 0, h: 0 }, smp);
-              },
-              title: st === "error" ? m3.error : STATUS_LABEL[st],
-              children: [
-                /* @__PURE__ */ u3("span", { class: `st-dot st-${st}`, "aria-label": STATUS_LABEL[st] }),
-                renaming === smp.id ? /* @__PURE__ */ u3(
-                  TextField,
-                  {
-                    value: smp.name,
-                    autoFocus: true,
-                    class: "row-input",
-                    onCommit: (v3) => renameSample(smp.id, v3),
-                    onBlur: (e3) => {
-                      renameSample(smp.id, e3.currentTarget.value);
-                      setUI({ renamingSample: null });
-                    },
-                    onClick: (e3) => e3.stopPropagation()
-                  }
-                ) : /* @__PURE__ */ u3("span", { class: "sample-name", onDblClick: () => setUI({ renamingSample: smp.id }), title: smp.name, children: /* @__PURE__ */ u3(FitText, { text: smp.name, minSize: 8 }) }),
-                /* @__PURE__ */ u3("span", { class: "sample-groups", children: (smp.groupIds || []).slice(0, 2).map((g4) => /* @__PURE__ */ u3("i", { class: "mini-chip", children: groupName(g4) }, g4)) }),
-                /* @__PURE__ */ u3("span", { class: "num sample-n", children: st === "ready" ? compact(smp.nEvents) : st === "loading" ? "\u2026" : "" }),
-                /* @__PURE__ */ u3(
-                  "button",
-                  {
-                    type: "button",
-                    class: "row-more",
-                    "aria-label": `Options for ${smp.name}`,
-                    onClick: (e3) => {
-                      e3.stopPropagation();
-                      sampleMenu(rectOf(e3.currentTarget), smp);
-                    },
-                    children: /* @__PURE__ */ u3(Icon, { name: "more", size: 14 })
-                  }
-                )
-              ]
-            },
-            smp.id
-          );
-        }) })
+        ] }) : /* @__PURE__ */ u3("ul", { class: "sample-list", role: "listbox", "aria-label": "Samples", children: [
+          sort.by !== "file" || sort.desc ? /* @__PURE__ */ u3("li", { class: "sort-note", role: "presentation", children: [
+            /* @__PURE__ */ u3(Icon, { name: "sort", size: 12 }),
+            /* @__PURE__ */ u3("span", { children: [
+              "Sorted by ",
+              sortLabel(sort),
+              ", ",
+              sort.desc ? "descending" : "ascending"
+            ] }),
+            /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => setSampleSort({ by: "file", key: null, desc: false }), children: "File order" })
+          ] }) : null,
+          list.map((smp, i4) => {
+            const m3 = meta[smp.id] || {};
+            const st = m3.status || "missing";
+            const grp = byGroup ? sortGroupOf(doc, smp) : null;
+            const heading = byGroup && (i4 === 0 || sortGroupOf(doc, list[i4 - 1]) !== grp);
+            const kwVal = byKw ? sortValue(doc, meta, smp, sort) : null;
+            return [
+              heading ? /* @__PURE__ */ u3("li", { class: "sample-heading", role: "presentation", children: grp ? grp.name : "No group" }, `h-${grp ? grp.id : "none"}`) : null,
+              /* @__PURE__ */ u3(
+                "li",
+                {
+                  role: "option",
+                  "aria-selected": current === smp.id ? "true" : "false",
+                  class: `sample-row ${current === smp.id ? "is-on" : ""} st-${st}`,
+                  onClick: () => setUI({ sampleId: smp.id }),
+                  onContextMenu: (e3) => {
+                    e3.preventDefault();
+                    sampleMenu({ x: e3.clientX, y: e3.clientY, w: 0, h: 0 }, smp);
+                  },
+                  title: st === "error" ? m3.error : STATUS_LABEL[st],
+                  children: [
+                    /* @__PURE__ */ u3("span", { class: `st-dot st-${st}`, "aria-label": STATUS_LABEL[st] }),
+                    renaming === smp.id ? /* @__PURE__ */ u3(
+                      TextField,
+                      {
+                        value: smp.name,
+                        autoFocus: true,
+                        class: "row-input",
+                        onCommit: (v3) => renameSample(smp.id, v3),
+                        onBlur: (e3) => {
+                          renameSample(smp.id, e3.currentTarget.value);
+                          setUI({ renamingSample: null });
+                        },
+                        onClick: (e3) => e3.stopPropagation()
+                      }
+                    ) : /* @__PURE__ */ u3("span", { class: "sample-name", onDblClick: () => setUI({ renamingSample: smp.id }), title: smp.name, children: /* @__PURE__ */ u3(FitText, { text: smp.name, minSize: 8 }) }),
+                    /* @__PURE__ */ u3("span", { class: "sample-groups", children: byKw ? /* @__PURE__ */ u3("i", { class: `mini-chip kw-chip ${kwVal === null ? "is-empty" : ""}`, title: `${sort.key}: ${kwVal === null ? "(not set)" : kwVal}`, children: kwVal === null ? "\u2013" : kwVal }) : byGroup ? null : (smp.groupIds || []).slice(0, 2).map((g4) => /* @__PURE__ */ u3("i", { class: "mini-chip", children: groupName(g4) }, g4)) }),
+                    /* @__PURE__ */ u3("span", { class: "num sample-n", children: st === "ready" ? compact(smp.nEvents) : st === "loading" ? "\u2026" : "" }),
+                    /* @__PURE__ */ u3(
+                      "button",
+                      {
+                        type: "button",
+                        class: "row-more",
+                        "aria-label": `Options for ${smp.name}`,
+                        onClick: (e3) => {
+                          e3.stopPropagation();
+                          sampleMenu(rectOf(e3.currentTarget), smp);
+                        },
+                        children: /* @__PURE__ */ u3(Icon, { name: "more", size: 14 })
+                      }
+                    )
+                  ]
+                },
+                smp.id
+              )
+            ];
+          })
+        ] })
       ] }) : null
     ] });
   }
@@ -11855,7 +12257,12 @@ canvas.mini.is-hl {
           );
         })
       ] }),
-      rows.length === 0 ? /* @__PURE__ */ u3("p", { class: "tree-empty", children: "Draw a gate on a plot to start the hierarchy. Pick a tool above the plots, then drag on the plot." }) : null
+      rows.length === 0 ? /* @__PURE__ */ u3("p", { class: "tree-empty", children: [
+        "Draw a gate on a plot to start the hierarchy. Pick a tool above the plots, then drag on the plot. Or",
+        " ",
+        /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => openDialog("autoGate"), children: "build Cells \u2192 Singlets \u2192 Live automatically" }),
+        "."
+      ] }) : null
     ] });
   }
 
@@ -11968,19 +12375,19 @@ canvas.mini.is-hl {
     }
     return map;
   }
-  function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }) {
+  function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected, font = 1 }) {
     const stats = (plot.statCols && plot.statCols.length ? plot.statCols : TREE_STATS_DEFAULT).filter((s3) => STATS[s3]);
-    const rowH = 19;
-    const headerH = 17;
+    const rowH = Math.round(19 * font);
+    const headerH = Math.round(17 * font);
     const padX = 6;
-    const minNameW = 70;
-    const colW = stats.length ? Math.max(30, Math.min(48, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
+    const minNameW = 70 * font;
+    const colW = stats.length ? Math.max(30 * font, Math.min(48 * font, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
     const statsW = stats.length * colW;
     const nameW = Math.max(30, area.w - padX * 2 - statsW);
-    const small = area.w < 170;
-    const fontHead = `600 ${small ? 9 : 10}px ${theme.fontUI}`;
-    const fontName = `500 ${small ? 10 : 11}px ${theme.fontUI}`;
-    const fontVal = `500 ${small ? 10 : 11}px ${theme.fontMono}`;
+    const small = area.w < 170 * font;
+    const fontHead = `600 ${(small ? 9 : 10) * font}px ${theme.fontUI}`;
+    const fontName = `500 ${(small ? 10 : 11) * font}px ${theme.fontUI}`;
+    const fontVal = `500 ${(small ? 10 : 11) * font}px ${theme.fontMono}`;
     ctx.save();
     ctx.beginPath();
     ctx.rect(area.x, area.y, area.w, area.h);
@@ -12017,7 +12424,7 @@ canvas.mini.is-hl {
         ctx.fillRect(area.x, rowY, area.w, rowH);
       }
       const cy = rowY + rowH / 2;
-      const indent = Math.min(depth, 4) * 8;
+      const indent = Math.min(depth, 4) * 8 * font;
       ctx.textAlign = "left";
       ctx.font = fontName;
       ctx.fillStyle = theme.labelFg;
@@ -12059,17 +12466,19 @@ canvas.mini.is-hl {
   }
   function paintPlot(ctx, o3) {
     const { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, selected, hover, readOnly, overridden, message } = o3;
-    const area = plot.type === "tree" ? plotArea(W2, H3, TREE_MARGIN) : plotArea(W2, H3);
+    const st = o3.style || {};
+    const f5 = st.font || 1;
+    const area = plot.type === "tree" ? plotArea(W2, H3, TREE_MARGIN) : st.margin ? plotArea(W2, H3, st.margin) : plotArea(W2, H3);
     if (!o3.noClear) ctx.clearRect(0, 0, W2, H3);
     if (plot.type === "tree") {
       drawFrame(ctx, area, theme);
-      paintHierarchy(ctx, { area, doc, plot, counts, theme, selected });
+      paintHierarchy(ctx, { area, doc, plot, counts, theme, selected, font: f5 });
       if (message) {
         ctx.save();
         ctx.fillStyle = theme.labelBg;
         ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
         ctx.fillStyle = theme.tick;
-        ctx.font = `500 12px ${theme.fontUI}`;
+        ctx.font = `500 ${12 * f5}px ${theme.fontUI}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);
@@ -12081,7 +12490,7 @@ canvas.mini.is-hl {
     const tx2 = makeTransform(doc.transforms[plot.x]);
     const ty = is2D ? makeTransform(doc.transforms[plot.y]) : null;
     drawFrame(ctx, area, theme);
-    const fontTick = `10.5px ${theme.fontUI}`;
+    const fontTick = `${10.5 * f5}px ${theme.fontUI}`;
     if (layer && layer.kind === "image") {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
@@ -12145,8 +12554,8 @@ canvas.mini.is-hl {
       }
       ctx.restore();
     }
-    drawAxes(ctx, area, { tx: tx2, ty, theme, font: fontTick, yMax: !is2D && layer ? layer.ymax : 0 });
-    const gates = o3.gates || [];
+    drawAxes(ctx, area, { tx: tx2, ty, theme, font: fontTick, yMax: !is2D && layer ? layer.ymax : 0, labels: st.tickLabels !== false, ticks: st.ticks !== false });
+    const gates = st.gates === false ? [] : o3.gates || [];
     const shapes = [];
     for (const g4 of gates) {
       const eff = effectiveGate(doc, sampleId, g4.id) || g4;
@@ -12163,16 +12572,18 @@ canvas.mini.is-hl {
       labels,
       overridden,
       readOnly,
-      showLabels: doc.settings.showLabels !== false,
-      fontLabel: `600 11px ${theme.fontUI}`,
-      fontValue: `500 11px ${theme.fontMono}`
+      showLabels: doc.settings.showLabels !== false && st.gateLabels !== "none",
+      labelParts: st.gateLabels || "both",
+      labelH: Math.round(17 * f5),
+      fontLabel: `600 ${11 * f5}px ${theme.fontUI}`,
+      fontValue: `500 ${11 * f5}px ${theme.fontMono}`
     });
     if (message) {
       ctx.save();
       ctx.fillStyle = theme.labelBg;
       ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
       ctx.fillStyle = theme.tick;
-      ctx.font = `500 12px ${theme.fontUI}`;
+      ctx.font = `500 ${12 * f5}px ${theme.fontUI}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);
@@ -12614,6 +13025,34 @@ canvas.mini.is-hl {
   init_derived();
   init_render();
   init_transforms();
+
+  // src/ui/plot/panel-style.js
+  var PANEL_DEFAULTS = { size: 220, font: 1, title: true, axisTitles: true, tickLabels: true, ticks: true, gates: true, gateLabels: "both" };
+  function layoutDefaults(L2) {
+    return { ...PANEL_DEFAULTS, ...L2.panel || {}, size: L2.size || PANEL_DEFAULTS.size, title: L2.showTitles !== false, axisTitles: L2.showAxisLabels !== false };
+  }
+  function panelStyle(L2, plotId) {
+    return { ...layoutDefaults(L2), ...(L2.plotStyles || {})[plotId] || {} };
+  }
+  function panelGeom(st) {
+    const f5 = st.font || 1;
+    const titleH = st.title ? Math.round(22 * f5) : 4;
+    const xtH = st.axisTitles ? Math.round(18 * f5) + 2 : 0;
+    const ytW = st.axisTitles ? Math.round(16 * f5) + 2 : 0;
+    const margin = {
+      l: st.tickLabels ? Math.round(38 * f5) + 6 : st.ticks ? 7 : 2,
+      r: st.tickLabels ? Math.round(6 * f5) + 4 : 4,
+      t: 4,
+      b: st.tickLabels ? Math.round(16 * f5) + 8 : st.ticks ? 7 : 2
+    };
+    const PW = Math.round(st.size || PANEL_DEFAULTS.size);
+    const W2 = PW - ytW;
+    const aw = Math.max(20, W2 - margin.l - margin.r);
+    const H3 = aw + margin.t + margin.b;
+    return { PW, PH: titleH + H3 + xtH, W: W2, H: H3, titleH, xtH, ytW, margin, f: f5 };
+  }
+
+  // src/ui/plot/export.js
   init_download();
   init_gating();
   init_doc();
@@ -12777,12 +13216,15 @@ canvas.mini.is-hl {
   var TITLE_H = 22;
   var XT_H = 20;
   var YT_W = 18;
-  async function fetchLayer(plot, sampleId, W2, H3, theme) {
+  function paintStyle(st, g4) {
+    return { margin: g4.margin, font: g4.f, tickLabels: st.tickLabels !== false, ticks: st.ticks !== false, gates: st.gates !== false, gateLabels: st.gateLabels || "both" };
+  }
+  async function fetchLayer(plot, sampleId, W2, H3, theme, margin) {
     if (plot.type === "tree") return { layer: null, message: null };
     const s3 = store.get();
     const doc = s3.doc;
     const is2D = !!plot.y && plot.type !== "hist";
-    const area = plotArea(W2, H3);
+    const area = margin ? plotArea(W2, H3, margin) : plotArea(W2, H3);
     const ov = overlayIds(doc, plot);
     const req2 = is2D ? { pop: plot.pop, x: plot.x, y: plot.y, w: Math.round(area.w), h: Math.round(area.h), overlays: ov } : { pop: plot.pop, x: plot.x, bins: Math.max(64, Math.min(512, Math.round(area.w / 1.25))), overlays: ov };
     const ids = plot.concatIds && plot.concatIds.length ? plot.concatIds.filter((id) => (s3.meta[id] || {}).status === "ready") : [sampleId];
@@ -12793,53 +13235,75 @@ canvas.mini.is-hl {
     const layer = buildLayer(res, { type: plot.type, settings: { ...doc.settings, dotSize: plot.dotSize ?? doc.settings.dotSize }, theme, overlayColors: ov.map((id) => doc.gates[id] ? doc.gates[id].color : theme.accent) });
     return { layer, message: layer && layer.n === 0 ? "No events" : null };
   }
+  function fetchPanelLayer(plot, sampleId, st, theme) {
+    const g4 = panelGeom(st);
+    return fetchLayer(plot, sampleId, g4.W, g4.H, theme, g4.margin);
+  }
   function drawPanel(ctx, o3) {
-    const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH, showTitle = true, showAxisLabels = true } = o3;
+    const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, style } = o3;
     const s3 = store.get();
     const doc = s3.doc;
     const counts = (s3.counts[sampleId] || {}).counts || null;
-    const W2 = PW - YT_W;
-    const H3 = PH - TITLE_H - XT_H;
+    let PW = o3.PW;
+    let W2;
+    let H3;
+    let titleH = TITLE_H;
+    let xtH = XT_H;
+    let ytW = YT_W;
+    let f5 = 1;
+    let ps = null;
+    let showTitle = o3.showTitle !== false;
+    let showAxisLabels = o3.showAxisLabels !== false;
+    if (style) {
+      const g4 = panelGeom(style);
+      ({ PW, W: W2, H: H3, titleH, xtH, ytW, f: f5 } = g4);
+      ps = paintStyle(style, g4);
+      showTitle = !!style.title;
+      showAxisLabels = !!style.axisTitles;
+    } else {
+      W2 = PW - YT_W;
+      H3 = o3.PH - TITLE_H - XT_H;
+    }
     ctx.save();
     if (!ctx.isSvgRecorder) ctx.translate(ox, oy);
     const off = ctx.isSvgRecorder ? [ox, oy] : [0, 0];
     if (showTitle) {
       ctx.fillStyle = theme.labelFg;
-      ctx.font = `600 12px ${theme.fontUI}`;
+      ctx.font = `600 ${12 * f5}px ${theme.fontUI}`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
+      ctx.fillText(title || popName(doc, plot.pop), off[0] + ytW + 2, off[1] + titleH / 2);
       if (subtitle) {
-        ctx.font = `400 10.5px ${theme.fontUI}`;
+        ctx.font = `400 ${10.5 * f5}px ${theme.fontUI}`;
         ctx.fillStyle = theme.tick;
         ctx.textAlign = "right";
-        ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+        ctx.fillText(subtitle, off[0] + PW - 6, off[1] + titleH / 2);
       }
     }
     const inner = ctx.isSvgRecorder ? new SvgContext(W2, H3) : null;
     const target = inner || ctx;
     if (!inner) {
       ctx.save();
-      ctx.translate(YT_W, TITLE_H);
+      ctx.translate(ytW, titleH);
     }
-    paintPlot(target, { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, gates: o3.gates || gatesForPlot(doc, plot), selected: o3.selected || null, hover: null, readOnly: true, overridden: /* @__PURE__ */ new Set(), message, noClear: true });
-    if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
+    paintPlot(target, { W: W2, H: H3, doc, plot, sampleId, layer, theme, counts, gates: o3.gates || gatesForPlot(doc, plot), selected: o3.selected || null, hover: null, readOnly: true, overridden: /* @__PURE__ */ new Set(), message, noClear: true, style: ps });
+    if (inner) ctx.group(inner.inner(), ox + ytW, oy + titleH);
     else ctx.restore();
     if (showAxisLabels && plot.type !== "tree") {
-      const area = plotArea(W2, H3);
+      const area = ps ? plotArea(W2, H3, ps.margin) : plotArea(W2, H3);
       const xi = channelInfo(doc, plot.x);
       const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
       ctx.fillStyle = theme.labelFg;
-      ctx.font = `500 11px ${theme.fontUI}`;
+      ctx.font = `500 ${11 * f5}px ${theme.fontUI}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H3 + XT_H / 2);
+      ctx.fillText(xt, off[0] + ytW + area.x + area.w / 2, off[1] + titleH + H3 + xtH / 2);
       let yt = "Count";
       if (plot.y && plot.type !== "hist") {
         const yi = channelInfo(doc, plot.y);
         yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
       }
-      rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
+      rotatedText(ctx, yt, off[0] + ytW / 2 + 1, off[1] + titleH + area.y + area.h / 2, -Math.PI / 2);
     }
     ctx.restore();
   }
@@ -13377,8 +13841,8 @@ canvas.mini.is-hl {
           nu = [pp[0] * drag.index, pp[1] * drag.index];
           const lu = Math.hypot(nu[0], nu[1]) || 1;
           const lv = Math.hypot(vp[0], vp[1]);
-          const cross = up[0] * vp[1] - up[1] * vp[0];
-          const sgn = cross >= 0 ? 1 : -1;
+          const cross2 = up[0] * vp[1] - up[1] * vp[0];
+          const sgn = cross2 >= 0 ? 1 : -1;
           nv = [-nu[1] / lu * lv * sgn, nu[0] / lu * lv * sgn];
         } else {
           const lv = Math.hypot(vp[0], vp[1]) || 1;
@@ -14179,7 +14643,7 @@ canvas.mini.is-hl {
     const doc = useSel((s3) => s3.doc);
     const sampleId = useSel((s3) => s3.ui.sampleId);
     const meta = useSel((s3) => s3.meta);
-    const list = doc.samples;
+    const list = sortSamples(doc, meta, doc.samples);
     const i4 = list.findIndex((x3) => x3.id === sampleId);
     const go = (d3) => {
       if (!list.length) return;
@@ -14247,6 +14711,10 @@ canvas.mini.is-hl {
         /* @__PURE__ */ u3("label", { class: "size-ctl", title: "Plot size", children: [
           /* @__PURE__ */ u3(Icon, { name: "grid", size: 14 }),
           /* @__PURE__ */ u3("input", { type: "range", min: "200", max: "460", step: "10", value: plotSize, onInput: (e3) => updateSettings({ plotSize: parseInt(e3.currentTarget.value, 10) }), "aria-label": "Plot size" })
+        ] }),
+        /* @__PURE__ */ u3("button", { type: "button", class: "btn btn-default btn-sm auto-gate-btn", onClick: () => openDialog("autoGate"), title: "Build Cells \u2192 Singlets \u2192 Live automatically from the data", children: [
+          /* @__PURE__ */ u3(Icon, { name: "gates", size: 14 }),
+          /* @__PURE__ */ u3("span", { children: "Auto-gate" })
         ] }),
         /* @__PURE__ */ u3("button", { type: "button", class: "btn btn-default btn-sm", onClick: addNew, title: "Add a plot of the selected population", children: [
           /* @__PURE__ */ u3(Icon, { name: "plus", size: 14 }),
@@ -14330,7 +14798,7 @@ canvas.mini.is-hl {
           }
         }
         if (e3.key === "[" || e3.key === "]") {
-          const list = s3.doc.samples;
+          const list = sortSamples(s3.doc, s3.meta, s3.doc.samples);
           if (list.length < 2) return;
           const i4 = list.findIndex((x3) => x3.id === s3.ui.sampleId);
           const j4 = (Math.max(0, i4) + (e3.key === "]" ? 1 : -1) + list.length) % list.length;
@@ -14496,10 +14964,10 @@ canvas.mini.is-hl {
     } catch (e3) {
       singular = true;
     }
-    const setVal = (i4, j4, pct2) => {
-      if (ro || i4 === j4 || !Number.isFinite(pct2)) return;
+    const setVal = (i4, j4, pct3) => {
+      if (ro || i4 === j4 || !Number.isFinite(pct3)) return;
       const m3 = mat.matrix.map((r3) => r3.slice());
-      m3[i4][j4] = Math.round(pct2 * 1e3) / 1e5;
+      m3[i4][j4] = Math.round(pct3 * 1e3) / 1e5;
       updateMatrix(mat.id, { matrix: m3 }, { coalesce: `m:${mat.id}:${i4}:${j4}` });
     };
     const nudge = (i4, j4, d3) => setVal(i4, j4, mat.matrix[i4][j4] * 100 + d3);
@@ -15052,6 +15520,7 @@ canvas.mini.is-hl {
   init_store();
   init_doc();
   init_derived();
+  init_gating();
   init_transforms();
   init_gate_geometry();
   init_gates();
@@ -15068,15 +15537,17 @@ canvas.mini.is-hl {
     const y3 = p3.y ? channelInfo(doc, p3.y) : null;
     return `${popName(doc, p3.pop)} \xB7 ${x3.label || x3.name}${y3 && p3.type !== "hist" ? ` \xD7 ${y3.label || y3.name}` : ""}`;
   }
-  function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true }) {
+  function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true, style = null, onClick = null, active = false }) {
     const ref = A2();
     const doc = useSel((s3) => s3.doc);
     const status = useSel((s3) => (s3.meta[sampleId] || {}).status);
     const counts = useSel((s3) => (s3.counts[sampleId] || {}).counts);
     const theme = useTheme();
     const state = store.get();
-    const PW = size;
-    const PH = size + 40;
+    const geom = style ? panelGeom(style) : null;
+    const PW = geom ? geom.PW : size;
+    const PH = geom ? geom.PH : size + 40;
+    const styleKey = style ? JSON.stringify(style) : "";
     const key = status === "ready" ? [
       sampleId,
       plot.pop,
@@ -15085,6 +15556,7 @@ canvas.mini.is-hl {
       plot.type,
       plot.overlay,
       size,
+      styleKey,
       popSig(state, sampleId, plot.pop),
       transformKey(doc.transforms[plot.x]),
       plot.y ? transformKey(doc.transforms[plot.y]) : "",
@@ -15099,7 +15571,7 @@ canvas.mini.is-hl {
     y2(() => {
       if (!key) return;
       let alive = true;
-      fetchLayer(plot, sampleId, PW - 18, PH - 22 - 20, theme).then((r3) => alive && setLayer(r3), () => {
+      (style ? fetchPanelLayer(plot, sampleId, style, theme) : fetchLayer(plot, sampleId, PW - 18, PH - 22 - 20, theme)).then((r3) => alive && setLayer(r3), () => {
       });
       return () => {
         alive = false;
@@ -15115,9 +15587,12 @@ canvas.mini.is-hl {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, PW, PH);
       if (!layer) return;
-      drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === "ready" ? layer.message : "Not loaded", theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels });
-    }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels]);
-    return /* @__PURE__ */ u3("canvas", { ref, class: "static-panel", style: { width: `${PW}px`, height: `${PH}px` }, role: "img", "aria-label": `${title}${subtitle ? `, ${subtitle}` : ""}` });
+      drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === "ready" ? layer.message : "Not loaded", theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels, style });
+    }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels, styleKey]);
+    const label = `${title}${subtitle ? `, ${subtitle}` : ""}`;
+    const canvas = /* @__PURE__ */ u3("canvas", { ref, class: "static-panel", style: { width: `${PW}px`, height: `${PH}px` }, role: "img", "aria-label": label });
+    if (!onClick) return canvas;
+    return /* @__PURE__ */ u3("button", { type: "button", class: `panel-btn ${active ? "is-on" : ""}`, onClick, title: "Click to change how this plot is drawn", children: canvas });
   }
   function LayoutView() {
     const doc = useSel((s3) => s3.doc);
@@ -15127,9 +15602,20 @@ canvas.mini.is-hl {
     const samples = samplesInGroup(doc, L2.groupId).filter((x3) => (meta[x3.id] || {}).status === "ready");
     const size = L2.size || 220;
     const [exporting, setExporting] = h2(false);
-    const togglePlot = (id) => setLayout({ plotIds: L2.plotIds.includes(id) ? L2.plotIds.filter((x3) => x3 !== id) : [...L2.plotIds, id] });
+    const [styling, setStyling] = h2(null);
+    const styleFor = (p3) => panelStyle(L2, p3.id);
+    const geomFor = (p3) => panelGeom(styleFor(p3));
+    const openStyle = (p3, e3) => setStyling({ plotId: p3.id, anchor: rectOf(e3.currentTarget) });
+    const togglePlot = (id) => {
+      const ids = store.get().doc.layout.plotIds;
+      setLayout({ plotIds: ids.includes(id) ? ids.filter((x3) => x3 !== id) : [...ids, id] });
+    };
+    const choices = gatingPlots(doc);
+    const pick = (p3) => p3.auto ? setLayout({ plotIds: [...store.get().doc.layout.plotIds, materializePlot(p3)] }) : togglePlot(p3.id);
     const rows = L2.transpose ? plots : samples;
     const cols = L2.transpose ? samples : plots;
+    const widest = plots.reduce((m3, p3) => Math.max(m3, geomFor(p3).PW), 0);
+    const colWidths = L2.transpose ? cols.map(() => widest) : cols.map((p3) => geomFor(p3).PW);
     const sampleIdsKey = samples.map((x3) => x3.id).join(",");
     y2(() => {
       watchCounts(sampleIdsKey ? sampleIdsKey.split(",") : []);
@@ -15140,13 +15626,25 @@ canvas.mini.is-hl {
       setExporting(true);
       try {
         const theme = exportTheme();
-        const PW = size;
-        const PH = size + 40;
         const headW = 150;
-        const W2 = headW + cols.length * (PW + 12) + 12;
-        const H3 = TITLE + 12 + rows.length * (PH + 12);
+        const gap = 12;
+        const colX = [];
+        let x0 = headW;
+        for (const w3 of colWidths) {
+          colX.push(x0);
+          x0 += w3 + gap;
+        }
+        const rowH = rows.map((r3) => L2.transpose ? geomFor(r3).PH : Math.max(...plots.map((p3) => geomFor(p3).PH)));
+        const rowY = [];
+        let y0 = TITLE + gap;
+        for (const h3 of rowH) {
+          rowY.push(y0);
+          y0 += h3 + gap;
+        }
+        const W2 = x0;
+        const H3 = y0;
         const layers = /* @__PURE__ */ new Map();
-        for (const p3 of plots) for (const smp of samples) layers.set(`${p3.id}|${smp.id}`, await fetchLayer(p3, smp.id, PW - 18, PH - 22 - 20, theme));
+        for (const p3 of plots) for (const smp of samples) layers.set(`${p3.id}|${smp.id}`, await fetchPanelLayer(p3, smp.id, styleFor(p3), theme));
         const paintAll = (ctx) => {
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, W2, H3);
@@ -15156,17 +15654,17 @@ canvas.mini.is-hl {
           ctx.textAlign = "left";
           ctx.fillText(doc.name, 12, TITLE / 2 + 4);
           rows.forEach((r3, ri) => {
-            const y3 = TITLE + 12 + ri * (PH + 12);
+            const y3 = rowY[ri];
             ctx.font = `600 11.5px ${theme.fontUI}`;
             ctx.fillStyle = theme.labelFg;
             ctx.textAlign = "left";
-            ctx.fillText(L2.transpose ? plotLabel(doc, r3).slice(0, 26) : r3.name.slice(0, 24), 12, y3 + PH / 2);
+            ctx.textBaseline = "middle";
+            ctx.fillText(L2.transpose ? plotLabel(doc, r3).slice(0, 26) : r3.name.slice(0, 24), 12, y3 + rowH[ri] / 2);
             cols.forEach((c3, ci) => {
               const p3 = L2.transpose ? r3 : c3;
               const smp = L2.transpose ? c3 : r3;
-              const x3 = headW + ci * (PW + 12);
               const lr = layers.get(`${p3.id}|${smp.id}`);
-              drawPanel(ctx, { plot: p3, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p3.pop), subtitle: L2.transpose ? smp.name : "", ox: x3, oy: y3, PW, PH, showTitle: L2.showTitles !== false, showAxisLabels: L2.showAxisLabels !== false });
+              drawPanel(ctx, { plot: p3, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p3.pop), subtitle: L2.transpose ? smp.name : "", ox: colX[ci], oy: y3, style: styleFor(p3) });
             });
           });
         };
@@ -15195,10 +15693,27 @@ canvas.mini.is-hl {
         /* @__PURE__ */ u3("section", { class: "card", children: [
           /* @__PURE__ */ u3("header", { class: "card-head", children: /* @__PURE__ */ u3("h2", { children: "Batch figure" }) }),
           /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Plots" }),
-          doc.plots.length ? /* @__PURE__ */ u3("div", { class: "check-list", children: doc.plots.map((p3) => /* @__PURE__ */ u3("label", { class: "check-row", children: [
-            /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.plotIds.includes(p3.id), onChange: () => togglePlot(p3.id) }),
-            /* @__PURE__ */ u3("span", { children: plotLabel(doc, p3) })
-          ] }, p3.id)) }) : /* @__PURE__ */ u3("p", { class: "muted small", children: "Add plots in the Gating view first." }),
+          choices.length ? /* @__PURE__ */ u3("div", { class: "check-list", children: choices.map((p3) => {
+            const on2 = L2.plotIds.includes(p3.id);
+            const own = Object.keys((L2.plotStyles || {})[p3.id] || {}).length > 0;
+            return /* @__PURE__ */ u3("div", { class: "check-row plot-pick", children: [
+              /* @__PURE__ */ u3("label", { class: "grow", children: [
+                /* @__PURE__ */ u3("input", { type: "checkbox", checked: on2, onChange: () => pick(p3) }),
+                /* @__PURE__ */ u3("span", { children: plotLabel(doc, p3) })
+              ] }),
+              on2 ? /* @__PURE__ */ u3(
+                IconButton,
+                {
+                  icon: "sliders",
+                  size: 13,
+                  class: "plot-style-btn",
+                  active: own || styling && styling.plotId === p3.id,
+                  label: own ? "This plot has its own size, text or elements: change them" : "Size, text and elements for this plot",
+                  onClick: (e3) => openStyle(p3, e3)
+                }
+              ) : null
+            ] }, p3.id);
+          }) }) : /* @__PURE__ */ u3("p", { class: "muted small", children: "Add plots in the Gating view first." }),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -15226,19 +15741,9 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("span", { children: "Rows are" }),
             /* @__PURE__ */ u3(Segmented, { value: L2.transpose ? "plots" : "samples", onChange: (v3) => setLayout({ transpose: v3 === "plots" }), options: [{ value: "samples", label: "Samples" }, { value: "plots", label: "Plots" }], label: "Rows are" })
           ] }),
-          /* @__PURE__ */ u3("label", { class: "field-row", children: [
-            /* @__PURE__ */ u3("span", { children: "Panel size" }),
-            /* @__PURE__ */ u3("input", { type: "range", min: "160", max: "360", step: "10", value: size, onInput: (e3) => setLayout({ size: parseInt(e3.currentTarget.value, 10) }) })
-          ] }),
-          /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Show on each panel" }),
-          /* @__PURE__ */ u3("label", { class: "check-row", children: [
-            /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.showTitles !== false, onChange: (e3) => setLayout({ showTitles: e3.currentTarget.checked }) }),
-            /* @__PURE__ */ u3("span", { children: "Plot title" })
-          ] }),
-          /* @__PURE__ */ u3("label", { class: "check-row", children: [
-            /* @__PURE__ */ u3("input", { type: "checkbox", checked: L2.showAxisLabels !== false, onChange: (e3) => setLayout({ showAxisLabels: e3.currentTarget.checked }) }),
-            /* @__PURE__ */ u3("span", { children: "Axis labels" })
-          ] }),
+          /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Every panel" }),
+          /* @__PURE__ */ u3(PanelStyleFields, { plotId: null }),
+          /* @__PURE__ */ u3("p", { class: "muted small", children: "To give one plot its own size, text or elements, click it in the figure, or use the button next to it in the list above." }),
           /* @__PURE__ */ u3("div", { class: "card-actions", children: [
             /* @__PURE__ */ u3(Button, { icon: "download", variant: "primary", disabled: exporting || !plots.length || !samples.length, onClick: () => exportGrid("png"), children: exporting ? "Exporting\u2026" : "Export PNG" }),
             /* @__PURE__ */ u3(Button, { icon: "download", disabled: exporting || !plots.length || !samples.length, onClick: () => exportGrid("svg"), children: "Export SVG" })
@@ -15247,7 +15752,7 @@ canvas.mini.is-hl {
         /* @__PURE__ */ u3(OverlayList, {})
       ] }),
       /* @__PURE__ */ u3("section", { class: "layout-main", children: [
-        !plots.length || !samples.length ? /* @__PURE__ */ u3(Empty, { icon: "grid", title: "Choose plots for the figure", children: "Tick plots on the left. Every chosen plot is drawn for every sample in the group, using the same gates." }) : /* @__PURE__ */ u3("div", { class: "batch", style: { gridTemplateColumns: `minmax(90px, 160px) repeat(${cols.length}, ${size}px)` }, children: [
+        !plots.length || !samples.length ? /* @__PURE__ */ u3(Empty, { icon: "grid", title: "Choose plots for the figure", children: "Tick plots on the left. Every chosen plot is drawn for every sample in the group, using the same gates." }) : /* @__PURE__ */ u3("div", { class: "batch layout-grid", style: { gridTemplateColumns: `minmax(90px, 160px) ${colWidths.map((w3) => `${w3}px`).join(" ")}` }, children: [
           /* @__PURE__ */ u3("div", {}),
           cols.map((c3) => /* @__PURE__ */ u3("div", { class: "batch-col", children: L2.transpose ? c3.name : plotLabel(doc, c3) }, c3.id)),
           rows.map((r3) => /* @__PURE__ */ u3(k, { children: [
@@ -15262,9 +15767,10 @@ canvas.mini.is-hl {
                   sampleId: smp.id,
                   size,
                   title: popName(doc, p3.pop),
-                  subtitle: L2.transpose ? "" : "",
-                  showTitle: L2.showTitles !== false,
-                  showAxisLabels: L2.showAxisLabels !== false
+                  subtitle: "",
+                  style: styleFor(p3),
+                  active: !!styling && styling.plotId === p3.id,
+                  onClick: (e3) => openStyle(p3, e3)
                 },
                 `${p3.id}|${smp.id}`
               );
@@ -15272,7 +15778,106 @@ canvas.mini.is-hl {
           ] }))
         ] }),
         /* @__PURE__ */ u3(OverlayPanels, {})
-      ] })
+      ] }),
+      styling && plots.some((p3) => p3.id === styling.plotId) ? /* @__PURE__ */ u3(Popover, { anchor: styling.anchor, onClose: () => setStyling(null), placement: "right", children: /* @__PURE__ */ u3("div", { class: "panel-style-pop", children: [
+        /* @__PURE__ */ u3("div", { class: "panel-style-head", children: [
+          /* @__PURE__ */ u3("b", { children: plotLabel(doc, doc.plots.find((p3) => p3.id === styling.plotId)) }),
+          /* @__PURE__ */ u3("span", { class: "muted small", children: "This plot only, in every row of the figure" })
+        ] }),
+        /* @__PURE__ */ u3(PanelStyleFields, { plotId: styling.plotId })
+      ] }) }) : null
+    ] });
+  }
+  var GATE_LABEL_OPTIONS = [
+    { value: "both", label: "Name + value", title: "Gate name and its number" },
+    { value: "name", label: "Name", title: "Gate name only" },
+    { value: "value", label: "Value", title: "The number only" },
+    { value: "none", label: "None", title: "No gate labels" }
+  ];
+  function PanelStyleFields({ plotId }) {
+    const L2 = useSel((s3) => s3.doc.layout);
+    const plot = useSel((s3) => plotId ? s3.doc.plots.find((p3) => p3.id === plotId) : null);
+    const own = plotId ? (L2.plotStyles || {})[plotId] || {} : {};
+    const st = plotId ? panelStyle(L2, plotId) : layoutDefaults(L2);
+    const tree = plot && plot.type === "tree";
+    const set = (k3, v3) => {
+      const cur = store.get().doc.layout;
+      const opts = { coalesce: `panel:${plotId || "*"}:${k3}` };
+      if (plotId) {
+        const mine = (cur.plotStyles || {})[plotId] || {};
+        return setLayout({ plotStyles: { ...cur.plotStyles || {}, [plotId]: { ...mine, [k3]: v3 } } }, opts);
+      }
+      if (k3 === "size") return setLayout({ size: v3 }, opts);
+      if (k3 === "title") return setLayout({ showTitles: v3 }, opts);
+      if (k3 === "axisTitles") return setLayout({ showAxisLabels: v3 }, opts);
+      return setLayout({ panel: { ...cur.panel || {}, [k3]: v3 } }, opts);
+    };
+    const reset = (keys) => {
+      if (!plotId) return;
+      const cur = store.get().doc.layout;
+      const next = { ...(cur.plotStyles || {})[plotId] || {} };
+      for (const k3 of keys) delete next[k3];
+      const all = { ...cur.plotStyles || {} };
+      if (Object.keys(next).length) all[plotId] = next;
+      else delete all[plotId];
+      setLayout({ plotStyles: all });
+    };
+    const mark = (k3) => plotId && own[k3] !== void 0 ? /* @__PURE__ */ u3(
+      "button",
+      {
+        type: "button",
+        class: "own-mark",
+        title: "Set for this plot only. Click to use the figure's setting.",
+        onClick: (e3) => {
+          e3.preventDefault();
+          e3.stopPropagation();
+          reset([k3]);
+        },
+        children: /* @__PURE__ */ u3(Icon, { name: "undo", size: 11 })
+      }
+    ) : null;
+    const check = (k3, label, disabled = false) => /* @__PURE__ */ u3("div", { class: `check-row ${plotId && own[k3] !== void 0 ? "is-own" : ""}`, children: [
+      /* @__PURE__ */ u3("label", { class: "grow", children: [
+        /* @__PURE__ */ u3("input", { type: "checkbox", checked: !!st[k3], disabled, onChange: (e3) => set(k3, e3.currentTarget.checked) }),
+        /* @__PURE__ */ u3("span", { children: label })
+      ] }),
+      mark(k3)
+    ] });
+    return /* @__PURE__ */ u3("div", { class: "panel-style", children: [
+      /* @__PURE__ */ u3("div", { class: `field-row ${own.size !== void 0 ? "is-own" : ""}`, children: [
+        /* @__PURE__ */ u3("span", { children: "Panel size" }),
+        /* @__PURE__ */ u3("span", { class: "range-val", children: [
+          /* @__PURE__ */ u3("input", { type: "range", min: "100", max: "480", step: "10", value: st.size, onInput: (e3) => set("size", parseInt(e3.currentTarget.value, 10)), "aria-label": "Panel size" }),
+          /* @__PURE__ */ u3("span", { class: "num muted", children: st.size }),
+          mark("size")
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("div", { class: `field-row ${own.font !== void 0 ? "is-own" : ""}`, children: [
+        /* @__PURE__ */ u3("span", { children: "Text size" }),
+        /* @__PURE__ */ u3("span", { class: "range-val", children: [
+          /* @__PURE__ */ u3("input", { type: "range", min: "0.6", max: "2", step: "0.05", value: st.font, onInput: (e3) => set("font", parseFloat(e3.currentTarget.value)), "aria-label": "Text size" }),
+          /* @__PURE__ */ u3("span", { class: "num muted", children: [
+            Math.round(st.font * 100),
+            "%"
+          ] }),
+          mark("font")
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("div", { class: "panel-style-checks", children: [
+        check("title", "Plot title"),
+        tree ? null : check("axisTitles", "Axis labels"),
+        tree ? null : check("tickLabels", "Axis numbers"),
+        tree ? null : check("ticks", "Tick marks"),
+        tree ? null : check("gates", "Gates")
+      ] }),
+      tree ? null : /* @__PURE__ */ u3("div", { class: `gate-labels-row ${own.gateLabels !== void 0 ? "is-own" : ""}`, children: [
+        /* @__PURE__ */ u3("span", { children: "Gate labels" }),
+        /* @__PURE__ */ u3("span", { class: "range-val", children: [
+          /* @__PURE__ */ u3(Segmented, { value: st.gates ? st.gateLabels : "none", onChange: (v3) => set("gateLabels", v3), options: GATE_LABEL_OPTIONS, label: "Gate labels" }),
+          mark("gateLabels")
+        ] })
+      ] }),
+      plotId && Object.keys(own).length ? /* @__PURE__ */ u3("button", { type: "button", class: "link-btn panel-style-reset", onClick: () => reset(Object.keys(own)), children: "Use the figure's settings for this plot" }) : null
     ] });
   }
   function TreePlotCard({ plot: p3 }) {
@@ -15447,6 +16052,7 @@ canvas.mini.is-hl {
   init_store();
   init_doc();
   init_derived();
+  init_gating();
   init_bridge();
   init_ui();
   init_jsxRuntime_module();
@@ -15463,8 +16069,11 @@ canvas.mini.is-hl {
     const size = useSel((s3) => s3.ui.batchSize || 190);
     const samples = samplesInGroup(doc, groupId || null);
     const ready = samples.filter((x3) => (meta[x3.id] || {}).status === "ready");
-    const plots = doc.plots;
-    const open = (sampleId, plotId) => setUI({ view: "gating", sampleId, focusPlot: plotId, flashPlot: plotId });
+    const plots = gatingPlots(doc);
+    const open = (sampleId, p3) => {
+      const id = materializePlot(p3);
+      setUI({ view: "gating", sampleId, focusPlot: id, flashPlot: id });
+    };
     const readyIds = ready.map((x3) => x3.id).join(",");
     y2(() => {
       watchCounts(readyIds ? readyIds.split(",") : []);
@@ -15506,7 +16115,7 @@ canvas.mini.is-hl {
         ready.map((smp) => /* @__PURE__ */ u3(k, { children: [
           /* @__PURE__ */ u3("div", { class: "batch-row", children: smp.name }, `h${smp.id}`),
           plots.map(
-            (p3) => p3.type === "tree" ? /* @__PURE__ */ u3("div", { class: "batch-cell batch-cell-static", children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`) : /* @__PURE__ */ u3("button", { type: "button", class: "batch-cell", onClick: () => open(smp.id, p3.id), title: `Open ${popName(doc, p3.pop)} for ${smp.name}`, children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`)
+            (p3) => p3.type === "tree" ? /* @__PURE__ */ u3("div", { class: "batch-cell batch-cell-static", children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`) : /* @__PURE__ */ u3("button", { type: "button", class: "batch-cell", onClick: () => open(smp.id, p3), title: `Open ${popName(doc, p3.pop)} for ${smp.name}`, children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`)
           )
         ] }))
       ] }) })
@@ -15707,6 +16316,377 @@ canvas.mini.is-hl {
     return manifest;
   }
 
+  // src/ui/state/autogate.js
+  init_store();
+  init_bridge();
+  init_doc();
+
+  // src/core/autogate.js
+  init_gate_geometry();
+  init_gates();
+  var SAT = 0.995;
+  function hist1d(vals, keep, bins, lo2 = 0, hi2 = 1) {
+    const h3 = new Float64Array(bins);
+    const k3 = bins / (hi2 - lo2);
+    for (let i4 = 0; i4 < vals.length; i4++) {
+      if (keep && !keep[i4]) continue;
+      const v3 = vals[i4];
+      if (!(v3 >= lo2 && v3 < hi2)) continue;
+      h3[Math.min(bins - 1, (v3 - lo2) * k3 | 0)]++;
+    }
+    return h3;
+  }
+  function smooth1d(h3, sigma) {
+    if (sigma <= 0) return Float64Array.from(h3);
+    const r3 = Math.ceil(sigma * 3);
+    const w3 = [];
+    let ws = 0;
+    for (let i4 = -r3; i4 <= r3; i4++) {
+      const v3 = Math.exp(-i4 * i4 / (2 * sigma * sigma));
+      w3.push(v3);
+      ws += v3;
+    }
+    const out = new Float64Array(h3.length);
+    for (let i4 = 0; i4 < h3.length; i4++) {
+      let s3 = 0;
+      for (let j4 = -r3; j4 <= r3; j4++) {
+        const k3 = Math.min(h3.length - 1, Math.max(0, i4 + j4));
+        s3 += h3[k3] * w3[j4 + r3];
+      }
+      out[i4] = s3 / ws;
+    }
+    return out;
+  }
+  function argmax(a3, from = 0, to = a3.length - 1) {
+    let best = from;
+    for (let i4 = from; i4 <= to; i4++) if (a3[i4] > a3[best]) best = i4;
+    return best;
+  }
+  function argmin(a3, from = 0, to = a3.length - 1) {
+    let best = from;
+    for (let i4 = from; i4 <= to; i4++) if (a3[i4] < a3[best]) best = i4;
+    return best;
+  }
+  function quantile(sorted, p3) {
+    if (!sorted.length) return NaN;
+    const pos2 = Math.min(1, Math.max(0, p3)) * (sorted.length - 1);
+    const lo2 = Math.floor(pos2);
+    const hi2 = Math.min(sorted.length - 1, lo2 + 1);
+    return sorted[lo2] + (pos2 - lo2) * (sorted[hi2] - sorted[lo2]);
+  }
+  function cross(o3, a3, b2) {
+    return (a3[0] - o3[0]) * (b2[1] - o3[1]) - (a3[1] - o3[1]) * (b2[0] - o3[0]);
+  }
+  function convexHull(points) {
+    const p3 = points.slice().sort((a3, b2) => a3[0] - b2[0] || a3[1] - b2[1]);
+    if (p3.length < 3) return p3;
+    const lower = [];
+    for (const q4 of p3) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q4) <= 0) lower.pop();
+      lower.push(q4);
+    }
+    const upper = [];
+    for (let i4 = p3.length - 1; i4 >= 0; i4--) {
+      const q4 = p3[i4];
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q4) <= 0) upper.pop();
+      upper.push(q4);
+    }
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+  function simplifyPolygon(poly, max) {
+    const p3 = poly.slice();
+    const area = (i4) => {
+      const a3 = p3[(i4 - 1 + p3.length) % p3.length];
+      const b2 = p3[i4];
+      const c3 = p3[(i4 + 1) % p3.length];
+      return Math.abs(cross(a3, b2, c3)) / 2;
+    };
+    while (p3.length > max) {
+      let best = 0;
+      let bestA = Infinity;
+      for (let i4 = 0; i4 < p3.length; i4++) {
+        const a3 = area(i4);
+        if (a3 < bestA) {
+          bestA = a3;
+          best = i4;
+        }
+      }
+      p3.splice(best, 1);
+    }
+    return p3;
+  }
+  function expand(poly, frac, margin) {
+    const cx = poly.reduce((s3, q4) => s3 + q4[0], 0) / poly.length;
+    const cy = poly.reduce((s3, q4) => s3 + q4[1], 0) / poly.length;
+    return poly.map(([x3, y3]) => {
+      const dx = x3 - cx;
+      const dy = y3 - cy;
+      const d3 = Math.hypot(dx, dy) || 1;
+      return [x3 + dx * frac + dx / d3 * margin, y3 + dy * frac + dy / d3 * margin];
+    });
+  }
+  function clip(poly, inside2, cut) {
+    const out = [];
+    for (let i4 = 0; i4 < poly.length; i4++) {
+      const a3 = poly[i4];
+      const b2 = poly[(i4 + 1) % poly.length];
+      const ia = inside2(a3);
+      const ib = inside2(b2);
+      if (ia) out.push(a3);
+      if (ia !== ib) out.push(cut(a3, b2));
+    }
+    return out;
+  }
+  var clipX = (poly, x3, keepAbove) => clip(
+    poly,
+    (q4) => keepAbove ? q4[0] >= x3 : q4[0] <= x3,
+    (a3, b2) => [x3, a3[1] + (x3 - a3[0]) * (b2[1] - a3[1]) / (b2[0] - a3[0])]
+  );
+  var clipY = (poly, y3, keepAbove) => clip(
+    poly,
+    (q4) => keepAbove ? q4[1] >= y3 : q4[1] <= y3,
+    (a3, b2) => [a3[0] + (y3 - a3[1]) * (b2[0] - a3[0]) / (b2[1] - a3[1]), y3]
+  );
+  function findCells(fa, sa, { keep = null, coverage = 0.985 } = {}) {
+    const n2 = fa.length;
+    const ok = new Uint8Array(n2);
+    for (let i4 = 0; i4 < n2; i4++) ok[i4] = (!keep || keep[i4]) && fa[i4] < SAT && sa[i4] < SAT && fa[i4] > -0.05 ? 1 : 0;
+    const B4 = 128;
+    const hs = smooth1d(hist1d(fa, ok, B4), 1.5);
+    const peak = argmax(hs, Math.round(0.06 * B4), B4 - 2);
+    const valley = argmin(hs, Math.round(0.02 * B4), peak);
+    const thrBin = hs[valley] < 0.6 * hs[peak] ? valley : Math.round(0.02 * B4);
+    const threshold = (thrBin + 0.5) / B4;
+    const G3 = 64;
+    const h22 = new Float64Array(G3 * G3);
+    let total = 0;
+    for (let i4 = 0; i4 < n2; i4++) {
+      if (!ok[i4] || fa[i4] < threshold) continue;
+      const bx = Math.min(G3 - 1, Math.max(0, fa[i4] * G3 | 0));
+      const by = Math.min(G3 - 1, Math.max(0, sa[i4] * G3 | 0));
+      h22[by * G3 + bx]++;
+      total++;
+    }
+    const sm = new Float64Array(G3 * G3);
+    for (let y3 = 0; y3 < G3; y3++) {
+      for (let x3 = 0; x3 < G3; x3++) {
+        let s3 = 0;
+        let w3 = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x3 + dx;
+            const yy = y3 + dy;
+            if (xx < 0 || yy < 0 || xx >= G3 || yy >= G3) continue;
+            const k3 = dx === 0 && dy === 0 ? 4 : dx === 0 || dy === 0 ? 2 : 1;
+            s3 += h22[yy * G3 + xx] * k3;
+            w3 += k3;
+          }
+        }
+        sm[y3 * G3 + x3] = s3 / w3;
+      }
+    }
+    const order = Array.from(sm.keys()).filter((i4) => h22[i4] > 0).sort((a3, b2) => sm[b2] - sm[a3]);
+    const pts = [];
+    let acc = 0;
+    for (const i4 of order) {
+      if (acc >= coverage * total) break;
+      acc += h22[i4];
+      const x3 = i4 % G3 / G3;
+      const y3 = Math.floor(i4 / G3) / G3;
+      pts.push([x3, y3], [x3 + 1 / G3, y3], [x3, y3 + 1 / G3], [x3 + 1 / G3, y3 + 1 / G3]);
+    }
+    if (pts.length < 3) return { threshold, polygon: null };
+    let poly = simplifyPolygon(convexHull(pts), 10);
+    poly = expand(poly, 0.04, 0.01);
+    poly = clipX(poly, threshold, true);
+    poly = clipX(poly, SAT, false);
+    poly = clipY(poly, SAT, false);
+    return { threshold, polygon: poly.map(([x3, y3]) => [x3, Math.max(y3, EDGE_LO)]) };
+  }
+  function findSingletRatio(A4, H3, { keep = null } = {}) {
+    const lr = [];
+    for (let i4 = 0; i4 < A4.length; i4++) {
+      if (keep && !keep[i4]) continue;
+      if (A4[i4] > 0 && H3[i4] > 0) lr.push(Math.log10(H3[i4] / A4[i4]));
+    }
+    if (lr.length < 50) return null;
+    const LO = -1.5;
+    const HI = 1;
+    const B4 = 500;
+    const hs = smooth1d(hist1d(lr, null, B4, LO, HI), 2);
+    const mode = LO + (argmax(hs) + 0.5) * (HI - LO) / B4;
+    const above = lr.filter((v3) => v3 > mode).map((v3) => v3 - mode).sort((a3, b2) => a3 - b2);
+    const sigma = Math.max(6e-3, quantile(above, 0.5) / 0.6745);
+    return { mode: 10 ** mode, lo: 10 ** (mode - 4 * sigma), hi: 10 ** (mode + 6 * sigma) };
+  }
+  function findLiveThreshold(v3, { keep = null } = {}) {
+    const B4 = 200;
+    const GAP = 30;
+    const hs = smooth1d(hist1d(v3, keep, B4, 0, 1), 2);
+    const P5 = argmax(hs);
+    const top = hs[P5];
+    if (!(top > 0)) return null;
+    const peaks = [];
+    for (let i4 = 1; i4 < B4 - 1; i4++) if (hs[i4] >= 0.015 * top && hs[i4] >= hs[i4 - 1] && hs[i4] > hs[i4 + 1]) peaks.push(i4);
+    let dead = -1;
+    for (const j4 of peaks) {
+      if (j4 - P5 < GAP) continue;
+      const floor = hs[argmin(hs, P5, j4)];
+      if (floor < 0.5 * hs[j4]) dead = j4;
+    }
+    let thr;
+    if (dead >= 0) {
+      const dim = peaks.filter((i4) => i4 < dead && hs[argmin(hs, i4, dead)] < 0.5 * hs[dead]);
+      const lastDim = dim.length ? dim[dim.length - 1] : P5;
+      const floor = hs[argmin(hs, lastDim, dead)];
+      thr = lastDim;
+      while (thr < dead && hs[thr] > 2 * floor + 2e-3 * top) thr++;
+    } else {
+      const lastDim = peaks.length ? peaks[peaks.length - 1] : P5;
+      thr = lastDim;
+      while (thr < B4 - 1 && hs[thr] > 0.01 * top) thr++;
+      thr = Math.min(B4 - 1, thr + 2);
+    }
+    return Math.min(0.98, (thr + 0.5) / B4);
+  }
+  var VIABILITY = /viab|live|dead|zombie|7-?aad|dapi|\bpi\b|propidium|fvs|\bl\/?d\b|aqua|sytox|fixable|ghost|near[- ]?ir/i;
+  function guessPregateChannels(channels) {
+    const by = (re) => channels.find((c3) => re.test(c3.name));
+    const fscA = by(/^fsc[-_ ]?a$/i) || channels.find((c3) => /^fsc/i.test(c3.name) && !/[-_ ][hw]$/i.test(c3.name));
+    const sscA = by(/^ssc[-_ ]?a$/i) || channels.find((c3) => /^ssc/i.test(c3.name) && !/[-_ ][hw]$/i.test(c3.name));
+    const fscH = by(/^fsc[-_ ]?h$/i);
+    const viab = channels.find((c3) => c3.kind !== "scatter" && c3.kind !== "time" && (VIABILITY.test(c3.label || "") || VIABILITY.test(c3.name)));
+    return { fscA: fscA ? fscA.name : null, sscA: sscA ? sscA.name : null, fscH: fscH ? fscH.name : null, viab: viab ? viab.name : null };
+  }
+  function autoPregate(cols, tx2, steps = { cells: true, singlets: true, live: true }) {
+    const n2 = cols.fscA.length;
+    const notes = [];
+    const out = { n: n2, notes };
+    let keep = new Uint8Array(n2).fill(1);
+    const count = (m3) => m3.reduce((s3, v3) => s3 + v3, 0);
+    if (steps.cells) {
+      const c3 = findCells(cols.fscA, cols.sscA);
+      if (!c3.polygon) {
+        notes.push("Too few events to find the cells.");
+        return out;
+      }
+      const next = new Uint8Array(n2);
+      for (let i4 = 0; i4 < n2; i4++) next[i4] = pointInPolygon([cols.fscA[i4], cols.sscA[i4]], c3.polygon) ? 1 : 0;
+      const polygon = c3.polygon.map(([x3, y3]) => [tx2.fscA.inverse(x3), tx2.sscA.inverse(y3)]);
+      out.cells = { polygon, kept: count(next) / Math.max(1, count(keep)) };
+      keep = next;
+    }
+    if (steps.singlets && cols.fscH) {
+      const A4 = new Float64Array(n2);
+      const H3 = new Float64Array(n2);
+      for (let i4 = 0; i4 < n2; i4++) {
+        A4[i4] = tx2.fscA.inverse(cols.fscA[i4]);
+        H3[i4] = tx2.fscH.inverse(cols.fscH[i4]);
+      }
+      const r3 = findSingletRatio(A4, H3, { keep });
+      if (!r3) notes.push("Too few events to find singlets.");
+      else {
+        const inA = [];
+        for (let i4 = 0; i4 < n2; i4++) if (keep[i4] && A4[i4] > 0) inA.push(A4[i4]);
+        inA.sort((a3, b2) => a3 - b2);
+        const aMin = Math.max(quantile(inA, 1e-3) * 0.9, tx2.fscA.inverse(1e-3));
+        const aMax = Math.max(tx2.fscA.inverse(1.02), quantile(inA, 1) * 1.05);
+        const K2 = 6;
+        const along = Array.from({ length: K2 }, (_3, k3) => aMin * (aMax / aMin) ** (k3 / (K2 - 1)));
+        const polygon = [...along.map((a3) => [a3, a3 * r3.lo]), ...along.slice().reverse().map((a3) => [a3, a3 * r3.hi])];
+        const next = new Uint8Array(n2);
+        for (let i4 = 0; i4 < n2; i4++) {
+          if (!keep[i4] || !(A4[i4] >= aMin)) continue;
+          const q4 = H3[i4] / A4[i4];
+          next[i4] = q4 >= r3.lo && q4 <= r3.hi ? 1 : 0;
+        }
+        out.singlets = { polygon, ratio: r3, kept: count(next) / Math.max(1, count(keep)) };
+        keep = next;
+      }
+    } else if (steps.singlets) notes.push("No FSC-H parameter, so singlets were skipped.");
+    if (steps.live && cols.viab) {
+      const t3 = findLiveThreshold(cols.viab, { keep });
+      if (t3 === null) notes.push("Too few events to find live cells.");
+      else {
+        const next = new Uint8Array(n2);
+        for (let i4 = 0; i4 < n2; i4++) next[i4] = keep[i4] && cols.viab[i4] < t3 ? 1 : 0;
+        out.live = { rect: { x0: null, x1: tx2.viab.inverse(t3), y0: null, y1: null }, threshold: t3, kept: count(next) / Math.max(1, count(keep)) };
+      }
+    } else if (steps.live) notes.push("No viability dye chosen, so live cells were skipped.");
+    return out;
+  }
+
+  // src/ui/state/autogate.js
+  init_transforms();
+  init_gates();
+  var TARGET_EVENTS = 2e5;
+  function uniqueName(gates, base) {
+    const names = new Set(Object.values(gates).map((g4) => g4.name));
+    if (!names.has(base)) return base;
+    for (let k3 = 1; ; k3++) {
+      const n2 = k3 === 1 ? `${base} (auto)` : `${base} (auto ${k3})`;
+      if (!names.has(n2)) return n2;
+    }
+  }
+  function ensurePlot(pop, x3, y3) {
+    const doc = store.get().doc;
+    const have = doc.plots.find((p3) => p3.pop === pop && p3.x === x3 && (p3.y || null) === (y3 || null) && p3.type !== "tree");
+    return have ? have.id : addPlot({ pop, x: x3, y: y3, type: y3 ? "pseudo" : "hist" }, { focus: false });
+  }
+  async function runAutoPregate({ sampleIds, channels, steps, parent = ROOT }) {
+    const s3 = store.get();
+    const ready = sampleIds.filter((id) => (s3.meta[id] || {}).status === "ready");
+    if (!ready.length) throw new Error("None of the chosen samples has its data loaded.");
+    const names = ["fscA", "sscA", "fscH", "viab"].filter((k3) => channels[k3]);
+    const max = Math.max(2e4, Math.ceil(TARGET_EVENTS / ready.length));
+    const parts = await Promise.all(ready.map((id) => request(id, "events", { pop: parent, channels: names.map((k3) => channels[k3]), max })));
+    const n2 = parts.reduce((t3, p3) => t3 + p3.n, 0);
+    if (n2 < 200) throw new Error(`Only ${n2} events in that population: too few to find gates from.`);
+    const cols = {};
+    names.forEach((k3, j4) => {
+      const a3 = new Float32Array(n2);
+      let o3 = 0;
+      for (const p3 of parts) {
+        a3.set(p3.columns[j4].subarray(0, p3.n), o3);
+        o3 += p3.n;
+      }
+      cols[k3] = a3;
+    });
+    const transforms = store.get().doc.transforms;
+    const tx2 = {};
+    for (const k3 of names) tx2[k3] = makeTransform(transforms[channels[k3]]);
+    const res = autoPregate(cols, tx2, {
+      cells: !!steps.cells,
+      singlets: !!steps.singlets && !!channels.fscH,
+      live: !!steps.live && !!channels.viab
+    });
+    const doc = store.get().doc;
+    const work = { ...doc.gates };
+    const made = [];
+    let at = parent;
+    const make = (base, type, x3, y3, geom, kept) => {
+      const g4 = { ...newGateBase({ ...doc, gates: work }, { parent: at, x: x3, y: y3, type, name: uniqueName(work, base) }), ...geom };
+      work[g4.id] = g4;
+      made.push({ gate: g4, kept });
+      at = g4.id;
+    };
+    if (res.cells) make("Cells", "polygon", channels.fscA, channels.sscA, { polygon: res.cells.polygon }, res.cells.kept);
+    if (res.singlets) make("Singlets", "polygon", channels.fscA, channels.fscH, { polygon: res.singlets.polygon }, res.singlets.kept);
+    if (res.live) make("Live", "rect", channels.viab, channels.sscA, { rect: res.live.rect }, res.live.kept);
+    if (!made.length) return { made: [], n: n2, notes: res.notes };
+    beginTxn();
+    try {
+      addGates(made.map((m3) => m3.gate), { select: false });
+      const first = ensurePlot(made[0].gate.parent, made[0].gate.x, made[0].gate.y);
+      for (const m3 of made.slice(1)) ensurePlot(m3.gate.parent, m3.gate.x, m3.gate.y);
+      ensurePlot(at, channels.fscA, channels.sscA);
+      setUI({ selectedGate: at, focusPlot: first, flashPlot: first, view: "gating" });
+    } finally {
+      commitTxn();
+    }
+    return { made: made.map((m3) => ({ id: m3.gate.id, name: m3.gate.name, kept: m3.kept })), n: n2, notes: res.notes };
+  }
+
   // src/ui/components/Dialogs.jsx
   init_download();
   init_gates();
@@ -15716,7 +16696,7 @@ canvas.mini.is-hl {
   function DialogHost() {
     const d3 = useSel((s3) => s3.ui.dialog);
     if (!d3) return null;
-    const C3 = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, applyGate: ApplyGateDialog, locateFiles: LocateFilesDialog, help: HelpDialog }[d3.name];
+    const C3 = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, applyGate: ApplyGateDialog, locateFiles: LocateFilesDialog, autoGate: AutoGateDialog, help: HelpDialog }[d3.name];
     return C3 ? /* @__PURE__ */ u3(C3, { ...d3.props || {} }) : null;
   }
   function when(t3) {
@@ -15983,6 +16963,144 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("span", { children: smp.fileName })
           ] }, smp.id)) }),
           note ? /* @__PURE__ */ u3("p", { class: "muted small locate-note", children: note }) : null
+        ]
+      }
+    );
+  }
+  var pct2 = (v3) => `${(100 * v3).toFixed(1)}%`;
+  function AutoGateDialog() {
+    const doc = useSel((s3) => s3.doc);
+    const meta = useSel((s3) => s3.meta);
+    const sampleId = useSel((s3) => s3.ui.sampleId);
+    const chans = allChannels(doc);
+    const guess = T2(() => guessPregateChannels(chans), [chans.length]);
+    const [ch, setCh] = h2(guess);
+    const [steps, setSteps] = h2({ cells: true, singlets: !!guess.fscH, live: !!guess.viab });
+    const [parent, setParent] = h2(ROOT);
+    const loaded2 = doc.samples.filter((x3) => (meta[x3.id] || {}).status === "ready");
+    const current = loaded2.find((x3) => x3.id === sampleId) || loaded2[0];
+    const [basis, setBasis] = h2("sample");
+    const [busy, setBusy] = h2(false);
+    const [error, setError] = h2("");
+    const groupLoaded = (gid) => loaded2.filter((x3) => (x3.groupIds || []).includes(gid));
+    const basisIds = () => {
+      if (basis === "sample") return current ? [current.id] : [];
+      if (basis === "all") return loaded2.map((x3) => x3.id);
+      return groupLoaded(basis.slice(2)).map((x3) => x3.id);
+    };
+    const set = (k3) => (e3) => {
+      const v3 = e3.currentTarget.value || null;
+      setCh({ ...ch, [k3]: v3 });
+      if (k3 === "fscH") setSteps({ ...steps, singlets: !!v3 });
+      if (k3 === "viab") setSteps({ ...steps, live: !!v3 });
+    };
+    const toggle = (k3) => setSteps({ ...steps, [k3]: !steps[k3] });
+    const can = ch.fscA && ch.sscA && (steps.cells || steps.singlets && ch.fscH || steps.live && ch.viab) && basisIds().length > 0;
+    const build = async () => {
+      setBusy(true);
+      setError("");
+      try {
+        const r3 = await runAutoPregate({ sampleIds: basisIds(), channels: ch, steps, parent });
+        if (!r3.made.length) {
+          setError(r3.notes.join(" ") || "No gates could be found.");
+          return;
+        }
+        closeDialog();
+        toast(`Built ${r3.made.map((m3) => `${m3.name} (${pct2(m3.kept)})`).join(" \u2192 ")} from ${r3.n.toLocaleString("en-US")} events. Drag any gate to adjust it.`, { timeout: 9e3 });
+        for (const note of r3.notes) toast(note, { kind: "warn", timeout: 9e3 });
+      } catch (e3) {
+        setError(e3.message || String(e3));
+      } finally {
+        setBusy(false);
+      }
+    };
+    const chanSelect = (k3, { optional = false, kinds = null } = {}) => /* @__PURE__ */ u3("select", { class: "field field-sm", value: ch[k3] || "", onChange: set(k3), children: [
+      optional ? /* @__PURE__ */ u3("option", { value: "", children: "None (skip this step)" }) : null,
+      chans.filter((c3) => !kinds || kinds.includes(c3.kind)).map((c3) => /* @__PURE__ */ u3("option", { value: c3.name, children: c3.label ? `${c3.label} \xB7 ${c3.name}` : c3.name }, c3.name))
+    ] });
+    return /* @__PURE__ */ u3(
+      Dialog,
+      {
+        title: "Automatic pre-gating",
+        onClose: closeDialog,
+        width: 540,
+        class: "autogate-dialog",
+        footer: /* @__PURE__ */ u3(k, { children: [
+          /* @__PURE__ */ u3(Button, { onClick: closeDialog, children: "Cancel" }),
+          /* @__PURE__ */ u3(Button, { variant: "primary", icon: "gates", disabled: !can || busy, onClick: build, children: busy ? "Finding gates\u2026" : "Build gates" })
+        ] }),
+        children: [
+          /* @__PURE__ */ u3("p", { class: "muted small", children: "Finds the usual front end of a panel from the data and adds it as ordinary gates, with a plot for each step. Every gate can be dragged to adjust it afterwards, and the whole thing undoes in one step." }),
+          /* @__PURE__ */ u3("div", { class: "autogate-steps", children: [
+            /* @__PURE__ */ u3("div", { class: "autogate-step", children: [
+              /* @__PURE__ */ u3("label", { class: "autogate-name", children: [
+                /* @__PURE__ */ u3("input", { type: "checkbox", checked: steps.cells, onChange: () => toggle("cells") }),
+                /* @__PURE__ */ u3("span", { children: "Cells" })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "autogate-ch", children: [
+                chanSelect("fscA", { kinds: ["scatter"] }),
+                /* @__PURE__ */ u3("span", { class: "muted", children: "\xD7" }),
+                chanSelect("sscA", { kinds: ["scatter"] })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "muted small autogate-what", children: "Removes debris (low FSC) and saturated events." })
+            ] }),
+            /* @__PURE__ */ u3("div", { class: `autogate-step ${ch.fscH ? "" : "is-off"}`, children: [
+              /* @__PURE__ */ u3("label", { class: "autogate-name", children: [
+                /* @__PURE__ */ u3("input", { type: "checkbox", checked: steps.singlets && !!ch.fscH, disabled: !ch.fscH, onChange: () => toggle("singlets") }),
+                /* @__PURE__ */ u3("span", { children: "Singlets" })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "autogate-ch", children: [
+                /* @__PURE__ */ u3("span", { class: "muted small", children: [
+                  ch.fscA || "FSC-A",
+                  " \xD7"
+                ] }),
+                chanSelect("fscH", { optional: true, kinds: ["scatter"] })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "muted small autogate-what", children: "Removes doublets: too little height for their area." })
+            ] }),
+            /* @__PURE__ */ u3("div", { class: `autogate-step ${ch.viab ? "" : "is-off"}`, children: [
+              /* @__PURE__ */ u3("label", { class: "autogate-name", children: [
+                /* @__PURE__ */ u3("input", { type: "checkbox", checked: steps.live && !!ch.viab, disabled: !ch.viab, onChange: () => toggle("live") }),
+                /* @__PURE__ */ u3("span", { children: "Live" })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "autogate-ch", children: [
+                chanSelect("viab", { optional: true, kinds: ["fluor", "mass", "derived"] }),
+                /* @__PURE__ */ u3("span", { class: "muted small", children: [
+                  "\xD7 ",
+                  ch.sscA || "SSC-A"
+                ] })
+              ] }),
+              /* @__PURE__ */ u3("span", { class: "muted small autogate-what", children: "Removes dead cells: bright for the viability dye." })
+            ] })
+          ] }),
+          !guess.viab ? /* @__PURE__ */ u3("p", { class: "muted small", children: "No viability dye was recognised by name or label; choose its parameter to include Live." }) : null,
+          /* @__PURE__ */ u3("label", { class: "field-row", children: [
+            /* @__PURE__ */ u3("span", { children: "Fit to" }),
+            /* @__PURE__ */ u3("select", { class: "field", value: basis, onChange: (e3) => setBasis(e3.currentTarget.value), children: [
+              /* @__PURE__ */ u3("option", { value: "sample", children: current ? `This sample (${current.name})` : "This sample" }),
+              doc.groups.filter((g4) => groupLoaded(g4.id).length > 1).map((g4) => /* @__PURE__ */ u3("option", { value: `g:${g4.id}`, children: [
+                "Group \u201C",
+                g4.name,
+                "\u201D, pooled (",
+                groupLoaded(g4.id).length,
+                " samples)"
+              ] }, g4.id)),
+              loaded2.length > 1 ? /* @__PURE__ */ u3("option", { value: "all", children: [
+                "All loaded samples, pooled (",
+                loaded2.length,
+                ")"
+              ] }) : null
+            ] })
+          ] }),
+          /* @__PURE__ */ u3("label", { class: "field-row", children: [
+            /* @__PURE__ */ u3("span", { children: "Start from" }),
+            /* @__PURE__ */ u3("select", { class: "field", value: parent, onChange: (e3) => setParent(e3.currentTarget.value), children: popOptions(doc).map((p3) => /* @__PURE__ */ u3("option", { value: p3.id, children: [
+              " ".repeat(p3.depth),
+              p3.name
+            ] }, p3.id)) })
+          ] }),
+          /* @__PURE__ */ u3("p", { class: "muted small", children: "The gates are shared by every sample. To fine-tune one sample, right-click a gate and choose \u201CAdjust for this sample only\u201D." }),
+          error ? /* @__PURE__ */ u3("p", { class: "autogate-error small", children: error }) : null
         ]
       }
     );

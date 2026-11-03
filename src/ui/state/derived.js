@@ -298,6 +298,33 @@ export function gatesForPlot(doc, plot) {
   return out;
 }
 
+/**
+ * Every plot needed to show the whole gating strategy: the workspace's own
+ * plots, plus a stand-in for each gate that no plot shows. A plot's
+ * population can be switched in place (the population button on a plot), so
+ * a workspace gated by stepping one plot down the hierarchy ends up with a
+ * single plot even though every gate exists; Batch and Layout still need a
+ * plot for each step. A stand-in shows a gate on its own axes in its parent
+ * population, has `auto: true` and a stable id, and isn't stored until it's
+ * needed (see materializePlot). Ordered by gating path, parents first.
+ */
+export function gatingPlots(doc) {
+  const shown = new Set();
+  const all = doc.plots.slice();
+  for (const p of all) for (const g of gatesForPlot(doc, p)) shown.add(g.id);
+  for (const { gate: g } of hierarchyRows(doc, ROOT)) {
+    if (shown.has(g.id) || g.type === 'boolean' || !g.x) continue;
+    const pop = g.parent || ROOT;
+    const y = g.type === 'range' ? null : g.y || null;
+    const p = { id: `auto:${pop}|${g.x}|${y || ''}`, auto: true, pop, x: g.x, y, type: y ? 'pseudo' : 'hist', overlay: 'none' };
+    all.push(p);
+    for (const s of gatesForPlot(doc, p)) shown.add(s.id);
+  }
+  const rank = new Map([[ROOT, -1], ...hierarchyRows(doc, ROOT).map((r, i) => [r.gate.id, i])]);
+  const at = (p) => (p.type === 'tree' ? 1e9 : rank.get(p.pop) ?? 1e8);
+  return all.map((p, i) => [p, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map(([p]) => p);
+}
+
 /** Child gates that exist under a population but are on other axes. */
 export function hiddenChildren(doc, plot) {
   const shown = new Set(gatesForPlot(doc, plot).map((g) => g.id));

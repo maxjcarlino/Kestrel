@@ -4,7 +4,8 @@
 import { useEffect } from 'preact/hooks';
 import { useSel } from '../state/store.js';
 import { setUI, samplesInGroup } from '../state/doc.js';
-import { popName, channelInfo } from '../state/derived.js';
+import { popName, channelInfo, gatingPlots } from '../state/derived.js';
+import { materializePlot } from '../state/gating.js';
 import { watchCounts } from '../state/bridge.js';
 import { StaticPanel } from './LayoutView.jsx';
 import { Empty, Icon } from './ui.jsx';
@@ -23,8 +24,13 @@ export function BatchView() {
   const size = useSel((s) => s.ui.batchSize || 190);
   const samples = samplesInGroup(doc, groupId || null);
   const ready = samples.filter((x) => (meta[x.id] || {}).status === 'ready');
-  const plots = doc.plots;
-  const open = (sampleId, plotId) => setUI({ view: 'gating', sampleId, focusPlot: plotId, flashPlot: plotId });
+  // every step of the gating strategy, including gates whose plot was moved
+  // on to another population (see gatingPlots)
+  const plots = gatingPlots(doc);
+  const open = (sampleId, p) => {
+    const id = materializePlot(p);
+    setUI({ view: 'gating', sampleId, focusPlot: id, flashPlot: id });
+  };
 
   // Keep every visible sample's gate counts (and so its % figures) current,
   // not just the one sample the Gating view happens to be on.
@@ -84,7 +90,7 @@ export function BatchView() {
                       <StaticPanel plot={p} sampleId={smp.id} size={size} title="" subtitle="" />
                     </div>
                   ) : (
-                    <button type="button" class="batch-cell" onClick={() => open(smp.id, p.id)} title={`Open ${popName(doc, p.pop)} for ${smp.name}`} key={`${p.id}|${smp.id}`}>
+                    <button type="button" class="batch-cell" onClick={() => open(smp.id, p)} title={`Open ${popName(doc, p.pop)} for ${smp.name}`} key={`${p.id}|${smp.id}`}>
                       <StaticPanel plot={p} sampleId={smp.id} size={size} title="" subtitle="" />
                     </button>
                   ),

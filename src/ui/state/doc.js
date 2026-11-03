@@ -630,8 +630,8 @@ export function setTable(patch) {
   updateDoc((d) => ({ ...d, table: { ...d.table, ...patch } }));
 }
 
-export function setLayout(patch) {
-  updateDoc((d) => ({ ...d, layout: { ...d.layout, ...patch } }));
+export function setLayout(patch, opts = {}) {
+  updateDoc((d) => ({ ...d, layout: { ...d.layout, ...patch } }), opts);
 }
 
 // ------------------------------------------------------------------ samples & groups

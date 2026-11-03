@@ -3,16 +3,17 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
 import { setLayout, samplesInGroup, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
-import { popName, popSig, compKey, channelInfo, allChannels } from '../state/derived.js';
+import { popName, popSig, compKey, channelInfo, allChannels, gatingPlots } from '../state/derived.js';
+import { materializePlot } from '../state/gating.js';
 import { transformKey } from '../../core/transforms.js';
 import { newId } from '../../core/gate-geometry.js';
 import { ROOT } from '../../core/gates.js';
 import { STATS } from '../../core/stats.js';
-import { fetchLayer, drawPanel, SvgContext, fetchOverlay, drawOverlay, SERIES_COLORS } from '../plot/export.js';
+import { fetchLayer, fetchPanelLayer, drawPanel, SvgContext, fetchOverlay, drawOverlay, SERIES_COLORS, panelStyle, panelGeom, layoutDefaults } from '../plot/export.js';
 import { watchCounts } from '../state/bridge.js';
 import { makeCanvas, TREE_STATS, TREE_STATS_DEFAULT } from '../plot/paint.js';
 import { useTheme, exportTheme } from '../theme.js';
-import { Icon, IconButton, Button, Segmented, Empty, openMenu, rectOf } from './ui.jsx';
+import { Icon, IconButton, Button, Segmented, Empty, openMenu, rectOf, Popover } from './ui.jsx';
 import { popOptions } from '../plot/PlotCard.jsx';
 import { saveFile, safeName } from '../util/download.js';
 import { report } from '../state/gating.js';
@@ -26,18 +27,25 @@ function plotLabel(doc, p) {
   return `${popName(doc, p.pop)} · ${x.label || x.name}${y && p.type !== 'hist' ? ` × ${y.label || y.name}` : ''}`;
 }
 
-export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true }) {
+/**
+ * One read-only panel (Batch and Layout). With `style` (a Layout panel
+ * style), its size, text and visible elements follow that; otherwise it's
+ * drawn at `size` the standard way.
+ */
+export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle = true, showAxisLabels = true, style = null, onClick = null, active = false }) {
   const ref = useRef();
   const doc = useSel((s) => s.doc);
   const status = useSel((s) => (s.meta[sampleId] || {}).status);
   const counts = useSel((s) => (s.counts[sampleId] || {}).counts);
   const theme = useTheme();
   const state = store.get();
-  const PW = size;
-  const PH = size + 40;
+  const geom = style ? panelGeom(style) : null;
+  const PW = geom ? geom.PW : size;
+  const PH = geom ? geom.PH : size + 40;
+  const styleKey = style ? JSON.stringify(style) : '';
   const key = status === 'ready'
     ? [
-        sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size,
+        sampleId, plot.pop, plot.x, plot.y, plot.type, plot.overlay, size, styleKey,
         popSig(state, sampleId, plot.pop), transformKey(doc.transforms[plot.x]), plot.y ? transformKey(doc.transforms[plot.y]) : '',
         compKey(state, sampleId), doc.settings.colormap, doc.settings.dotSize, plot.dotSize,
         (plot.concatIds || []).join(','), (plot.statCols || []).join(','),
@@ -47,7 +55,7 @@ export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle =
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    fetchLayer(plot, sampleId, PW - 18, PH - 22 - 20, theme).then((r) => alive && setLayer(r), () => {});
+    (style ? fetchPanelLayer(plot, sampleId, style, theme) : fetchLayer(plot, sampleId, PW - 18, PH - 22 - 20, theme)).then((r) => alive && setLayer(r), () => {});
     return () => {
       alive = false;
     };
@@ -62,9 +70,16 @@ export function StaticPanel({ plot, sampleId, size, title, subtitle, showTitle =
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, PW, PH);
     if (!layer) return;
-    drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === 'ready' ? layer.message : 'Not loaded', theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels });
-  }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels]);
-  return <canvas ref={ref} class="static-panel" style={{ width: `${PW}px`, height: `${PH}px` }} role="img" aria-label={`${title}${subtitle ? `, ${subtitle}` : ''}`} />;
+    drawPanel(ctx, { plot, sampleId, layer: layer.layer, message: status === 'ready' ? layer.message : 'Not loaded', theme, title, subtitle, ox: 0, oy: 0, PW, PH, showTitle, showAxisLabels, style });
+  }, [layer, doc.gates, doc.overrides, doc.settings, counts, theme, title, subtitle, showTitle, showAxisLabels, styleKey]);
+  const label = `${title}${subtitle ? `, ${subtitle}` : ''}`;
+  const canvas = <canvas ref={ref} class="static-panel" style={{ width: `${PW}px`, height: `${PH}px` }} role="img" aria-label={label} />;
+  if (!onClick) return canvas;
+  return (
+    <button type="button" class={`panel-btn ${active ? 'is-on' : ''}`} onClick={onClick} title="Click to change how this plot is drawn">
+      {canvas}
+    </button>
+  );
 }
 
 export function LayoutView() {
@@ -75,9 +90,26 @@ export function LayoutView() {
   const samples = samplesInGroup(doc, L.groupId).filter((x) => (meta[x.id] || {}).status === 'ready');
   const size = L.size || 220;
   const [exporting, setExporting] = useState(false);
-  const togglePlot = (id) => setLayout({ plotIds: L.plotIds.includes(id) ? L.plotIds.filter((x) => x !== id) : [...L.plotIds, id] });
+  // the plot whose style popover is open, and where it opened
+  const [styling, setStyling] = useState(null);
+  const styleFor = (p) => panelStyle(L, p.id);
+  const geomFor = (p) => panelGeom(styleFor(p));
+  const openStyle = (p, e) => setStyling({ plotId: p.id, anchor: rectOf(e.currentTarget) });
+  // read the layout fresh: several quick clicks can land before a re-render
+  const togglePlot = (id) => {
+    const ids = store.get().doc.layout.plotIds;
+    setLayout({ plotIds: ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id] });
+  };
+  // Offer a plot for every gate, not only the plots the Gating view has; a
+  // stand-in becomes a real plot when it's ticked (see gatingPlots).
+  const choices = gatingPlots(doc);
+  const pick = (p) => (p.auto ? setLayout({ plotIds: [...store.get().doc.layout.plotIds, materializePlot(p)] }) : togglePlot(p.id));
   const rows = L.transpose ? plots : samples;
   const cols = L.transpose ? samples : plots;
+  // each plot can have its own size: a column of plots is as wide as its
+  // plot; with plots as rows, every column fits the widest plot
+  const widest = plots.reduce((m, p) => Math.max(m, geomFor(p).PW), 0);
+  const colWidths = L.transpose ? cols.map(() => widest) : cols.map((p) => geomFor(p).PW);
 
   // Keep every sample shown in the grid current, not just the active one.
   const sampleIdsKey = samples.map((x) => x.id).join(',');
@@ -91,13 +123,25 @@ export function LayoutView() {
     setExporting(true);
     try {
       const theme = exportTheme();
-      const PW = size;
-      const PH = size + 40;
       const headW = 150;
-      const W = headW + cols.length * (PW + 12) + 12;
-      const H = TITLE + 12 + rows.length * (PH + 12);
+      const gap = 12;
+      const colX = [];
+      let x0 = headW;
+      for (const w of colWidths) {
+        colX.push(x0);
+        x0 += w + gap;
+      }
+      const rowH = rows.map((r) => (L.transpose ? geomFor(r).PH : Math.max(...plots.map((p) => geomFor(p).PH))));
+      const rowY = [];
+      let y0 = TITLE + gap;
+      for (const h of rowH) {
+        rowY.push(y0);
+        y0 += h + gap;
+      }
+      const W = x0;
+      const H = y0;
       const layers = new Map();
-      for (const p of plots) for (const smp of samples) layers.set(`${p.id}|${smp.id}`, await fetchLayer(p, smp.id, PW - 18, PH - 22 - 20, theme));
+      for (const p of plots) for (const smp of samples) layers.set(`${p.id}|${smp.id}`, await fetchPanelLayer(p, smp.id, styleFor(p), theme));
       const paintAll = (ctx) => {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
@@ -107,17 +151,17 @@ export function LayoutView() {
         ctx.textAlign = 'left';
         ctx.fillText(doc.name, 12, TITLE / 2 + 4);
         rows.forEach((r, ri) => {
-          const y = TITLE + 12 + ri * (PH + 12);
+          const y = rowY[ri];
           ctx.font = `600 11.5px ${theme.fontUI}`;
           ctx.fillStyle = theme.labelFg;
           ctx.textAlign = 'left';
-          ctx.fillText(L.transpose ? plotLabel(doc, r).slice(0, 26) : r.name.slice(0, 24), 12, y + PH / 2);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(L.transpose ? plotLabel(doc, r).slice(0, 26) : r.name.slice(0, 24), 12, y + rowH[ri] / 2);
           cols.forEach((c, ci) => {
             const p = L.transpose ? r : c;
             const smp = L.transpose ? c : r;
-            const x = headW + ci * (PW + 12);
             const lr = layers.get(`${p.id}|${smp.id}`);
-            drawPanel(ctx, { plot: p, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p.pop), subtitle: L.transpose ? smp.name : '', ox: x, oy: y, PW, PH, showTitle: L.showTitles !== false, showAxisLabels: L.showAxisLabels !== false });
+            drawPanel(ctx, { plot: p, sampleId: smp.id, layer: lr ? lr.layer : null, message: lr ? lr.message : null, theme, title: popName(doc, p.pop), subtitle: L.transpose ? smp.name : '', ox: colX[ci], oy: y, style: styleFor(p) });
           });
         });
       };
@@ -150,14 +194,30 @@ export function LayoutView() {
             <h2>Batch figure</h2>
           </header>
           <div class="eyebrow">Plots</div>
-          {doc.plots.length ? (
+          {choices.length ? (
             <div class="check-list">
-              {doc.plots.map((p) => (
-                <label class="check-row" key={p.id}>
-                  <input type="checkbox" checked={L.plotIds.includes(p.id)} onChange={() => togglePlot(p.id)} />
-                  <span>{plotLabel(doc, p)}</span>
-                </label>
-              ))}
+              {choices.map((p) => {
+                const on = L.plotIds.includes(p.id);
+                const own = Object.keys((L.plotStyles || {})[p.id] || {}).length > 0;
+                return (
+                  <div class="check-row plot-pick" key={p.id}>
+                    <label class="grow">
+                      <input type="checkbox" checked={on} onChange={() => pick(p)} />
+                      <span>{plotLabel(doc, p)}</span>
+                    </label>
+                    {on ? (
+                      <IconButton
+                        icon="sliders"
+                        size={13}
+                        class="plot-style-btn"
+                        active={own || (styling && styling.plotId === p.id)}
+                        label={own ? 'This plot has its own size, text or elements: change them' : 'Size, text and elements for this plot'}
+                        onClick={(e) => openStyle(p, e)}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p class="muted small">Add plots in the Gating view first.</p>
@@ -191,19 +251,9 @@ export function LayoutView() {
             <span>Rows are</span>
             <Segmented value={L.transpose ? 'plots' : 'samples'} onChange={(v) => setLayout({ transpose: v === 'plots' })} options={[{ value: 'samples', label: 'Samples' }, { value: 'plots', label: 'Plots' }]} label="Rows are" />
           </div>
-          <label class="field-row">
-            <span>Panel size</span>
-            <input type="range" min="160" max="360" step="10" value={size} onInput={(e) => setLayout({ size: parseInt(e.currentTarget.value, 10) })} />
-          </label>
-          <div class="eyebrow">Show on each panel</div>
-          <label class="check-row">
-            <input type="checkbox" checked={L.showTitles !== false} onChange={(e) => setLayout({ showTitles: e.currentTarget.checked })} />
-            <span>Plot title</span>
-          </label>
-          <label class="check-row">
-            <input type="checkbox" checked={L.showAxisLabels !== false} onChange={(e) => setLayout({ showAxisLabels: e.currentTarget.checked })} />
-            <span>Axis labels</span>
-          </label>
+          <div class="eyebrow">Every panel</div>
+          <PanelStyleFields plotId={null} />
+          <p class="muted small">To give one plot its own size, text or elements, click it in the figure, or use the button next to it in the list above.</p>
           <div class="card-actions">
             <Button icon="download" variant="primary" disabled={exporting || !plots.length || !samples.length} onClick={() => exportGrid('png')}>
               {exporting ? 'Exporting…' : 'Export PNG'}
@@ -219,7 +269,7 @@ export function LayoutView() {
         {!plots.length || !samples.length ? (
           <Empty icon="grid" title="Choose plots for the figure">Tick plots on the left. Every chosen plot is drawn for every sample in the group, using the same gates.</Empty>
         ) : (
-          <div class="batch" style={{ gridTemplateColumns: `minmax(90px, 160px) repeat(${cols.length}, ${size}px)` }}>
+          <div class="batch layout-grid" style={{ gridTemplateColumns: `minmax(90px, 160px) ${colWidths.map((w) => `${w}px`).join(' ')}` }}>
             <div />
             {cols.map((c) => (
               <div class="batch-col" key={c.id}>
@@ -241,9 +291,10 @@ export function LayoutView() {
                       sampleId={smp.id}
                       size={size}
                       title={popName(doc, p.pop)}
-                      subtitle={L.transpose ? '' : ''}
-                      showTitle={L.showTitles !== false}
-                      showAxisLabels={L.showAxisLabels !== false}
+                      subtitle=""
+                      style={styleFor(p)}
+                      active={!!styling && styling.plotId === p.id}
+                      onClick={(e) => openStyle(p, e)}
                     />
                   );
                 })}
@@ -253,6 +304,126 @@ export function LayoutView() {
         )}
         <OverlayPanels />
       </section>
+      {styling && plots.some((p) => p.id === styling.plotId) ? (
+        <Popover anchor={styling.anchor} onClose={() => setStyling(null)} placement="right">
+          <div class="panel-style-pop">
+            <div class="panel-style-head">
+              <b>{plotLabel(doc, doc.plots.find((p) => p.id === styling.plotId))}</b>
+              <span class="muted small">This plot only, in every row of the figure</span>
+            </div>
+            <PanelStyleFields plotId={styling.plotId} />
+          </div>
+        </Popover>
+      ) : null}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------- panel styles
+
+const GATE_LABEL_OPTIONS = [
+  { value: 'both', label: 'Name + value', title: 'Gate name and its number' },
+  { value: 'name', label: 'Name', title: 'Gate name only' },
+  { value: 'value', label: 'Value', title: 'The number only' },
+  { value: 'none', label: 'None', title: 'No gate labels' },
+];
+
+/**
+ * The size, text and element settings for panels: with `plotId` null, the
+ * defaults for every panel in the figure; with a plot id, that plot's own
+ * settings, which win over the defaults (each one it changes is marked and
+ * can be put back).
+ */
+function PanelStyleFields({ plotId }) {
+  const L = useSel((s) => s.doc.layout);
+  const plot = useSel((s) => (plotId ? s.doc.plots.find((p) => p.id === plotId) : null));
+  const own = plotId ? (L.plotStyles || {})[plotId] || {} : {};
+  const st = plotId ? panelStyle(L, plotId) : layoutDefaults(L);
+  const tree = plot && plot.type === 'tree';
+  const set = (k, v) => {
+    const cur = store.get().doc.layout;
+    const opts = { coalesce: `panel:${plotId || '*'}:${k}` };
+    if (plotId) {
+      const mine = (cur.plotStyles || {})[plotId] || {};
+      return setLayout({ plotStyles: { ...(cur.plotStyles || {}), [plotId]: { ...mine, [k]: v } } }, opts);
+    }
+    if (k === 'size') return setLayout({ size: v }, opts);
+    if (k === 'title') return setLayout({ showTitles: v }, opts);
+    if (k === 'axisTitles') return setLayout({ showAxisLabels: v }, opts);
+    return setLayout({ panel: { ...(cur.panel || {}), [k]: v } }, opts);
+  };
+  const reset = (keys) => {
+    if (!plotId) return;
+    const cur = store.get().doc.layout;
+    const next = { ...((cur.plotStyles || {})[plotId] || {}) };
+    for (const k of keys) delete next[k];
+    const all = { ...(cur.plotStyles || {}) };
+    if (Object.keys(next).length) all[plotId] = next;
+    else delete all[plotId];
+    setLayout({ plotStyles: all });
+  };
+  const mark = (k) => (plotId && own[k] !== undefined ? (
+    <button
+      type="button"
+      class="own-mark"
+      title="Set for this plot only. Click to use the figure's setting."
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        reset([k]);
+      }}
+    >
+      <Icon name="undo" size={11} />
+    </button>
+  ) : null);
+  const check = (k, label, disabled = false) => (
+    <div class={`check-row ${plotId && own[k] !== undefined ? 'is-own' : ''}`}>
+      <label class="grow">
+        <input type="checkbox" checked={!!st[k]} disabled={disabled} onChange={(e) => set(k, e.currentTarget.checked)} />
+        <span>{label}</span>
+      </label>
+      {mark(k)}
+    </div>
+  );
+  return (
+    <div class="panel-style">
+      <div class={`field-row ${own.size !== undefined ? 'is-own' : ''}`}>
+        <span>Panel size</span>
+        <span class="range-val">
+          <input type="range" min="100" max="480" step="10" value={st.size} onInput={(e) => set('size', parseInt(e.currentTarget.value, 10))} aria-label="Panel size" />
+          <span class="num muted">{st.size}</span>
+          {mark('size')}
+        </span>
+      </div>
+      <div class={`field-row ${own.font !== undefined ? 'is-own' : ''}`}>
+        <span>Text size</span>
+        <span class="range-val">
+          <input type="range" min="0.6" max="2" step="0.05" value={st.font} onInput={(e) => set('font', parseFloat(e.currentTarget.value))} aria-label="Text size" />
+          <span class="num muted">{Math.round(st.font * 100)}%</span>
+          {mark('font')}
+        </span>
+      </div>
+      <div class="panel-style-checks">
+        {check('title', 'Plot title')}
+        {tree ? null : check('axisTitles', 'Axis labels')}
+        {tree ? null : check('tickLabels', 'Axis numbers')}
+        {tree ? null : check('ticks', 'Tick marks')}
+        {tree ? null : check('gates', 'Gates')}
+      </div>
+      {tree ? null : (
+        <div class={`gate-labels-row ${own.gateLabels !== undefined ? 'is-own' : ''}`}>
+          <span>Gate labels</span>
+          <span class="range-val">
+            <Segmented value={st.gates ? st.gateLabels : 'none'} onChange={(v) => set('gateLabels', v)} options={GATE_LABEL_OPTIONS} label="Gate labels" />
+            {mark('gateLabels')}
+          </span>
+        </div>
+      )}
+      {plotId && Object.keys(own).length ? (
+        <button type="button" class="link-btn panel-style-reset" onClick={() => reset(Object.keys(own))}>
+          Use the figure's settings for this plot
+        </button>
+      ) : null}
     </div>
   );
 }

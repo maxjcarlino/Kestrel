@@ -9,6 +9,8 @@ import { request } from '../state/bridge.js';
 import { allChannels, popName } from '../state/derived.js';
 import { spilloverFromMedians } from '../../core/compensation.js';
 import { missingSamples, loadMatching, pickFolderMatches } from '../state/locate.js';
+import { runAutoPregate } from '../state/autogate.js';
+import { guessPregateChannels } from '../../core/autogate.js';
 import { pickFiles } from '../util/download.js';
 import { ROOT } from '../../core/gates.js';
 import { GATE_COLORS } from '../../core/gate-geometry.js';
@@ -19,7 +21,7 @@ import { TOOLS } from './GatingView.jsx';
 export function DialogHost() {
   const d = useSel((s) => s.ui.dialog);
   if (!d) return null;
-  const C = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, applyGate: ApplyGateDialog, locateFiles: LocateFilesDialog, help: HelpDialog }[d.name];
+  const C = { workspaces: WorkspacesDialog, boolean: BooleanDialog, computeComp: ComputeCompDialog, group: GroupDialog, groupByKeyword: GroupByKeywordDialog, groups: GroupsDialog, applyGate: ApplyGateDialog, locateFiles: LocateFilesDialog, autoGate: AutoGateDialog, help: HelpDialog }[d.name];
   return C ? <C {...(d.props || {})} /> : null;
 }
 
@@ -306,6 +308,159 @@ function LocateFilesDialog({ dir = null }) {
         ))}
       </ul>
       {note ? <p class="muted small locate-note">{note}</p> : null}
+    </Dialog>
+  );
+}
+
+// ------------------------------------------------------------------ automatic pre-gating
+
+const pct = (v) => `${(100 * v).toFixed(1)}%`;
+
+/** One click to the usual front end: Cells → Singlets → Live, found from the data. */
+function AutoGateDialog() {
+  const doc = useSel((s) => s.doc);
+  const meta = useSel((s) => s.meta);
+  const sampleId = useSel((s) => s.ui.sampleId);
+  const chans = allChannels(doc);
+  const guess = useMemo(() => guessPregateChannels(chans), [chans.length]);
+  const [ch, setCh] = useState(guess);
+  const [steps, setSteps] = useState({ cells: true, singlets: !!guess.fscH, live: !!guess.viab });
+  const [parent, setParent] = useState(ROOT);
+  const loaded = doc.samples.filter((x) => (meta[x.id] || {}).status === 'ready');
+  const current = loaded.find((x) => x.id === sampleId) || loaded[0];
+  const [basis, setBasis] = useState('sample');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const groupLoaded = (gid) => loaded.filter((x) => (x.groupIds || []).includes(gid));
+  const basisIds = () => {
+    if (basis === 'sample') return current ? [current.id] : [];
+    if (basis === 'all') return loaded.map((x) => x.id);
+    return groupLoaded(basis.slice(2)).map((x) => x.id);
+  };
+  const set = (k) => (e) => {
+    const v = e.currentTarget.value || null;
+    setCh({ ...ch, [k]: v });
+    if (k === 'fscH') setSteps({ ...steps, singlets: !!v });
+    if (k === 'viab') setSteps({ ...steps, live: !!v });
+  };
+  const toggle = (k) => setSteps({ ...steps, [k]: !steps[k] });
+  const can = ch.fscA && ch.sscA && (steps.cells || (steps.singlets && ch.fscH) || (steps.live && ch.viab)) && basisIds().length > 0;
+
+  const build = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const r = await runAutoPregate({ sampleIds: basisIds(), channels: ch, steps, parent });
+      if (!r.made.length) {
+        setError(r.notes.join(' ') || 'No gates could be found.');
+        return;
+      }
+      closeDialog();
+      toast(`Built ${r.made.map((m) => `${m.name} (${pct(m.kept)})`).join(' → ')} from ${r.n.toLocaleString('en-US')} events. Drag any gate to adjust it.`, { timeout: 9000 });
+      for (const note of r.notes) toast(note, { kind: 'warn', timeout: 9000 });
+    } catch (e) {
+      setError(e.message || String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const chanSelect = (k, { optional = false, kinds = null } = {}) => (
+    <select class="field field-sm" value={ch[k] || ''} onChange={set(k)}>
+      {optional ? <option value="">None (skip this step)</option> : null}
+      {chans
+        .filter((c) => !kinds || kinds.includes(c.kind))
+        .map((c) => (
+          <option value={c.name} key={c.name}>
+            {c.label ? `${c.label} · ${c.name}` : c.name}
+          </option>
+        ))}
+    </select>
+  );
+
+  return (
+    <Dialog
+      title="Automatic pre-gating"
+      onClose={closeDialog}
+      width={540}
+      class="autogate-dialog"
+      footer={
+        <>
+          <Button onClick={closeDialog}>Cancel</Button>
+          <Button variant="primary" icon="gates" disabled={!can || busy} onClick={build}>
+            {busy ? 'Finding gates…' : 'Build gates'}
+          </Button>
+        </>
+      }
+    >
+      <p class="muted small">
+        Finds the usual front end of a panel from the data and adds it as ordinary gates, with a plot for each step. Every gate can be dragged to adjust it afterwards, and the whole thing undoes in one step.
+      </p>
+      <div class="autogate-steps">
+        <div class="autogate-step">
+          <label class="autogate-name">
+            <input type="checkbox" checked={steps.cells} onChange={() => toggle('cells')} />
+            <span>Cells</span>
+          </label>
+          <span class="autogate-ch">
+            {chanSelect('fscA', { kinds: ['scatter'] })}
+            <span class="muted">×</span>
+            {chanSelect('sscA', { kinds: ['scatter'] })}
+          </span>
+          <span class="muted small autogate-what">Removes debris (low FSC) and saturated events.</span>
+        </div>
+        <div class={`autogate-step ${ch.fscH ? '' : 'is-off'}`}>
+          <label class="autogate-name">
+            <input type="checkbox" checked={steps.singlets && !!ch.fscH} disabled={!ch.fscH} onChange={() => toggle('singlets')} />
+            <span>Singlets</span>
+          </label>
+          <span class="autogate-ch">
+            <span class="muted small">{ch.fscA || 'FSC-A'} ×</span>
+            {chanSelect('fscH', { optional: true, kinds: ['scatter'] })}
+          </span>
+          <span class="muted small autogate-what">Removes doublets: too little height for their area.</span>
+        </div>
+        <div class={`autogate-step ${ch.viab ? '' : 'is-off'}`}>
+          <label class="autogate-name">
+            <input type="checkbox" checked={steps.live && !!ch.viab} disabled={!ch.viab} onChange={() => toggle('live')} />
+            <span>Live</span>
+          </label>
+          <span class="autogate-ch">
+            {chanSelect('viab', { optional: true, kinds: ['fluor', 'mass', 'derived'] })}
+            <span class="muted small">× {ch.sscA || 'SSC-A'}</span>
+          </span>
+          <span class="muted small autogate-what">Removes dead cells: bright for the viability dye.</span>
+        </div>
+      </div>
+      {!guess.viab ? <p class="muted small">No viability dye was recognised by name or label; choose its parameter to include Live.</p> : null}
+      <label class="field-row">
+        <span>Fit to</span>
+        <select class="field" value={basis} onChange={(e) => setBasis(e.currentTarget.value)}>
+          <option value="sample">{current ? `This sample (${current.name})` : 'This sample'}</option>
+          {doc.groups
+            .filter((g) => groupLoaded(g.id).length > 1)
+            .map((g) => (
+              <option value={`g:${g.id}`} key={g.id}>
+                Group “{g.name}”, pooled ({groupLoaded(g.id).length} samples)
+              </option>
+            ))}
+          {loaded.length > 1 ? <option value="all">All loaded samples, pooled ({loaded.length})</option> : null}
+        </select>
+      </label>
+      <label class="field-row">
+        <span>Start from</span>
+        <select class="field" value={parent} onChange={(e) => setParent(e.currentTarget.value)}>
+          {popOptions(doc).map((p) => (
+            <option value={p.id} key={p.id}>
+              {' '.repeat(p.depth)}
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p class="muted small">The gates are shared by every sample. To fine-tune one sample, right-click a gate and choose “Adjust for this sample only”.</p>
+      {error ? <p class="autogate-error small">{error}</p> : null}
     </Dialog>
   );
 }

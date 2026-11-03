@@ -121,21 +121,21 @@ export function gateLabels(doc, counts, gates, stat) {
  * `plot.statCols` (count / % parent / % grandparent / % total) right
  * aligned next to each name.
  */
-export function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }) {
+export function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected, font = 1 }) {
   const stats = (plot.statCols && plot.statCols.length ? plot.statCols : TREE_STATS_DEFAULT).filter((s) => STATS[s]);
-  const rowH = 19;
-  const headerH = 17;
+  const rowH = Math.round(19 * font);
+  const headerH = Math.round(17 * font);
   const padX = 6;
   // Keep at least ~70px for names; split whatever's left between stat columns,
   // never wider than 48px each (narrower when the panel or the list is small).
-  const minNameW = 70;
-  const colW = stats.length ? Math.max(30, Math.min(48, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
+  const minNameW = 70 * font;
+  const colW = stats.length ? Math.max(30 * font, Math.min(48 * font, Math.floor((area.w - padX * 2 - minNameW) / stats.length))) : 0;
   const statsW = stats.length * colW;
   const nameW = Math.max(30, area.w - padX * 2 - statsW);
-  const small = area.w < 170;
-  const fontHead = `600 ${small ? 9 : 10}px ${theme.fontUI}`;
-  const fontName = `500 ${small ? 10 : 11}px ${theme.fontUI}`;
-  const fontVal = `500 ${small ? 10 : 11}px ${theme.fontMono}`;
+  const small = area.w < 170 * font;
+  const fontHead = `600 ${(small ? 9 : 10) * font}px ${theme.fontUI}`;
+  const fontName = `500 ${(small ? 10 : 11) * font}px ${theme.fontUI}`;
+  const fontVal = `500 ${(small ? 10 : 11) * font}px ${theme.fontMono}`;
 
   ctx.save();
   ctx.beginPath();
@@ -176,7 +176,7 @@ export function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }
       ctx.fillRect(area.x, rowY, area.w, rowH);
     }
     const cy = rowY + rowH / 2;
-    const indent = Math.min(depth, 4) * 8;
+    const indent = Math.min(depth, 4) * 8 * font;
     ctx.textAlign = 'left';
     ctx.font = fontName;
     ctx.fillStyle = theme.labelFg;
@@ -219,21 +219,26 @@ export function paintHierarchy(ctx, { area, doc, plot, counts, theme, selected }
 
 /**
  * Paint a complete plot into a 2D context sized W×H (CSS pixels).
+ * `o.style` (optional, from a Layout panel style) sets the margins, text
+ * scale, and whether axis numbers, tick marks, gates and which parts of the
+ * gate labels are drawn; without it a plot is drawn the usual way.
  * Returns {area, shapes, labelBoxes}.
  */
 export function paintPlot(ctx, o) {
   const { W, H, doc, plot, sampleId, layer, theme, counts, selected, hover, readOnly, overridden, message } = o;
-  const area = plot.type === 'tree' ? plotArea(W, H, TREE_MARGIN) : plotArea(W, H);
+  const st = o.style || {};
+  const f = st.font || 1;
+  const area = plot.type === 'tree' ? plotArea(W, H, TREE_MARGIN) : st.margin ? plotArea(W, H, st.margin) : plotArea(W, H);
   if (!o.noClear) ctx.clearRect(0, 0, W, H);
   if (plot.type === 'tree') {
     drawFrame(ctx, area, theme);
-    paintHierarchy(ctx, { area, doc, plot, counts, theme, selected });
+    paintHierarchy(ctx, { area, doc, plot, counts, theme, selected, font: f });
     if (message) {
       ctx.save();
       ctx.fillStyle = theme.labelBg;
       ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
       ctx.fillStyle = theme.tick;
-      ctx.font = `500 12px ${theme.fontUI}`;
+      ctx.font = `500 ${12 * f}px ${theme.fontUI}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);
@@ -245,7 +250,7 @@ export function paintPlot(ctx, o) {
   const tx = makeTransform(doc.transforms[plot.x]);
   const ty = is2D ? makeTransform(doc.transforms[plot.y]) : null;
   drawFrame(ctx, area, theme);
-  const fontTick = `10.5px ${theme.fontUI}`;
+  const fontTick = `${10.5 * f}px ${theme.fontUI}`;
   if (layer && layer.kind === 'image') {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -309,10 +314,10 @@ export function paintPlot(ctx, o) {
     }
     ctx.restore();
   }
-  drawAxes(ctx, area, { tx, ty, theme, font: fontTick, yMax: !is2D && layer ? layer.ymax : 0 });
+  drawAxes(ctx, area, { tx, ty, theme, font: fontTick, yMax: !is2D && layer ? layer.ymax : 0, labels: st.tickLabels !== false, ticks: st.ticks !== false });
 
   // gates
-  const gates = o.gates || [];
+  const gates = st.gates === false ? [] : o.gates || [];
   const shapes = [];
   for (const g of gates) {
     const eff = effectiveGate(doc, sampleId, g.id) || g;
@@ -329,9 +334,11 @@ export function paintPlot(ctx, o) {
     labels,
     overridden,
     readOnly,
-    showLabels: doc.settings.showLabels !== false,
-    fontLabel: `600 11px ${theme.fontUI}`,
-    fontValue: `500 11px ${theme.fontMono}`,
+    showLabels: doc.settings.showLabels !== false && st.gateLabels !== 'none',
+    labelParts: st.gateLabels || 'both',
+    labelH: Math.round(17 * f),
+    fontLabel: `600 ${11 * f}px ${theme.fontUI}`,
+    fontValue: `500 ${11 * f}px ${theme.fontMono}`,
   });
 
   if (message) {
@@ -339,7 +346,7 @@ export function paintPlot(ctx, o) {
     ctx.fillStyle = theme.labelBg;
     ctx.fillRect(area.x + 1, area.y + 1, area.w - 2, area.h - 2);
     ctx.fillStyle = theme.tick;
-    ctx.font = `500 12px ${theme.fontUI}`;
+    ctx.font = `500 ${12 * f}px ${theme.fontUI}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     wrapText(ctx, message, area.x + area.w / 2, area.y + area.h / 2, area.w - 24, 16);

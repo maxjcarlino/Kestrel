@@ -10,6 +10,7 @@ import { buildLayer, paintPlot, overlayIds, makeCanvas, mergeResults } from './p
 import { plotArea, smoothHist, drawAxes, drawFrame, niceStep, withAlpha } from './render.js';
 import { makeTransform } from '../../core/transforms.js';
 import { exportTheme } from '../theme.js';
+import { panelGeom } from './panel-style.js';
 import { saveFile, safeName } from '../util/download.js';
 import { report } from '../state/gating.js';
 import { toast } from '../state/doc.js';
@@ -180,17 +181,24 @@ const TITLE_H = 22;
 const XT_H = 20;
 const YT_W = 18;
 
+export { PANEL_DEFAULTS, layoutDefaults, panelStyle, panelGeom } from './panel-style.js';
+
+/** The part of a panel style paintPlot needs. */
+function paintStyle(st, g) {
+  return { margin: g.margin, font: g.f, tickLabels: st.tickLabels !== false, ticks: st.ticks !== false, gates: st.gates !== false, gateLabels: st.gateLabels || 'both' };
+}
+
 /** Fetch the event layer for a plot at a given size. If the plot has a
  * concatIds list, pools binned counts from those samples instead of just
  * sampleId. */
-export async function fetchLayer(plot, sampleId, W, H, theme) {
+export async function fetchLayer(plot, sampleId, W, H, theme, margin) {
   // A gating-hierarchy panel only needs per-gate counts, already kept fresh
   // by watchCounts; it has no binned 'plot' data to fetch from the engine.
   if (plot.type === 'tree') return { layer: null, message: null };
   const s = store.get();
   const doc = s.doc;
   const is2D = !!plot.y && plot.type !== 'hist';
-  const area = plotArea(W, H);
+  const area = margin ? plotArea(W, H, margin) : plotArea(W, H);
   const ov = overlayIds(doc, plot);
   const req = is2D
     ? { pop: plot.pop, x: plot.x, y: plot.y, w: Math.round(area.w), h: Math.round(area.h), overlays: ov }
@@ -204,31 +212,57 @@ export async function fetchLayer(plot, sampleId, W, H, theme) {
   return { layer, message: layer && layer.n === 0 ? 'No events' : null };
 }
 
+/** Fetch a Layout panel's layer at the size its style draws it. */
+export function fetchPanelLayer(plot, sampleId, st, theme) {
+  const g = panelGeom(st);
+  return fetchLayer(plot, sampleId, g.W, g.H, theme, g.margin);
+}
+
 /**
- * Draw one titled panel (plot + axis titles) at (ox, oy) with outer size PW×PH.
+ * Draw one titled panel (plot + axis titles) at (ox, oy) with outer size
+ * PW×PH. With `style` (a Layout panel style, see panelStyle) the size, text
+ * and which elements are drawn follow it, and PW/PH come from panelGeom.
  */
 export function drawPanel(ctx, o) {
-  const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, PW, PH, showTitle = true, showAxisLabels = true } = o;
+  const { plot, sampleId, layer, message, theme, title, subtitle, ox, oy, style } = o;
   const s = store.get();
   const doc = s.doc;
   const counts = (s.counts[sampleId] || {}).counts || null;
-  const W = PW - YT_W;
-  const H = PH - TITLE_H - XT_H;
+  let PW = o.PW;
+  let W;
+  let H;
+  let titleH = TITLE_H;
+  let xtH = XT_H;
+  let ytW = YT_W;
+  let f = 1;
+  let ps = null;
+  let showTitle = o.showTitle !== false;
+  let showAxisLabels = o.showAxisLabels !== false;
+  if (style) {
+    const g = panelGeom(style);
+    ({ PW, W, H, titleH, xtH, ytW, f } = g);
+    ps = paintStyle(style, g);
+    showTitle = !!style.title;
+    showAxisLabels = !!style.axisTitles;
+  } else {
+    W = PW - YT_W;
+    H = o.PH - TITLE_H - XT_H;
+  }
   ctx.save();
   if (!ctx.isSvgRecorder) ctx.translate(ox, oy);
   const off = ctx.isSvgRecorder ? [ox, oy] : [0, 0];
   // title
   if (showTitle) {
     ctx.fillStyle = theme.labelFg;
-    ctx.font = `600 12px ${theme.fontUI}`;
+    ctx.font = `600 ${12 * f}px ${theme.fontUI}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(title || popName(doc, plot.pop), off[0] + YT_W + 2, off[1] + TITLE_H / 2);
+    ctx.fillText(title || popName(doc, plot.pop), off[0] + ytW + 2, off[1] + titleH / 2);
     if (subtitle) {
-      ctx.font = `400 10.5px ${theme.fontUI}`;
+      ctx.font = `400 ${10.5 * f}px ${theme.fontUI}`;
       ctx.fillStyle = theme.tick;
       ctx.textAlign = 'right';
-      ctx.fillText(subtitle, off[0] + PW - 6, off[1] + TITLE_H / 2);
+      ctx.fillText(subtitle, off[0] + PW - 6, off[1] + titleH / 2);
     }
   }
   // plot body
@@ -236,27 +270,27 @@ export function drawPanel(ctx, o) {
   const target = inner || ctx;
   if (!inner) {
     ctx.save();
-    ctx.translate(YT_W, TITLE_H);
+    ctx.translate(ytW, titleH);
   }
-  paintPlot(target, { W, H, doc, plot, sampleId, layer, theme, counts, gates: o.gates || gatesForPlot(doc, plot), selected: o.selected || null, hover: null, readOnly: true, overridden: new Set(), message, noClear: true });
-  if (inner) ctx.group(inner.inner(), ox + YT_W, oy + TITLE_H);
+  paintPlot(target, { W, H, doc, plot, sampleId, layer, theme, counts, gates: o.gates || gatesForPlot(doc, plot), selected: o.selected || null, hover: null, readOnly: true, overridden: new Set(), message, noClear: true, style: ps });
+  if (inner) ctx.group(inner.inner(), ox + ytW, oy + titleH);
   else ctx.restore();
   // axis titles (a gating-hierarchy panel has no x/y channel to label)
   if (showAxisLabels && plot.type !== 'tree') {
-    const area = plotArea(W, H);
+    const area = ps ? plotArea(W, H, ps.margin) : plotArea(W, H);
     const xi = channelInfo(doc, plot.x);
     const xt = xi.label ? `${xi.label} (${xi.name})` : xi.name;
     ctx.fillStyle = theme.labelFg;
-    ctx.font = `500 11px ${theme.fontUI}`;
+    ctx.font = `500 ${11 * f}px ${theme.fontUI}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(xt, off[0] + YT_W + area.x + area.w / 2, off[1] + TITLE_H + H + XT_H / 2);
+    ctx.fillText(xt, off[0] + ytW + area.x + area.w / 2, off[1] + titleH + H + xtH / 2);
     let yt = 'Count';
     if (plot.y && plot.type !== 'hist') {
       const yi = channelInfo(doc, plot.y);
       yt = yi.label ? `${yi.label} (${yi.name})` : yi.name;
     }
-    rotatedText(ctx, yt, off[0] + YT_W / 2 + 1, off[1] + TITLE_H + area.y + area.h / 2, -Math.PI / 2);
+    rotatedText(ctx, yt, off[0] + ytW / 2 + 1, off[1] + titleH + area.y + area.h / 2, -Math.PI / 2);
   }
   ctx.restore();
 }

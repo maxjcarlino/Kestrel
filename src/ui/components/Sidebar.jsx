@@ -11,6 +11,7 @@ import { ROOT } from '../../core/gates.js';
 import { Icon, IconButton, openMenu, rectOf, openDialog, TextField, FitText } from './ui.jsx';
 import { pickFiles } from '../util/download.js';
 import { setKV } from '../state/persist.js';
+import { sortSamples, sortValue, sortGroupOf, sortableKeywords, currentSort, setSampleSort, sortLabel } from '../state/sample-sort.js';
 
 const SIDEBAR_DEFAULT = 304;
 const SIDEBAR_MIN = 220;
@@ -133,7 +134,35 @@ function SamplesPanel() {
   const renaming = useSel((s) => s.ui.renamingSample);
   const [groupId, setGroupId] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
-  const list = samplesInGroup(doc, groupId);
+  const sort = currentSort(doc);
+  const list = sortSamples(doc, meta, samplesInGroup(doc, groupId), sort);
+  const byGroup = sort.by === 'group' && !groupId && doc.groups.length > 0;
+  const byKw = sort.by === 'kw' && sort.key;
+  const sortMenu = (e) => {
+    const kws = sortableKeywords(doc, meta);
+    const pick = (by, key = null) => setSampleSort({ by, key });
+    openMenu(
+      rectOf(e.currentTarget),
+      [
+        { heading: 'Sort samples by' },
+        { label: 'File order', checked: sort.by === 'file', onClick: () => pick('file') },
+        { label: 'Name', checked: sort.by === 'name', onClick: () => pick('name') },
+        { label: 'Group', checked: sort.by === 'group', disabled: !doc.groups.length, why: 'No groups yet', onClick: () => pick('group') },
+        { label: 'Event count', checked: sort.by === 'events', onClick: () => pick('events') },
+        {
+          label: sort.by === 'kw' ? `Keyword: ${sort.key}` : 'Keyword',
+          icon: 'tag',
+          disabled: !kws.length,
+          why: 'Load data files to sort by their keywords',
+          submenu: kws.map((k) => ({ label: k, checked: sort.by === 'kw' && sort.key === k, onClick: () => pick('kw', k) })),
+        },
+        { divider: true },
+        { label: 'Ascending', icon: 'up', checked: !sort.desc, onClick: () => setSampleSort({ desc: false }) },
+        { label: 'Descending', icon: 'down', checked: !!sort.desc, onClick: () => setSampleSort({ desc: true }) },
+      ],
+      { title: 'Sample order' },
+    );
+  };
   const missing = doc.samples.filter((x) => (meta[x.id] || {}).status === 'missing');
   const groupName = (id) => (doc.groups.find((g) => g.id === id) || {}).name;
 
@@ -160,6 +189,13 @@ function SamplesPanel() {
                 ...(doc.groups.length ? [{ label: 'Manage groups…', icon: 'gear', onClick: () => openDialog('groups') }] : []),
               ])
             }
+          />
+          <IconButton
+            icon="sort"
+            label={`Sort samples (now: ${sortLabel(sort)}${sort.desc ? ', descending' : ''})`}
+            active={sort.by !== 'file' || !!sort.desc}
+            class="sort-btn"
+            onClick={sortMenu}
           />
           <button type="button" class="btn btn-primary btn-sm" onClick={chooseFiles}>
             <Icon name="plus" size={14} />
@@ -202,10 +238,29 @@ function SamplesPanel() {
             </div>
           ) : (
             <ul class="sample-list" role="listbox" aria-label="Samples">
-              {list.map((smp) => {
+              {sort.by !== 'file' || sort.desc ? (
+                <li class="sort-note" role="presentation">
+                  <Icon name="sort" size={12} />
+                  <span>
+                    Sorted by {sortLabel(sort)}, {sort.desc ? 'descending' : 'ascending'}
+                  </span>
+                  <button type="button" class="link-btn" onClick={() => setSampleSort({ by: 'file', key: null, desc: false })}>
+                    File order
+                  </button>
+                </li>
+              ) : null}
+              {list.map((smp, i) => {
                 const m = meta[smp.id] || {};
                 const st = m.status || 'missing';
-                return (
+                const grp = byGroup ? sortGroupOf(doc, smp) : null;
+                const heading = byGroup && (i === 0 || sortGroupOf(doc, list[i - 1]) !== grp);
+                const kwVal = byKw ? sortValue(doc, meta, smp, sort) : null;
+                return [
+                  heading ? (
+                    <li class="sample-heading" role="presentation" key={`h-${grp ? grp.id : 'none'}`}>
+                      {grp ? grp.name : 'No group'}
+                    </li>
+                  ) : null,
                   <li
                     key={smp.id}
                     role="option"
@@ -237,11 +292,17 @@ function SamplesPanel() {
                       </span>
                     )}
                     <span class="sample-groups">
-                      {(smp.groupIds || []).slice(0, 2).map((g) => (
-                        <i class="mini-chip" key={g}>
-                          {groupName(g)}
+                      {byKw ? (
+                        <i class={`mini-chip kw-chip ${kwVal === null ? 'is-empty' : ''}`} title={`${sort.key}: ${kwVal === null ? '(not set)' : kwVal}`}>
+                          {kwVal === null ? '–' : kwVal}
                         </i>
-                      ))}
+                      ) : byGroup ? null : (
+                        (smp.groupIds || []).slice(0, 2).map((g) => (
+                          <i class="mini-chip" key={g}>
+                            {groupName(g)}
+                          </i>
+                        ))
+                      )}
                     </span>
                     <span class="num sample-n">{st === 'ready' ? compact(smp.nEvents) : st === 'loading' ? '…' : ''}</span>
                     <button
@@ -255,8 +316,8 @@ function SamplesPanel() {
                     >
                       <Icon name="more" size={14} />
                     </button>
-                  </li>
-                );
+                  </li>,
+                ];
               })}
             </ul>
           )}
@@ -383,7 +444,15 @@ function PopulationTree() {
           );
         })}
       </ul>
-      {rows.length === 0 ? <p class="tree-empty">Draw a gate on a plot to start the hierarchy. Pick a tool above the plots, then drag on the plot.</p> : null}
+      {rows.length === 0 ? (
+        <p class="tree-empty">
+          Draw a gate on a plot to start the hierarchy. Pick a tool above the plots, then drag on the plot. Or{' '}
+          <button type="button" class="link-btn" onClick={() => openDialog('autoGate')}>
+            build Cells → Singlets → Live automatically
+          </button>
+          .
+        </p>
+      ) : null}
     </section>
   );
 }

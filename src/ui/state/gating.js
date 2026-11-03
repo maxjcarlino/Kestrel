@@ -67,6 +67,18 @@ export function drillDown(gateId) {
   setUI({ selectedGate: gateId, view: 'gating' });
 }
 
+/**
+ * Turn a stand-in plot from gatingPlots() into a real one in the workspace
+ * (placed after the plot that shows its population), and return its id. A
+ * real plot's id comes straight back.
+ */
+export function materializePlot(p, { focus = false } = {}) {
+  if (!p.auto) return p.id;
+  const doc = S().doc;
+  const host = doc.plots.find((q) => gatesForPlot(doc, q).some((g) => g.id === p.pop));
+  return addPlot({ pop: p.pop, x: p.x, y: p.y, type: p.type, overlay: 'none' }, { after: host ? host.id : null, focus });
+}
+
 export function removeGate(id) {
   const doc = S().doc;
   const g = doc.gates[id];

@@ -360,15 +360,17 @@ export function drawAxes(ctx, area, o) {
       lastPx = px;
       const len = t.major ? 5 : 3;
       const x = Math.round(px) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(x, area.y + area.h);
-      ctx.lineTo(x, area.y + area.h + len);
-      ctx.stroke();
+      if (o.ticks !== false) {
+        ctx.beginPath();
+        ctx.moveTo(x, area.y + area.h);
+        ctx.lineTo(x, area.y + area.h + len);
+        ctx.stroke();
+      }
       if (t.label) items.push({ pos: px, text: t.label, priority: t.priority });
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    for (const it of placeLabels(ctx, items, true)) {
+    for (const it of o.labels === false ? [] : placeLabels(ctx, items, true)) {
       const half = ctx.measureText(it.text).width / 2;
       const px = Math.min(Math.max(it.pos, area.x + half - 4), area.x + area.w + (o.marginRight ?? 8) - half);
       ctx.fillText(it.text, px, area.y + area.h + 7);
@@ -389,13 +391,15 @@ export function drawAxes(ctx, area, o) {
       lastPx = py;
       const len = t.major ? 5 : 3;
       const y = Math.round(py) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(area.x - len, y);
-      ctx.lineTo(area.x, y);
-      ctx.stroke();
+      if (o.ticks !== false) {
+        ctx.beginPath();
+        ctx.moveTo(area.x - len, y);
+        ctx.lineTo(area.x, y);
+        ctx.stroke();
+      }
       if (t.label) items.push({ pos: py, text: t.label, priority: t.priority });
     }
-    for (const it of placeLabels(ctx, items, false)) {
+    for (const it of o.labels === false ? [] : placeLabels(ctx, items, false)) {
       const py = Math.min(Math.max(it.pos, area.y + 5), area.y + area.h + 4);
       ctx.fillText(it.text, area.x - 7, py);
     }
@@ -404,12 +408,14 @@ export function drawAxes(ctx, area, o) {
     for (let v = 0; v <= o.yMax * 1.0001; v += step) {
       const py = area.y + (1 - v / o.yMax) * area.h;
       const y = Math.round(py) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(area.x - 5, y);
-      ctx.lineTo(area.x, y);
-      ctx.stroke();
+      if (o.ticks !== false) {
+        ctx.beginPath();
+        ctx.moveTo(area.x - 5, y);
+        ctx.lineTo(area.x, y);
+        ctx.stroke();
+      }
       const label = o.yLabelMode === 'percent' ? `${Math.round(v)}` : formatValue(v, step);
-      ctx.fillText(label, area.x - 7, Math.min(Math.max(py, area.y + 5), area.y + area.h));
+      if (o.labels !== false) ctx.fillText(label, area.x - 7, Math.min(Math.max(py, area.y + 5), area.y + area.h));
     }
   }
   ctx.restore();
@@ -722,14 +728,16 @@ export function drawGates(ctx, area, shapes, o) {
 
   // labels: measured, placed without overlaps, then drawn
   if (o.showLabels === false) return [];
-  const pad = 4;
-  const h = 17;
+  const parts = o.labelParts || 'both';
+  const h = o.labelH || 17;
+  const pad = Math.max(3, Math.round((h * 4) / 17));
   const items = [];
   for (const sh of shapes) {
     const g = sh.gate;
     const info = o.labels && o.labels.get(g.id);
-    let name = g.name;
-    const value = info && info.value ? info.value : '';
+    let name = parts === 'value' ? '' : g.name;
+    const value = parts !== 'name' && info && info.value ? info.value : '';
+    if (!name && !value) continue;
     const manual = g.labelPos && sh.kind !== 'quad' ? toPx(area, g.labelPos[0], g.labelPos[1]) : null;
     let { x, y, align, valign } = sh.label;
     if (manual) {

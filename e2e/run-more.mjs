@@ -305,6 +305,48 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
 
   await gotoSample(sourceSample);
 
+  // ---- sort the sample list: name, group, keyword; [ and ] follow it
+  const rowNames = () => p2.$$eval('.sample-row .fit-text', (els) => els.map((e) => e.textContent));
+  const fileOrder = await rowNames();
+  const sortBy = async (label, sub) => {
+    await p2.click('.sort-btn');
+    await p2.waitForSelector('.menu', { timeout: 3000 });
+    await p2.click(`.menu-item:has-text("${label}")`);
+    if (sub) await p2.click(`.menu-sub .menu-item:has-text("${sub}")`);
+    await p2.waitForTimeout(300);
+  };
+  await sortBy('Name');
+  const byName = await rowNames();
+  const natural = [...fileOrder].sort(new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare);
+  check('the sample list sorts by name', JSON.stringify(byName) === JSON.stringify(natural), byName.slice(0, 4).join(', ') + '…');
+  await sortBy('Descending');
+  check('…and in reverse', JSON.stringify(await rowNames()) === JSON.stringify([...natural].reverse()));
+  await sortBy('Ascending');
+  await sortBy('Group');
+  const headings = await p2.$$eval('.sample-heading', (els) => els.map((e) => e.textContent));
+  check('sorting by group heads each group', headings.join(',') === 'Samples,Compensation', headings.join(','));
+  await sortBy('Keyword', 'TUBE NAME');
+  const chips = await p2.$$eval('.sample-row .kw-chip', (els) => els.map((e) => e.textContent));
+  check('sorting by a keyword shows its value on each sample', chips.length === fileOrder.length && JSON.stringify(chips) === JSON.stringify(natural), chips.slice(0, 3).join(', '));
+  const note = await p2.$eval('.sort-note', (e) => e.textContent).catch(() => '');
+  check('the list says how it is sorted', /Sorted by TUBE NAME, ascending/.test(note), note);
+  // [ and ] step through samples in the order shown
+  await sortBy('Name');
+  await sortBy('Descending');
+  const shown = await rowNames();
+  await gotoSample(shown[0]);
+  await p2.keyboard.press(']');
+  await p2.waitForTimeout(400);
+  check('] steps to the next sample in the sorted order', (await p2.$eval('.sample-pick-name', (e) => e.textContent)) === shown[1]);
+  await p2.reload();
+  await p2.waitForSelector('.sample-row', { timeout: 15000 });
+  await p2.waitForTimeout(1200);
+  check('the order is saved with the workspace', JSON.stringify(await rowNames()) === JSON.stringify(shown));
+  await p2.click('.sort-note .link-btn');
+  await p2.waitForTimeout(300);
+  check('"File order" puts it back', JSON.stringify(await rowNames()) === JSON.stringify(fileOrder));
+  await gotoSample(sourceSample);
+
   // ---- the sidebar can be dragged wider/narrower, and the choice persists
   const sidebarBox = await p2.$eval('.sidebar', (el) => el.getBoundingClientRect());
   const handleBox = await p2.$eval('.sidebar-resizer', (el) => el.getBoundingClientRect());
@@ -449,7 +491,10 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   await p2.click('.view-tab:has-text("Batch")');
   await p2.waitForTimeout(2500);
   const cells = await p2.$$eval('.batch-cell', (els) => els.length);
-  check('Batch tab draws every plot for every sample', cells === 8 * 3, `${cells} panels`);
+  // 8 plots, plus one for "Cells": the relabel check above moved the first
+  // plot's x axis to FITC-A, so no plot shows the Cells gate any more and
+  // Batch adds one to keep every step of the gating in view.
+  check('Batch tab draws every plot for every sample', cells === 9 * 3, `${cells} panels`);
   const freshness = await p2.evaluate((ids) => {
     const st = window.kestrel.state();
     return ids.map((id) => {
@@ -474,8 +519,8 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   const plotChecks = await p2.$$('.check-list .check-row input');
   if (plotChecks.length) await plotChecks[0].click();
   await p2.waitForTimeout(1500);
-  const titleToggle = await p2.$('.layout-side label.check-row:has-text("Plot title") input');
-  const axisToggle = await p2.$('.layout-side label.check-row:has-text("Axis labels") input');
+  const titleToggle = await p2.$('.layout-side .check-row:has-text("Plot title") input');
+  const axisToggle = await p2.$('.layout-side .check-row:has-text("Axis labels") input');
   check('Layout view offers toggles for plot title and axis labels', !!titleToggle && !!axisToggle);
   if (titleToggle && axisToggle) {
     await titleToggle.click();
