@@ -314,7 +314,17 @@ export function makeTemplate(doc, name) {
     gates: orderGates(doc.gates).ordered,
     plots: doc.plots,
     table: { columns: doc.table.columns },
-    layout: { plotIds: doc.layout.plotIds, size: doc.layout.size, transpose: doc.layout.transpose, overlays: doc.layout.overlays || [] },
+    // the figure's plots and how they're drawn (sample choices are per workspace, so not here)
+    layout: {
+      plotIds: doc.layout.plotIds,
+      size: doc.layout.size,
+      transpose: doc.layout.transpose,
+      overlays: doc.layout.overlays || [],
+      showTitles: doc.layout.showTitles,
+      showAxisLabels: doc.layout.showAxisLabels,
+      panel: doc.layout.panel || {},
+      plotStyles: doc.layout.plotStyles || {},
+    },
     settings: doc.settings,
     groups: doc.groups.map((g) => ({ id: g.id, name: g.name })),
     channelLabels: doc.channelLabels || {},

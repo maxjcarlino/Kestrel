@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
-import { setLayout, samplesInGroup, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
+import { setLayout, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
+import { resolveSamples } from '../state/sample-select.js';
+import { SampleSelect } from './SampleSelect.jsx';
 import { popName, popSig, compKey, channelInfo, allChannels, gatingPlots } from '../state/derived.js';
 import { materializePlot } from '../state/gating.js';
 import { transformKey } from '../../core/transforms.js';
@@ -87,7 +89,9 @@ export function LayoutView() {
   const meta = useSel((s) => s.meta);
   const L = doc.layout;
   const plots = L.plotIds.map((id) => doc.plots.find((p) => p.id === id)).filter(Boolean);
-  const samples = samplesInGroup(doc, L.groupId).filter((x) => (meta[x.id] || {}).status === 'ready');
+  // the figure's samples, in order: a group (in the sample list's order) or a hand-picked list
+  const sampleSel = { groupId: L.groupId || null, ids: Array.isArray(L.sampleIds) ? L.sampleIds : null };
+  const samples = resolveSamples(doc, meta, sampleSel).filter((x) => (meta[x.id] || {}).status === 'ready');
   const size = L.size || 220;
   const [exporting, setExporting] = useState(false);
   // the plot whose style popover is open, and where it opened
@@ -236,17 +240,10 @@ export function LayoutView() {
           {doc.plots.filter((p) => p.type === 'tree').map((p) => (
             <TreePlotCard plot={p} key={p.id} />
           ))}
-          <label class="field-row">
+          <div class="field-row">
             <span>Samples</span>
-            <select class="field" value={L.groupId || ''} onChange={(e) => setLayout({ groupId: e.currentTarget.value || null })}>
-              <option value="">All samples</option>
-              {doc.groups.map((g) => (
-                <option value={g.id} key={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SampleSelect value={sampleSel} onChange={(v) => setLayout({ groupId: v.groupId || null, sampleIds: v.ids })} />
+          </div>
           <div class="field-row">
             <span>Rows are</span>
             <Segmented value={L.transpose ? 'plots' : 'samples'} onChange={(v) => setLayout({ transpose: v === 'plots' })} options={[{ value: 'samples', label: 'Samples' }, { value: 'plots', label: 'Plots' }]} label="Rows are" />
@@ -471,7 +468,8 @@ function OverlayList() {
   const add = () => {
     const ch = allChannels(doc).find((c) => c.kind === 'fluor') || allChannels(doc)[0];
     if (!ch) return;
-    const ids = samplesInGroup(doc, doc.layout.groupId).slice(0, 4).map((s) => s.id);
+    const L = doc.layout;
+    const ids = resolveSamples(doc, store.get().meta, { groupId: L.groupId || null, ids: Array.isArray(L.sampleIds) ? L.sampleIds : null }).slice(0, 4).map((s) => s.id);
     setLayout({ overlays: [...overlays, { id: newId('o'), title: `${ch.label || ch.name} overlay`, channel: ch.name, pop: 'root', sampleIds: ids, mode: 'offset', normalize: 'mode' }] });
   };
   return (

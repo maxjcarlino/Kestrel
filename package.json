@@ -28,7 +28,7 @@
     "build:min": "node scripts/build.mjs --minify",
     "dev": "node scripts/build.mjs --watch",
     "test": "node --test test/*.test.js",
-    "e2e": "node e2e/run.mjs && node e2e/run-more.mjs && node e2e/open-workspace.mjs && node e2e/reopen-gates.mjs && node e2e/autogate.mjs && node e2e/layout-style.mjs",
+    "e2e": "node e2e/run.mjs && node e2e/run-more.mjs && node e2e/open-workspace.mjs && node e2e/reopen-gates.mjs && node e2e/autogate.mjs && node e2e/layout-style.mjs && node e2e/sample-select.mjs",
     "compliance": "node scripts/gatingml-compliance.mjs",
     "perf": "node e2e/perf.mjs",
     "demo-data": "node scripts/make-demo-fcs.mjs",

@@ -3278,6 +3278,123 @@ canvas.mini.is-hl {
   align-self: flex-start;
 }
 
+/* ------------------------------------------------------------------ sample chooser (Batch, Layout) */
+.sample-select-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 150px;
+  max-width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+.sample-select-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sample-chooser {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sample-chooser .field-row {
+  grid-template-columns: 50px minmax(0, 1fr);
+}
+.ss-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ss-tools .muted {
+  flex: 1 1 100%;
+}
+.ss-tools .link-btn {
+  font-size: 12px;
+}
+.ss-note {
+  margin: 0;
+}
+.ss-list {
+  list-style: none;
+  margin: 0;
+  padding: 3px;
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.ss-preview {
+  max-height: 200px;
+}
+.ss-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  font-size: 12.5px;
+}
+.ss-row.is-chosen {
+  background: var(--panel-2);
+}
+.ss-row + .ss-row.is-chosen {
+  margin-top: 1px;
+}
+.ss-row.is-dragging {
+  opacity: 0.45;
+}
+.ss-row.is-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.ss-grip {
+  flex: none;
+  width: 12px;
+  color: var(--fg-3);
+  font-size: 10px;
+  letter-spacing: -2px;
+  cursor: grab;
+  user-select: none;
+}
+.ss-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.ss-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.ss-label .muted {
+  margin-left: auto;
+  flex: none;
+}
+.ss-move {
+  display: flex;
+  flex: none;
+}
+.ss-move .ibtn {
+  width: 22px;
+  height: 22px;
+}
+.ss-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--line);
+  list-style: none;
+}
+
 </style>
 </head>
 <body>
@@ -9597,7 +9714,10 @@ canvas.mini.is-hl {
     y2(() => {
       if (!enabled) return void 0;
       const down = (e3) => {
-        if (ref.current && !ref.current.contains(e3.target)) onClose();
+        if (!ref.current || ref.current.contains(e3.target)) return;
+        const menu = e3.target.closest && e3.target.closest(".popover.menu");
+        if (menu && menu !== ref.current && !ref.current.classList.contains("menu")) return;
+        onClose();
       };
       const key = (e3) => {
         if (e3.key === "Escape") onClose();
@@ -10647,7 +10767,17 @@ canvas.mini.is-hl {
       gates: orderGates(doc.gates).ordered,
       plots: doc.plots,
       table: { columns: doc.table.columns },
-      layout: { plotIds: doc.layout.plotIds, size: doc.layout.size, transpose: doc.layout.transpose, overlays: doc.layout.overlays || [] },
+      // the figure's plots and how they're drawn (sample choices are per workspace, so not here)
+      layout: {
+        plotIds: doc.layout.plotIds,
+        size: doc.layout.size,
+        transpose: doc.layout.transpose,
+        overlays: doc.layout.overlays || [],
+        showTitles: doc.layout.showTitles,
+        showAxisLabels: doc.layout.showAxisLabels,
+        panel: doc.layout.panel || {},
+        plotStyles: doc.layout.plotStyles || {}
+      },
       settings: doc.settings,
       groups: doc.groups.map((g4) => ({ id: g4.id, name: g4.name })),
       channelLabels: doc.channelLabels || {}
@@ -15519,6 +15649,190 @@ canvas.mini.is-hl {
   init_hooks_module();
   init_store();
   init_doc();
+
+  // src/ui/state/sample-select.js
+  init_doc();
+  function resolveSamples(doc, meta, sel = {}) {
+    if (Array.isArray(sel.ids)) {
+      const byId = new Map(doc.samples.map((s3) => [s3.id, s3]));
+      const seen = /* @__PURE__ */ new Set();
+      return sel.ids.map((id) => byId.get(id)).filter((s3) => s3 && !seen.has(s3.id) && seen.add(s3.id));
+    }
+    return sortSamples(doc, meta, samplesInGroup(doc, sel.groupId || null));
+  }
+  function selectionLabel(doc, sel = {}) {
+    if (Array.isArray(sel.ids)) {
+      const n2 = sel.ids.filter((id) => doc.samples.some((s3) => s3.id === id)).length;
+      return `${n2} chosen sample${n2 === 1 ? "" : "s"}`;
+    }
+    const g4 = sel.groupId && doc.groups.find((x3) => x3.id === sel.groupId);
+    return g4 ? g4.name : "All samples";
+  }
+  function orderNote(doc) {
+    const sort = currentSort(doc);
+    return sort.by === "file" && !sort.desc ? "in the order they were added" : `sorted by ${sortLabel(sort)}${sort.desc ? ", descending" : ""}, like the sample list`;
+  }
+  function moveId(ids, id, to) {
+    const from = ids.indexOf(id);
+    if (from < 0) return ids;
+    const out = ids.slice();
+    out.splice(from, 1);
+    out.splice(Math.max(0, Math.min(out.length, to)), 0, id);
+    return out;
+  }
+
+  // src/ui/components/SampleSelect.jsx
+  init_hooks_module();
+  init_store();
+  init_doc();
+  init_ui();
+  init_jsxRuntime_module();
+  function SampleSelect({ value, onChange, class: cls = "" }) {
+    const doc = useSel((s3) => s3.doc);
+    const [anchor, setAnchor] = h2(null);
+    return /* @__PURE__ */ u3(k, { children: [
+      /* @__PURE__ */ u3("button", { type: "button", class: `field sample-select-btn ${cls}`, onClick: (e3) => setAnchor(anchor ? null : rectOf(e3.currentTarget)), "aria-haspopup": "dialog", "aria-expanded": !!anchor, children: [
+        /* @__PURE__ */ u3("span", { children: selectionLabel(doc, value) }),
+        /* @__PURE__ */ u3(Icon, { name: "down", size: 12 })
+      ] }),
+      anchor ? /* @__PURE__ */ u3(Popover, { anchor, onClose: () => setAnchor(null), placement: "bottom", children: /* @__PURE__ */ u3(SampleChooser, { value, onChange }) }) : null
+    ] });
+  }
+  function SampleChooser({ value, onChange }) {
+    const doc = useSel((s3) => s3.doc);
+    const meta = useSel((s3) => s3.meta);
+    const [dragId, setDragId] = h2(null);
+    const [overId, setOverId] = h2(null);
+    const custom = Array.isArray(value.ids);
+    const shown = resolveSamples(doc, meta, value);
+    const ids = shown.map((s3) => s3.id);
+    const latestIds = () => Array.isArray(value.ids) ? value.ids.filter((id) => store.get().doc.samples.some((s3) => s3.id === id)) : ids;
+    const setIds = (next) => onChange({ groupId: value.groupId || null, ids: next });
+    const mode = custom ? "custom" : value.groupId || "";
+    const pickMode = (m3) => {
+      if (m3 === "custom") setIds(ids);
+      else onChange({ groupId: m3 || null, ids: null });
+    };
+    const toggle = (id) => {
+      const cur = latestIds();
+      setIds(cur.includes(id) ? cur.filter((x3) => x3 !== id) : [...cur, id]);
+    };
+    const move = (id, d3) => setIds(moveId(latestIds(), id, latestIds().indexOf(id) + d3));
+    const sortChosen = (e3) => {
+      const kws = sortableKeywords(doc, meta);
+      const apply = (sort) => {
+        const cur = latestIds();
+        const picked = doc.samples.filter((s3) => cur.includes(s3.id));
+        setIds(sortSamples(doc, meta, picked, sort).map((s3) => s3.id));
+      };
+      openMenu(rectOf(e3.currentTarget), [
+        { heading: "Put the chosen samples in order by" },
+        { label: "Name", onClick: () => apply({ by: "name" }) },
+        { label: "Group", disabled: !doc.groups.length, onClick: () => apply({ by: "group" }) },
+        { label: "Event count", onClick: () => apply({ by: "events" }) },
+        { label: "Order added", onClick: () => apply({ by: "file" }) },
+        { label: "Keyword", icon: "tag", disabled: !kws.length, submenu: kws.map((k3) => ({ label: k3, onClick: () => apply({ by: "kw", key: k3 }) })) },
+        { divider: true },
+        { label: "Reverse the order", icon: "sort", onClick: () => setIds(latestIds().slice().reverse()) }
+      ]);
+    };
+    const addGroup2 = (e3) => openMenu(
+      rectOf(e3.currentTarget),
+      doc.groups.map((g4) => ({
+        label: g4.name,
+        onClick: () => {
+          const cur = latestIds();
+          setIds([...cur, ...sortSamples(doc, meta, samplesInGroup(doc, g4.id)).map((s3) => s3.id).filter((id) => !cur.includes(id))]);
+        }
+      }))
+    );
+    const rest = custom ? sortSamples(doc, meta, doc.samples).filter((s3) => !ids.includes(s3.id)) : [];
+    const row = (smp, i4, chosen) => {
+      const st = (meta[smp.id] || {}).status;
+      return /* @__PURE__ */ u3(
+        "li",
+        {
+          class: `ss-row ${chosen ? "is-chosen" : ""} ${dragId === smp.id ? "is-dragging" : ""} ${overId === smp.id && dragId !== smp.id ? "is-over" : ""}`,
+          draggable: chosen,
+          onDragStart: (e3) => {
+            setDragId(smp.id);
+            e3.dataTransfer.effectAllowed = "move";
+            e3.dataTransfer.setData("text/plain", smp.id);
+          },
+          onDragOver: (e3) => {
+            if (!dragId || !chosen) return;
+            e3.preventDefault();
+            setOverId(smp.id);
+          },
+          onDrop: (e3) => {
+            e3.preventDefault();
+            if (dragId && chosen && dragId !== smp.id) setIds(moveId(latestIds(), dragId, latestIds().indexOf(smp.id)));
+            setDragId(null);
+            setOverId(null);
+          },
+          onDragEnd: () => {
+            setDragId(null);
+            setOverId(null);
+          },
+          children: [
+            chosen ? /* @__PURE__ */ u3("span", { class: "ss-grip", "aria-hidden": "true", children: "\u22EE\u22EE" }) : /* @__PURE__ */ u3("span", { class: "ss-grip" }),
+            /* @__PURE__ */ u3("label", { class: "ss-label", children: [
+              /* @__PURE__ */ u3("input", { type: "checkbox", checked: chosen, onChange: () => toggle(smp.id) }),
+              /* @__PURE__ */ u3("span", { class: "ss-name", children: smp.name }),
+              st !== "ready" ? /* @__PURE__ */ u3("span", { class: "muted small", children: "not loaded" }) : null
+            ] }),
+            chosen ? /* @__PURE__ */ u3("span", { class: "ss-move", children: [
+              /* @__PURE__ */ u3(IconButton, { icon: "up", size: 12, label: `Move ${smp.name} up`, disabled: i4 === 0, onClick: () => move(smp.id, -1) }),
+              /* @__PURE__ */ u3(IconButton, { icon: "down", size: 12, label: `Move ${smp.name} down`, disabled: i4 === shown.length - 1, onClick: () => move(smp.id, 1) })
+            ] }) : null
+          ]
+        },
+        smp.id
+      );
+    };
+    return /* @__PURE__ */ u3("div", { class: "sample-chooser", children: [
+      /* @__PURE__ */ u3("label", { class: "field-row", children: [
+        /* @__PURE__ */ u3("span", { children: "Show" }),
+        /* @__PURE__ */ u3("select", { class: "field", value: mode, onChange: (e3) => pickMode(e3.currentTarget.value), "aria-label": "Samples to show", children: [
+          /* @__PURE__ */ u3("option", { value: "", children: "All samples" }),
+          doc.groups.map((g4) => /* @__PURE__ */ u3("option", { value: g4.id, children: [
+            "Group: ",
+            g4.name
+          ] }, g4.id)),
+          /* @__PURE__ */ u3("option", { value: "custom", children: "Samples I choose\u2026" })
+        ] })
+      ] }),
+      custom ? /* @__PURE__ */ u3(k, { children: [
+        /* @__PURE__ */ u3("div", { class: "ss-tools", children: [
+          /* @__PURE__ */ u3("span", { class: "muted small", children: [
+            shown.length,
+            " chosen. Drag or use the arrows to order them."
+          ] }),
+          /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: sortChosen, disabled: shown.length < 2, children: "Sort\u2026" }),
+          doc.groups.length ? /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: addGroup2, children: "Add group\u2026" }) : null,
+          /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", disabled: !rest.length, onClick: () => setIds([...latestIds(), ...rest.map((s3) => s3.id)]), children: "All" }),
+          /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", disabled: !shown.length, onClick: () => setIds([]), children: "None" })
+        ] }),
+        /* @__PURE__ */ u3("ul", { class: "ss-list", "aria-label": "Samples", children: [
+          shown.map((s3, i4) => row(s3, i4, true)),
+          rest.length && shown.length ? /* @__PURE__ */ u3("li", { class: "ss-sep", role: "presentation" }) : null,
+          rest.map((s3, i4) => row(s3, i4, false))
+        ] })
+      ] }) : /* @__PURE__ */ u3(k, { children: [
+        /* @__PURE__ */ u3("p", { class: "muted small ss-note", children: [
+          shown.length,
+          " sample",
+          shown.length === 1 ? "" : "s",
+          ", ",
+          orderNote(doc),
+          ". To pick samples one by one or put them in your own order, choose \u201CSamples I choose\u2026\u201D."
+        ] }),
+        /* @__PURE__ */ u3("ul", { class: "ss-list ss-preview", "aria-label": "Samples", children: shown.map((s3) => /* @__PURE__ */ u3("li", { class: "ss-row", children: /* @__PURE__ */ u3("span", { class: "ss-name", children: s3.name }) }, s3.id)) })
+      ] })
+    ] });
+  }
+
+  // src/ui/components/LayoutView.jsx
   init_derived();
   init_gating();
   init_transforms();
@@ -15599,7 +15913,8 @@ canvas.mini.is-hl {
     const meta = useSel((s3) => s3.meta);
     const L2 = doc.layout;
     const plots = L2.plotIds.map((id) => doc.plots.find((p3) => p3.id === id)).filter(Boolean);
-    const samples = samplesInGroup(doc, L2.groupId).filter((x3) => (meta[x3.id] || {}).status === "ready");
+    const sampleSel = { groupId: L2.groupId || null, ids: Array.isArray(L2.sampleIds) ? L2.sampleIds : null };
+    const samples = resolveSamples(doc, meta, sampleSel).filter((x3) => (meta[x3.id] || {}).status === "ready");
     const size = L2.size || 220;
     const [exporting, setExporting] = h2(false);
     const [styling, setStyling] = h2(null);
@@ -15730,12 +16045,9 @@ canvas.mini.is-hl {
             }
           ),
           doc.plots.filter((p3) => p3.type === "tree").map((p3) => /* @__PURE__ */ u3(TreePlotCard, { plot: p3 }, p3.id)),
-          /* @__PURE__ */ u3("label", { class: "field-row", children: [
+          /* @__PURE__ */ u3("div", { class: "field-row", children: [
             /* @__PURE__ */ u3("span", { children: "Samples" }),
-            /* @__PURE__ */ u3("select", { class: "field", value: L2.groupId || "", onChange: (e3) => setLayout({ groupId: e3.currentTarget.value || null }), children: [
-              /* @__PURE__ */ u3("option", { value: "", children: "All samples" }),
-              doc.groups.map((g4) => /* @__PURE__ */ u3("option", { value: g4.id, children: g4.name }, g4.id))
-            ] })
+            /* @__PURE__ */ u3(SampleSelect, { value: sampleSel, onChange: (v3) => setLayout({ groupId: v3.groupId || null, sampleIds: v3.ids }) })
           ] }),
           /* @__PURE__ */ u3("div", { class: "field-row", children: [
             /* @__PURE__ */ u3("span", { children: "Rows are" }),
@@ -15905,7 +16217,8 @@ canvas.mini.is-hl {
     const add = () => {
       const ch = allChannels(doc).find((c3) => c3.kind === "fluor") || allChannels(doc)[0];
       if (!ch) return;
-      const ids = samplesInGroup(doc, doc.layout.groupId).slice(0, 4).map((s3) => s3.id);
+      const L2 = doc.layout;
+      const ids = resolveSamples(doc, store.get().meta, { groupId: L2.groupId || null, ids: Array.isArray(L2.sampleIds) ? L2.sampleIds : null }).slice(0, 4).map((s3) => s3.id);
       setLayout({ overlays: [...overlays, { id: newId("o"), title: `${ch.label || ch.name} overlay`, channel: ch.name, pop: "root", sampleIds: ids, mode: "offset", normalize: "mode" }] });
     };
     return /* @__PURE__ */ u3("section", { class: "card", children: [
@@ -16065,9 +16378,10 @@ canvas.mini.is-hl {
   function BatchView() {
     const doc = useSel((s3) => s3.doc);
     const meta = useSel((s3) => s3.meta);
-    const groupId = useSel((s3) => s3.ui.batchGroup === void 0 ? (doc.groups.find((g4) => /^samples$/i.test(g4.name)) || {}).id || "" : s3.ui.batchGroup);
+    const sel = doc.settings && doc.settings.batchSamples || { groupId: (doc.groups.find((g4) => /^samples$/i.test(g4.name)) || {}).id || null, ids: null };
+    const setSel = (next) => updateDoc((d3) => ({ ...d3, settings: { ...d3.settings, batchSamples: next } }), { history: false });
     const size = useSel((s3) => s3.ui.batchSize || 190);
-    const samples = samplesInGroup(doc, groupId || null);
+    const samples = resolveSamples(doc, meta, sel);
     const ready = samples.filter((x3) => (meta[x3.id] || {}).status === "ready");
     const plots = gatingPlots(doc);
     const open = (sampleId, p3) => {
@@ -16093,12 +16407,9 @@ canvas.mini.is-hl {
           ". Gates and frequencies are those of each sample. Click a plot to open it."
         ] }),
         /* @__PURE__ */ u3("div", { class: "batch-ctl", children: [
-          /* @__PURE__ */ u3("label", { class: "field-inline", children: [
+          /* @__PURE__ */ u3("div", { class: "field-inline", children: [
             /* @__PURE__ */ u3("span", { children: "Samples" }),
-            /* @__PURE__ */ u3("select", { class: "field field-sm", value: groupId || "", onChange: (e3) => setUI({ batchGroup: e3.currentTarget.value }), children: [
-              /* @__PURE__ */ u3("option", { value: "", children: "All samples" }),
-              doc.groups.map((g4) => /* @__PURE__ */ u3("option", { value: g4.id, children: g4.name }, g4.id))
-            ] })
+            /* @__PURE__ */ u3(SampleSelect, { value: sel, onChange: setSel, class: "field-sm" })
           ] }),
           /* @__PURE__ */ u3("label", { class: "size-ctl", title: "Panel size", children: [
             /* @__PURE__ */ u3(Icon, { name: "grid", size: 14 }),
@@ -16106,7 +16417,7 @@ canvas.mini.is-hl {
           ] })
         ] })
       ] }),
-      !plots.length || !ready.length ? /* @__PURE__ */ u3(Empty, { icon: "layers", title: plots.length ? "No loaded samples in this group" : "No plots yet", children: plots.length ? "Choose another group, or add data files." : "Draw plots and gates in the Gating view; they appear here for every sample." }) : /* @__PURE__ */ u3("div", { class: "batch-scroll", children: /* @__PURE__ */ u3("div", { class: "batch batch-all", style: { gridTemplateColumns: `minmax(100px, 150px) repeat(${plots.length}, ${size}px)` }, children: [
+      !plots.length || !ready.length ? /* @__PURE__ */ u3(Empty, { icon: "layers", title: plots.length ? "No loaded samples chosen" : "No plots yet", children: plots.length ? "Choose other samples above, or add data files." : "Draw plots and gates in the Gating view; they appear here for every sample." }) : /* @__PURE__ */ u3("div", { class: "batch-scroll", children: /* @__PURE__ */ u3("div", { class: "batch batch-all", style: { gridTemplateColumns: `minmax(100px, 150px) repeat(${plots.length}, ${size}px)` }, children: [
         /* @__PURE__ */ u3("div", { class: "batch-corner" }),
         plots.map((p3) => /* @__PURE__ */ u3("div", { class: "batch-col", children: [
           /* @__PURE__ */ u3("b", { children: popName(doc, p3.pop) }),

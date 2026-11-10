@@ -3,7 +3,9 @@
 
 import { useEffect } from 'preact/hooks';
 import { useSel } from '../state/store.js';
-import { setUI, samplesInGroup } from '../state/doc.js';
+import { setUI, updateDoc } from '../state/doc.js';
+import { resolveSamples } from '../state/sample-select.js';
+import { SampleSelect } from './SampleSelect.jsx';
 import { popName, channelInfo, gatingPlots } from '../state/derived.js';
 import { materializePlot } from '../state/gating.js';
 import { watchCounts } from '../state/bridge.js';
@@ -20,9 +22,12 @@ function axesLabel(doc, p) {
 export function BatchView() {
   const doc = useSel((s) => s.doc);
   const meta = useSel((s) => s.meta);
-  const groupId = useSel((s) => (s.ui.batchGroup === undefined ? (doc.groups.find((g) => /^samples$/i.test(g.name)) || {}).id || '' : s.ui.batchGroup));
+  // which samples, in what order: saved with the workspace (not an undo step);
+  // by default the "Samples" group if there is one, in the sample list's order
+  const sel = (doc.settings && doc.settings.batchSamples) || { groupId: (doc.groups.find((g) => /^samples$/i.test(g.name)) || {}).id || null, ids: null };
+  const setSel = (next) => updateDoc((d) => ({ ...d, settings: { ...d.settings, batchSamples: next } }), { history: false });
   const size = useSel((s) => s.ui.batchSize || 190);
-  const samples = samplesInGroup(doc, groupId || null);
+  const samples = resolveSamples(doc, meta, sel);
   const ready = samples.filter((x) => (meta[x.id] || {}).status === 'ready');
   // every step of the gating strategy, including gates whose plot was moved
   // on to another population (see gatingPlots)
@@ -48,17 +53,10 @@ export function BatchView() {
           {plots.length} plot{plots.length === 1 ? '' : 's'} × {ready.length} sample{ready.length === 1 ? '' : 's'}. Gates and frequencies are those of each sample. Click a plot to open it.
         </span>
         <div class="batch-ctl">
-          <label class="field-inline">
+          <div class="field-inline">
             <span>Samples</span>
-            <select class="field field-sm" value={groupId || ''} onChange={(e) => setUI({ batchGroup: e.currentTarget.value })}>
-              <option value="">All samples</option>
-              {doc.groups.map((g) => (
-                <option value={g.id} key={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SampleSelect value={sel} onChange={setSel} class="field-sm" />
+          </div>
           <label class="size-ctl" title="Panel size">
             <Icon name="grid" size={14} />
             <input type="range" min="140" max="320" step="10" value={size} onInput={(e) => setUI({ batchSize: parseInt(e.currentTarget.value, 10) })} aria-label="Panel size" />
@@ -66,8 +64,8 @@ export function BatchView() {
         </div>
       </div>
       {!plots.length || !ready.length ? (
-        <Empty icon="layers" title={plots.length ? 'No loaded samples in this group' : 'No plots yet'}>
-          {plots.length ? 'Choose another group, or add data files.' : 'Draw plots and gates in the Gating view; they appear here for every sample.'}
+        <Empty icon="layers" title={plots.length ? 'No loaded samples chosen' : 'No plots yet'}>
+          {plots.length ? 'Choose other samples above, or add data files.' : 'Draw plots and gates in the Gating view; they appear here for every sample.'}
         </Empty>
       ) : (
         <div class="batch-scroll">

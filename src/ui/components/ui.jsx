@@ -252,7 +252,11 @@ function useOutside(ref, onClose, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
     const down = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
+      if (!ref.current || ref.current.contains(e.target)) return;
+      // a menu opened from inside a popover (e.g. "Sort…") isn't "outside" it
+      const menu = e.target.closest && e.target.closest('.popover.menu');
+      if (menu && menu !== ref.current && !ref.current.classList.contains('menu')) return;
+      onClose();
     };
     const key = (e) => {
       if (e.key === 'Escape') onClose();
