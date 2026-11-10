@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
-import { setLayout, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
+import { setLayout, setUI, toast, addPlot, updatePlot, removePlot } from '../state/doc.js';
 import { resolveSamples } from '../state/sample-select.js';
 import { SampleSelect } from './SampleSelect.jsx';
 import { popName, popSig, compKey, channelInfo, allChannels, gatingPlots } from '../state/derived.js';
@@ -98,7 +98,7 @@ export function LayoutView() {
   const [styling, setStyling] = useState(null);
   const styleFor = (p) => panelStyle(L, p.id);
   const geomFor = (p) => panelGeom(styleFor(p));
-  const openStyle = (p, e) => setStyling({ plotId: p.id, anchor: rectOf(e.currentTarget) });
+  const openStyle = (p, e, sampleId = null) => setStyling({ plotId: p.id, sampleId, anchor: rectOf(e.currentTarget) });
   // read the layout fresh: several quick clicks can land before a re-render
   const togglePlot = (id) => {
     const ids = store.get().doc.layout.plotIds;
@@ -197,7 +197,27 @@ export function LayoutView() {
           <header class="card-head">
             <h2>Batch figure</h2>
           </header>
-          <div class="eyebrow">Plots</div>
+          <div class="eyebrow-row">
+            <div class="eyebrow">Plots</div>
+            <span>
+              <button
+                type="button"
+                class="link-btn"
+                title="Every step of the gating, in order"
+                onClick={() => {
+                  // every plot of the gating strategy, stand-ins made real (see gatingPlots)
+                  const ids = gatingPlots(store.get().doc).filter((p) => p.type !== 'tree').map((p) => materializePlot(p));
+                  setLayout({ plotIds: ids });
+                }}
+              >
+                All
+              </button>{' '}
+              ·{' '}
+              <button type="button" class="link-btn" onClick={() => setLayout({ plotIds: [] })}>
+                None
+              </button>
+            </span>
+          </div>
           {choices.length ? (
             <div class="check-list">
               {choices.map((p) => {
@@ -291,7 +311,7 @@ export function LayoutView() {
                       subtitle=""
                       style={styleFor(p)}
                       active={!!styling && styling.plotId === p.id}
-                      onClick={(e) => openStyle(p, e)}
+                      onClick={(e) => openStyle(p, e, smp.id)}
                     />
                   );
                 })}
@@ -309,6 +329,24 @@ export function LayoutView() {
               <span class="muted small">This plot only, in every row of the figure</span>
             </div>
             <PanelStyleFields plotId={styling.plotId} />
+            {(() => {
+              const p = doc.plots.find((q) => q.id === styling.plotId);
+              const smp = styling.sampleId && doc.samples.find((x) => x.id === styling.sampleId);
+              if (!p || p.type === 'tree') return null;
+              return (
+                <button
+                  type="button"
+                  class="btn btn-default btn-sm panel-open-gating"
+                  onClick={() => {
+                    setStyling(null);
+                    setUI({ view: 'gating', sampleId: smp ? smp.id : undefined, focusPlot: p.id, flashPlot: p.id });
+                  }}
+                >
+                  <Icon name="gates" size={13} />
+                  <span>{smp ? `Open in Gating (${smp.name})` : 'Open in Gating'}</span>
+                </button>
+              );
+            })()}
           </div>
         </Popover>
       ) : null}

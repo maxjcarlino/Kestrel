@@ -3395,6 +3395,192 @@ canvas.mini.is-hl {
   list-style: none;
 }
 
+/* ------------------------------------------------------------------ samples tab */
+.samples-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.samples-help {
+  max-width: 900px;
+  margin: 0 0 10px;
+}
+.samples-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.samples-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  min-width: 100%;
+}
+.samples-table th,
+.samples-table td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 0;
+  height: 30px;
+  text-align: left;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.samples-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel-2);
+  font-weight: 600;
+  color: var(--fg-2);
+}
+.samples-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--panel);
+  min-width: 190px;
+}
+.samples-table thead .sticky-col {
+  z-index: 3;
+  background: var(--panel-2);
+}
+.samples-table tbody tr.is-current .sticky-col,
+.samples-table tbody tr.is-current td {
+  background: var(--accent-soft);
+}
+.samples-table tbody th.sticky-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+}
+.samples-table td.num,
+.samples-table th.num {
+  text-align: right;
+  padding: 0 10px;
+}
+.samples-table th.num .th-btn {
+  justify-content: flex-end;
+}
+.th-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.th-btn:hover {
+  background: var(--panel);
+  color: var(--fg);
+}
+.th-btn .icon:last-child {
+  opacity: 0.55;
+}
+.th-input {
+  width: 100%;
+  min-width: 120px;
+  height: 28px;
+  border-radius: 0;
+}
+.own-col {
+  min-width: 140px;
+}
+.samples-table thead th.own-col {
+  color: var(--accent);
+}
+.kw-col {
+  min-width: 120px;
+  color: var(--fg-2);
+}
+.samples-table td.kw-col {
+  padding: 0 10px;
+  font-size: 12px;
+}
+.add-col {
+  width: 40px;
+  min-width: 40px;
+}
+.samples-table thead .add-col .th-btn {
+  justify-content: center;
+  padding: 0;
+  color: var(--accent);
+}
+.cell-input {
+  width: 100%;
+  height: 29px;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  padding: 0 10px;
+  background: transparent;
+  font: inherit;
+  color: var(--fg);
+  outline: none;
+}
+.cell-input::placeholder {
+  color: var(--fg-3);
+  font-style: italic;
+}
+.cell-input:hover {
+  background: var(--panel-2);
+}
+.cell-input:focus {
+  background: var(--panel);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.name-input {
+  font-weight: 600;
+  padding-left: 2px;
+}
+.groups-cell {
+  min-width: 120px;
+}
+.groups-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 29px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-3);
+}
+.groups-btn:hover {
+  background: var(--panel-2);
+  color: var(--accent);
+}
+.samples-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+}
+.kw-own th {
+  color: var(--accent);
+}
+.kw-own-tag {
+  margin-left: 8px;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 </style>
 </head>
 <body>
@@ -4836,12 +5022,12 @@ canvas.mini.is-hl {
     const span = max - min;
     const raw = span / 5;
     const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    const norm2 = raw / mag;
+    const norm3 = raw / mag;
     let step;
-    if (norm2 < 1.5) step = 1 * mag;
-    else if (norm2 < 2.25) step = 2 * mag;
-    else if (norm2 < 3.5) step = 2.5 * mag;
-    else if (norm2 < 7.5) step = 5 * mag;
+    if (norm3 < 1.5) step = 1 * mag;
+    else if (norm3 < 2.25) step = 2 * mag;
+    else if (norm3 < 3.5) step = 2.5 * mag;
+    else if (norm3 < 7.5) step = 5 * mag;
     else step = 10 * mag;
     const out = [];
     const first = Math.ceil(min / step - 1e-9) * step;
@@ -5048,6 +5234,7 @@ canvas.mini.is-hl {
     addGates: () => addGates,
     addGroup: () => addGroup,
     addMatrix: () => addMatrix,
+    addMetaField: () => addMetaField,
     addPlot: () => addPlot,
     addTableColumns: () => addTableColumns,
     applyGateToSamples: () => applyGateToSamples,
@@ -5070,7 +5257,9 @@ canvas.mini.is-hl {
     hasOverride: () => hasOverride,
     initialState: () => initialState,
     linkedMembers: () => linkedMembers,
+    lookupKeyword: () => lookupKeyword,
     makeOverride: () => makeOverride,
+    moveMetaField: () => moveMetaField,
     movePlot: () => movePlot,
     moveTableColumn: () => moveTableColumn,
     newGateBase: () => newGateBase,
@@ -5078,12 +5267,15 @@ canvas.mini.is-hl {
     redo: () => redo,
     removeDerived: () => removeDerived,
     removeGroup: () => removeGroup,
+    removeMetaField: () => removeMetaField,
     removePlot: () => removePlot,
     removeSamples: () => removeSamples,
     removeTableColumn: () => removeTableColumn,
     renameGate: () => renameGate,
+    renameMetaField: () => renameMetaField,
     renameSample: () => renameSample,
     renameWorkspace: () => renameWorkspace,
+    sampleKeywords: () => sampleKeywords,
     samplesInGroup: () => samplesInGroup,
     setChannelLabel: () => setChannelLabel,
     setDefaultComp: () => setDefaultComp,
@@ -5092,6 +5284,7 @@ canvas.mini.is-hl {
     setMeta: () => setMeta,
     setQuadCenter: () => setQuadCenter,
     setSampleComp: () => setSampleComp,
+    setSampleMeta: () => setSampleMeta,
     setSplitThreshold: () => setSplitThreshold,
     setTable: () => setTable,
     setTransform: () => setTransform,
@@ -5121,6 +5314,10 @@ canvas.mini.is-hl {
       gateOrder: [],
       overrides: {},
       channelLabels: {},
+      // your own per-sample columns (Samples tab): field names in order, and
+      // each sample's values; they work anywhere an FCS keyword does
+      metaFields: [],
+      sampleMeta: {},
       plots: [],
       table: { columns: [], groupId: null },
       layout: { plotIds: [], groupId: null, size: 220, transpose: false, overlays: [] },
@@ -5668,9 +5865,9 @@ canvas.mini.is-hl {
     const s3 = store.get();
     const byVal = /* @__PURE__ */ new Map();
     for (const smp of s3.doc.samples) {
-      const m3 = s3.meta[smp.id];
-      const kw = m3 && m3.keywords ? findKeyword(m3.keywords, keyword) : void 0;
-      const v3 = kw === void 0 || String(kw).trim() === "" ? "(none)" : String(kw).trim();
+      const kw = lookupKeyword(s3.doc, s3.meta, smp.id, keyword);
+      if (kw === void 0 || String(kw).trim() === "") continue;
+      const v3 = String(kw).trim();
       if (!byVal.has(v3)) byVal.set(v3, []);
       byVal.get(v3).push(smp.id);
     }
@@ -5691,6 +5888,88 @@ canvas.mini.is-hl {
       return { ...d3, groups, samples };
     });
     return created.length;
+  }
+  function sampleKeywords(doc, meta, id) {
+    const own = (doc.sampleMeta || {})[id] || {};
+    const kw = { ...((meta || {})[id] || {}).keywords || {} };
+    for (const f5 of doc.metaFields || []) {
+      const v3 = own[f5];
+      if (v3 === void 0 || v3 === null || String(v3).trim() === "") continue;
+      for (const k3 of Object.keys(kw)) if (k3.toUpperCase() === f5.toUpperCase()) delete kw[k3];
+      kw[f5] = String(v3);
+    }
+    return kw;
+  }
+  function lookupKeyword(doc, meta, id, name) {
+    return findKeyword(sampleKeywords(doc, meta, id), name);
+  }
+  function cleanFieldName(name) {
+    return String(name || "").replace(/\s+/g, " ").trim();
+  }
+  function addMetaField(name = "New column", { values = null } = {}) {
+    const fields = store.get().doc.metaFields || [];
+    const base = cleanFieldName(name) || "New column";
+    let n2 = base;
+    for (let k3 = 2; fields.some((f5) => f5.toUpperCase() === n2.toUpperCase()); k3++) n2 = `${base} ${k3}`;
+    updateDoc((d3) => {
+      const sampleMeta = { ...d3.sampleMeta || {} };
+      if (values) for (const [id, v3] of Object.entries(values)) sampleMeta[id] = { ...sampleMeta[id] || {}, [n2]: v3 };
+      return { ...d3, metaFields: [...d3.metaFields || [], n2], sampleMeta };
+    });
+    return n2;
+  }
+  function renameMetaField(oldName, name) {
+    const n2 = cleanFieldName(name);
+    const d0 = store.get().doc;
+    if (!n2 || n2 === oldName) return n2 === oldName;
+    if ((d0.metaFields || []).some((f5) => f5 !== oldName && f5.toUpperCase() === n2.toUpperCase())) return false;
+    updateDoc((d3) => {
+      const sampleMeta = {};
+      for (const [id, row] of Object.entries(d3.sampleMeta || {})) {
+        const r3 = { ...row };
+        if (oldName in r3) {
+          r3[n2] = r3[oldName];
+          delete r3[oldName];
+        }
+        sampleMeta[id] = r3;
+      }
+      const swap = (k3) => k3 === oldName ? n2 : k3;
+      const sort = d3.settings.sampleSort;
+      return {
+        ...d3,
+        metaFields: d3.metaFields.map(swap),
+        sampleMeta,
+        table: { ...d3.table, columns: d3.table.columns.map((c3) => c3.kind === "keyword" && c3.keyword === oldName ? { ...c3, keyword: n2 } : c3) },
+        settings: sort && sort.by === "kw" && sort.key === oldName ? { ...d3.settings, sampleSort: { ...sort, key: n2 } } : d3.settings
+      };
+    });
+    return true;
+  }
+  function removeMetaField(name) {
+    updateDoc((d3) => {
+      const sampleMeta = {};
+      for (const [id, row] of Object.entries(d3.sampleMeta || {})) {
+        const r3 = { ...row };
+        delete r3[name];
+        sampleMeta[id] = r3;
+      }
+      return { ...d3, metaFields: (d3.metaFields || []).filter((f5) => f5 !== name), sampleMeta };
+    });
+  }
+  function moveMetaField(name, to) {
+    updateDoc((d3) => {
+      const f5 = (d3.metaFields || []).filter((x3) => x3 !== name);
+      f5.splice(Math.max(0, Math.min(f5.length, to)), 0, name);
+      return { ...d3, metaFields: f5 };
+    });
+  }
+  function setSampleMeta(entries, opts = {}) {
+    if (!entries.length) return;
+    updateDoc((d3) => {
+      const sampleMeta = { ...d3.sampleMeta || {} };
+      for (const [id, f5, v3] of entries) sampleMeta[id] = { ...sampleMeta[id] || {}, [f5]: v3 == null ? "" : String(v3) };
+      return { ...d3, sampleMeta };
+    }, opts);
   }
   function findKeyword(keywords, name) {
     if (keywords[name] !== void 0) return keywords[name];
@@ -5716,7 +5995,7 @@ canvas.mini.is-hl {
         homepage: true ? "" : ""
       };
       SCHEMA = 1;
-      ANALYSIS_KEYS = ["transforms", "comp", "derived", "gates", "gateOrder", "overrides", "plots", "table", "layout", "settings", "groups", "channelLabels"];
+      ANALYSIS_KEYS = ["transforms", "comp", "derived", "gates", "gateOrder", "overrides", "plots", "table", "layout", "settings", "groups", "channelLabels", "metaFields", "sampleMeta"];
       DEFAULT_SETTINGS = {
         colormap: "classic",
         smooth: 1,
@@ -6743,6 +7022,42 @@ canvas.mini.is-hl {
     }
     if (m3 === 0) throw new Error("No numeric rows were found in the table.");
     return { channels, columns: m3 === n2 ? columns : columns.map((c3) => c3.slice(0, m3)), nEvents: m3 };
+  }
+  function parseTable(text) {
+    const src = String(text || "").replace(/^﻿/, "");
+    const first = src.split(/\r?\n/, 1)[0] || "";
+    const count = (ch) => first.split(ch).length - 1;
+    const delim = first.includes("	") ? "	" : count(";") > count(",") ? ";" : ",";
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let q4 = false;
+    for (let i4 = 0; i4 < src.length; i4++) {
+      const c3 = src[i4];
+      if (q4) {
+        if (c3 === '"') {
+          if (src[i4 + 1] === '"') {
+            cell += '"';
+            i4++;
+          } else q4 = false;
+        } else cell += c3;
+      } else if (c3 === '"' && cell === "") q4 = true;
+      else if (c3 === delim) {
+        row.push(cell);
+        cell = "";
+      } else if (c3 === "\n" || c3 === "\r") {
+        if (c3 === "\r" && src[i4 + 1] === "\n") i4++;
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = "";
+      } else cell += c3;
+    }
+    if (cell !== "" || row.length) {
+      row.push(cell);
+      rows.push(row);
+    }
+    return rows;
   }
   var init_csv = __esm({
     "src/core/csv.js"() {
@@ -10780,7 +11095,9 @@ canvas.mini.is-hl {
       },
       settings: doc.settings,
       groups: doc.groups.map((g4) => ({ id: g4.id, name: g4.name })),
-      channelLabels: doc.channelLabels || {}
+      channelLabels: doc.channelLabels || {},
+      // the names of your own sample columns (values belong to each workspace)
+      metaFields: doc.metaFields || []
     };
   }
   function workspaceFile(doc) {
@@ -10810,6 +11127,9 @@ canvas.mini.is-hl {
       next.layout = { ...d3.layout, ...t3.layout || {} };
       next.settings = { ...DEFAULT_SETTINGS, ...t3.settings || {} };
       next.channelLabels = { ...d3.channelLabels, ...t3.channelLabels || {} };
+      const fields = (d3.metaFields || []).slice();
+      for (const f5 of t3.metaFields || []) if (!fields.some((x3) => x3.toUpperCase() === f5.toUpperCase())) fields.push(f5);
+      next.metaFields = fields;
       const groups = d3.groups.slice();
       for (const g4 of t3.groups || []) if (!groups.some((x3) => x3.name === g4.name)) groups.push({ id: g4.id || newId("grp"), name: g4.name });
       next.groups = groups;
@@ -10833,7 +11153,8 @@ canvas.mini.is-hl {
       layout: raw.layout || {},
       settings: raw.settings || {},
       groups: raw.groups || [],
-      channelLabels: raw.channelLabels || {}
+      channelLabels: raw.channelLabels || {},
+      metaFields: raw.metaFields || []
     };
   }
   function migrateDoc(raw) {
@@ -11742,10 +12063,10 @@ canvas.mini.is-hl {
   // src/ui/components/Header.jsx
   init_jsxRuntime_module();
   var VIEWS = [
+    { id: "samples", label: "Samples", icon: "file" },
     { id: "gating", label: "Gating", icon: "gates" },
     { id: "comp", label: "Compensation", icon: "matrix" },
     { id: "table", label: "Statistics", icon: "table" },
-    { id: "batch", label: "Batch", icon: "layers" },
     { id: "layout", label: "Layout", icon: "grid" },
     { id: "keywords", label: "Keywords", icon: "tag" }
   ];
@@ -11929,7 +12250,7 @@ canvas.mini.is-hl {
   }
   function sortValue(doc, meta, smp, sort = currentSort(doc)) {
     if (sort.by === "kw" && sort.key) {
-      const v3 = findKeyword((meta[smp.id] || {}).keywords || {}, sort.key);
+      const v3 = lookupKeyword(doc, meta, smp.id, sort.key);
       return v3 === void 0 || v3 === null || String(v3).trim() === "" ? null : String(v3).trim();
     }
     return null;
@@ -11980,7 +12301,9 @@ canvas.mini.is-hl {
       const i4 = FIRST.indexOf(k3.toUpperCase());
       return i4 < 0 ? 1e3 : i4;
     };
-    return [...seen.values()].sort((a3, b2) => rank(a3) - rank(b2) || collator.compare(a3.replace(/^\$/, ""), b2.replace(/^\$/, "")));
+    const own = doc.metaFields || [];
+    const fileKws = [...seen.values()].filter((k3) => !own.some((f5) => f5.toUpperCase() === k3.toUpperCase()));
+    return [...own, ...fileKws.sort((a3, b2) => rank(a3) - rank(b2) || collator.compare(a3.replace(/^\$/, ""), b2.replace(/^\$/, "")))];
   }
   function currentSort(doc = store.get().doc) {
     return { ...DEFAULT_SORT, ...doc.settings && doc.settings.sampleSort || {} };
@@ -13509,7 +13832,7 @@ canvas.mini.is-hl {
       let mx = 0;
       for (const v3 of sm) if (v3 > mx) mx = v3;
       const total = ser.n || 1;
-      const norm2 = spec.normalize === "count" ? gmax : spec.normalize === "percent" ? total : mx;
+      const norm3 = spec.normalize === "count" ? gmax : spec.normalize === "percent" ? total : mx;
       const base = area.y + area.h - (offset ? i4 * step * area.h : 0);
       const color = SERIES_COLORS[i4 % SERIES_COLORS.length];
       const n2 = sm.length;
@@ -13517,7 +13840,7 @@ canvas.mini.is-hl {
       ctx.moveTo(area.x, base);
       for (let b2 = 0; b2 < n2; b2++) {
         const x3 = area.x + (b2 + 0.5) / n2 * area.w;
-        const yv = norm2 > 0 ? sm[b2] / norm2 : 0;
+        const yv = norm3 > 0 ? sm[b2] / norm3 : 0;
         ctx.lineTo(x3, base - yv * hScale * area.h * (spec.normalize === "percent" ? 4 : 1));
       }
       ctx.lineTo(area.x + area.w, base);
@@ -15424,11 +15747,10 @@ canvas.mini.is-hl {
           if (run.current !== myRun) return;
           const byId = {};
           statCols.forEach((c3, i4) => byId[c3.id] = vals[i4]);
-          const m3 = store.get().meta[smp.id] || {};
           const d3 = store.get().doc;
           const row = {};
           for (const c3 of columns) {
-            if (c3.kind === "keyword") row[c3.id] = m3.keywords ? findKeyword(m3.keywords, c3.keyword) ?? "" : "";
+            if (c3.kind === "keyword") continue;
             else if (STATS[c3.stat] && STATS[c3.stat].channel) row[c3.id] = byId[c3.id];
             else row[c3.id] = frequency(d3, counts, c3.pop, c3.stat);
           }
@@ -15457,12 +15779,14 @@ canvas.mini.is-hl {
       }
       return out;
     }, [rows, colKeyStr]);
+    const kwValue = (smp, c3) => String(lookupKeyword(doc, meta, smp.id, c3.keyword) ?? "");
     const tableRows = () => {
       const head = ["Sample", ...columns.map((c3) => {
         const t3 = colTitle(doc, c3);
         return c3.kind === "keyword" ? c3.keyword : `${t3.path || t3.top} | ${t3.main}${t3.sub ? ` ${t3.sub}` : ""}`;
       })];
       const body = samples.map((smp) => [smp.name, ...columns.map((c3) => {
+        if (c3.kind === "keyword") return kwValue(smp, c3);
         const v3 = rows[smp.id] ? rows[smp.id][c3.id] : "";
         if (typeof v3 === "number") return Number.isFinite(v3) ? Number(v3.toPrecision(8)) : "";
         return v3 ?? "";
@@ -15547,7 +15871,7 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("th", { class: "sticky-col", scope: "row", children: /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => setUI({ sampleId: smp.id, view: "gating" }), title: "Show in gating view", children: smp.name }) }),
             columns.map((c3) => {
               const v3 = rows[smp.id] ? rows[smp.id][c3.id] : void 0;
-              if (c3.kind === "keyword") return /* @__PURE__ */ u3("td", { class: "kw-cell", children: v3 === void 0 ? "\u2026" : String(v3) }, c3.id);
+              if (c3.kind === "keyword") return /* @__PURE__ */ u3("td", { class: "kw-cell", children: kwValue(smp, c3) }, c3.id);
               const [lo2, hi2] = ranges[c3.id] || [0, 0];
               const t3 = Number.isFinite(v3) && hi2 > lo2 ? (v3 - lo2) / (hi2 - lo2) : 0;
               return /* @__PURE__ */ u3("td", { class: "num", style: Number.isFinite(v3) ? { "--heat": `${Math.round(6 + t3 * 26)}%` } : null, children: v3 === void 0 ? "\u2026" : formatStat(c3.stat, v3) }, c3.id);
@@ -15571,7 +15895,7 @@ canvas.mini.is-hl {
     const [kw, setKw] = h2("");
     const chans = allChannels(doc);
     if (keyword) {
-      const keys = Object.keys(meta[sampleId] && meta[sampleId].keywords || {}).sort();
+      const keys = [...doc.metaFields || [], ...Object.keys(meta[sampleId] && meta[sampleId].keywords || {}).sort()];
       return /* @__PURE__ */ u3(Popover, { anchor, onClose, width: 320, class: "adder", children: /* @__PURE__ */ u3("div", { class: "adder-body", children: [
         /* @__PURE__ */ u3("label", { class: "field-row", children: [
           /* @__PURE__ */ u3("span", { children: "Keyword" }),
@@ -15920,7 +16244,7 @@ canvas.mini.is-hl {
     const [styling, setStyling] = h2(null);
     const styleFor = (p3) => panelStyle(L2, p3.id);
     const geomFor = (p3) => panelGeom(styleFor(p3));
-    const openStyle = (p3, e3) => setStyling({ plotId: p3.id, anchor: rectOf(e3.currentTarget) });
+    const openStyle = (p3, e3, sampleId = null) => setStyling({ plotId: p3.id, sampleId, anchor: rectOf(e3.currentTarget) });
     const togglePlot = (id) => {
       const ids = store.get().doc.layout.plotIds;
       setLayout({ plotIds: ids.includes(id) ? ids.filter((x3) => x3 !== id) : [...ids, id] });
@@ -16007,7 +16331,28 @@ canvas.mini.is-hl {
       /* @__PURE__ */ u3("aside", { class: "layout-side", children: [
         /* @__PURE__ */ u3("section", { class: "card", children: [
           /* @__PURE__ */ u3("header", { class: "card-head", children: /* @__PURE__ */ u3("h2", { children: "Batch figure" }) }),
-          /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Plots" }),
+          /* @__PURE__ */ u3("div", { class: "eyebrow-row", children: [
+            /* @__PURE__ */ u3("div", { class: "eyebrow", children: "Plots" }),
+            /* @__PURE__ */ u3("span", { children: [
+              /* @__PURE__ */ u3(
+                "button",
+                {
+                  type: "button",
+                  class: "link-btn",
+                  title: "Every step of the gating, in order",
+                  onClick: () => {
+                    const ids = gatingPlots(store.get().doc).filter((p3) => p3.type !== "tree").map((p3) => materializePlot(p3));
+                    setLayout({ plotIds: ids });
+                  },
+                  children: "All"
+                }
+              ),
+              " ",
+              "\xB7",
+              " ",
+              /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => setLayout({ plotIds: [] }), children: "None" })
+            ] })
+          ] }),
           choices.length ? /* @__PURE__ */ u3("div", { class: "check-list", children: choices.map((p3) => {
             const on2 = L2.plotIds.includes(p3.id);
             const own = Object.keys((L2.plotStyles || {})[p3.id] || {}).length > 0;
@@ -16082,7 +16427,7 @@ canvas.mini.is-hl {
                   subtitle: "",
                   style: styleFor(p3),
                   active: !!styling && styling.plotId === p3.id,
-                  onClick: (e3) => openStyle(p3, e3)
+                  onClick: (e3) => openStyle(p3, e3, smp.id)
                 },
                 `${p3.id}|${smp.id}`
               );
@@ -16096,7 +16441,27 @@ canvas.mini.is-hl {
           /* @__PURE__ */ u3("b", { children: plotLabel(doc, doc.plots.find((p3) => p3.id === styling.plotId)) }),
           /* @__PURE__ */ u3("span", { class: "muted small", children: "This plot only, in every row of the figure" })
         ] }),
-        /* @__PURE__ */ u3(PanelStyleFields, { plotId: styling.plotId })
+        /* @__PURE__ */ u3(PanelStyleFields, { plotId: styling.plotId }),
+        (() => {
+          const p3 = doc.plots.find((q4) => q4.id === styling.plotId);
+          const smp = styling.sampleId && doc.samples.find((x3) => x3.id === styling.sampleId);
+          if (!p3 || p3.type === "tree") return null;
+          return /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              class: "btn btn-default btn-sm panel-open-gating",
+              onClick: () => {
+                setStyling(null);
+                setUI({ view: "gating", sampleId: smp ? smp.id : void 0, focusPlot: p3.id, flashPlot: p3.id });
+              },
+              children: [
+                /* @__PURE__ */ u3(Icon, { name: "gates", size: 13 }),
+                /* @__PURE__ */ u3("span", { children: smp ? `Open in Gating (${smp.name})` : "Open in Gating" })
+              ]
+            }
+          );
+        })()
       ] }) }) : null
     ] });
   }
@@ -16360,77 +16725,334 @@ canvas.mini.is-hl {
     ] });
   }
 
-  // src/ui/components/BatchView.jsx
+  // src/ui/components/SamplesView.jsx
   init_hooks_module();
   init_store();
   init_doc();
-  init_derived();
-  init_gating();
-  init_bridge();
-  init_ui();
-  init_jsxRuntime_module();
-  function axesLabel(doc, p3) {
-    if (p3.type === "tree") return "Gating hierarchy";
-    const x3 = channelInfo(doc, p3.x);
-    const y3 = p3.y && p3.type !== "hist" ? channelInfo(doc, p3.y) : null;
-    return `${x3.label || x3.name}${y3 ? ` \xD7 ${y3.label || y3.name}` : ""}`;
+
+  // src/ui/state/sample-meta.js
+  var KEY_HEADERS = ["sample", "sample name", "samplename", "name", "file", "file name", "filename", "fcs file", "fcs", "tube", "tube name", "$fil"];
+  var stripExt = (s3) => String(s3 || "").replace(/\.(fcs|lmd|csv|tsv|txt)$/i, "");
+  var norm = (s3) => stripExt(String(s3 || "").trim()).toLowerCase();
+  function findSample(doc, key) {
+    const k3 = norm(key);
+    if (!k3) return null;
+    return doc.samples.find((s3) => norm(s3.name) === k3) || doc.samples.find((s3) => norm(s3.fileName) === k3) || null;
   }
-  function BatchView() {
+  function matchSheet(doc, rows) {
+    const clean = rows.filter((r3) => r3.some((c3) => String(c3).trim() !== ""));
+    if (clean.length < 2) return { keyHeader: null, fields: [], entries: [], matched: 0, unmatched: [] };
+    const head = clean[0].map((h3) => String(h3).trim());
+    const body = clean.slice(1);
+    let key = head.findIndex((h3) => KEY_HEADERS.includes(h3.toLowerCase()));
+    if (key < 0) key = head.findIndex((_3, j4) => body.some((r3) => findSample(doc, r3[j4])));
+    if (key < 0) return { keyHeader: null, fields: [], entries: [], matched: 0, unmatched: body.map((r3) => r3[0]).filter(Boolean) };
+    const fields = head.map((h3, j4) => j4 === key || !h3 ? null : h3);
+    const entries = [];
+    const unmatched = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const r3 of body) {
+      const smp = findSample(doc, r3[key]);
+      if (!smp) {
+        if (String(r3[key] || "").trim()) unmatched.push(String(r3[key]).trim());
+        continue;
+      }
+      seen.add(smp.id);
+      fields.forEach((f5, j4) => {
+        if (f5) entries.push([smp.id, f5, String(r3[j4] ?? "").trim()]);
+      });
+    }
+    return { keyHeader: head[key], fields: fields.filter(Boolean), entries, matched: seen.size, unmatched };
+  }
+  function pasteBlock(rows, sampleIds, fields, startRow, startCol, nameFor = (k3) => `Column ${k3}`) {
+    const block = rows.filter((r3, i4) => i4 < rows.length - 1 || r3.some((c3) => c3 !== ""));
+    const width = Math.max(0, ...block.map((r3) => r3.length));
+    const cols = fields.slice();
+    const newFields = [];
+    for (let j4 = startCol + width - cols.length, k3 = cols.length + 1; j4 > 0; j4--, k3++) {
+      let n2 = nameFor(k3);
+      while (cols.includes(n2)) n2 = nameFor(++k3);
+      cols.push(n2);
+      newFields.push(n2);
+    }
+    const entries = [];
+    block.forEach((r3, i4) => {
+      const id = sampleIds[startRow + i4];
+      if (!id) return;
+      r3.forEach((v3, j4) => entries.push([id, cols[startCol + j4], String(v3).trim()]));
+    });
+    return { entries, newFields };
+  }
+
+  // src/ui/components/SamplesView.jsx
+  init_ui();
+  init_csv();
+  init_download();
+  init_gating();
+  init_jsxRuntime_module();
+  var fmtN = (n2) => Number.isFinite(n2) && n2 > 0 ? n2.toLocaleString("en-US") : "";
+  function SamplesView() {
     const doc = useSel((s3) => s3.doc);
     const meta = useSel((s3) => s3.meta);
-    const sel = doc.settings && doc.settings.batchSamples || { groupId: (doc.groups.find((g4) => /^samples$/i.test(g4.name)) || {}).id || null, ids: null };
-    const setSel = (next) => updateDoc((d3) => ({ ...d3, settings: { ...d3.settings, batchSamples: next } }), { history: false });
-    const size = useSel((s3) => s3.ui.batchSize || 190);
-    const samples = resolveSamples(doc, meta, sel);
-    const ready = samples.filter((x3) => (meta[x3.id] || {}).status === "ready");
-    const plots = gatingPlots(doc);
-    const open = (sampleId, p3) => {
-      const id = materializePlot(p3);
-      setUI({ view: "gating", sampleId, focusPlot: id, flashPlot: id });
+    const sampleId = useSel((s3) => s3.ui.sampleId);
+    const [renaming, setRenaming] = h2(null);
+    const tableRef = A2();
+    const fields = doc.metaFields || [];
+    const kwCols = (doc.settings.sampleKwCols || []).filter((k3) => !fields.some((f5) => f5.toUpperCase() === k3.toUpperCase()));
+    const sort = currentSort(doc);
+    const rows = sortSamples(doc, meta, doc.samples, sort);
+    const own = (id, f5) => ((doc.sampleMeta || {})[id] || {})[f5] ?? "";
+    const fileKw = (id, k3) => findKeyword((meta[id] || {}).keywords || {}, k3);
+    const setKwCols = (cols) => updateDoc((d3) => ({ ...d3, settings: { ...d3.settings, sampleKwCols: cols } }), { history: false });
+    if (!doc.samples.length) {
+      return /* @__PURE__ */ u3("div", { class: "view-pad", children: /* @__PURE__ */ u3(Empty, { icon: "table", title: "No samples yet", action: /* @__PURE__ */ u3(Button, { variant: "primary", icon: "plus", onClick: chooseFiles, children: "Add FCS files" }), children: "Add data files, then use this tab to note what each sample is (treatment, donor, time point...) and group or sort them by it." }) });
+    }
+    const newColumn = () => {
+      const n2 = addMetaField("New column");
+      setRenaming(n2);
     };
-    const readyIds = ready.map((x3) => x3.id).join(",");
-    y2(() => {
-      watchCounts(readyIds ? readyIds.split(",") : []);
-      return () => watchCounts([]);
-    }, [readyIds]);
-    return /* @__PURE__ */ u3("div", { class: "batch-view", children: [
-      /* @__PURE__ */ u3("div", { class: "batch-bar", children: [
-        /* @__PURE__ */ u3("h2", { children: "Batch" }),
-        /* @__PURE__ */ u3("span", { class: "muted small", children: [
-          plots.length,
-          " plot",
-          plots.length === 1 ? "" : "s",
-          " \xD7 ",
-          ready.length,
-          " sample",
-          ready.length === 1 ? "" : "s",
-          ". Gates and frequencies are those of each sample. Click a plot to open it."
-        ] }),
-        /* @__PURE__ */ u3("div", { class: "batch-ctl", children: [
-          /* @__PURE__ */ u3("div", { class: "field-inline", children: [
-            /* @__PURE__ */ u3("span", { children: "Samples" }),
-            /* @__PURE__ */ u3(SampleSelect, { value: sel, onChange: setSel, class: "field-sm" })
-          ] }),
-          /* @__PURE__ */ u3("label", { class: "size-ctl", title: "Panel size", children: [
-            /* @__PURE__ */ u3(Icon, { name: "grid", size: 14 }),
-            /* @__PURE__ */ u3("input", { type: "range", min: "140", max: "320", step: "10", value: size, onInput: (e3) => setUI({ batchSize: parseInt(e3.currentTarget.value, 10) }), "aria-label": "Panel size" })
+    const sortBy = (by, key = null) => setSampleSort(sort.by === by && sort.key === key ? { desc: !sort.desc } : { by, key, desc: false });
+    const sortMark = (by, key = null) => sort.by === by && (key === null || sort.key === key) ? /* @__PURE__ */ u3(Icon, { name: sort.desc ? "down" : "up", size: 11 }) : null;
+    const fieldMenu = (f5, i4, e3) => openMenu(rectOf(e3.currentTarget), [
+      { label: "Rename", icon: "pencil", onClick: () => setRenaming(f5) },
+      { label: "Sort samples by this", icon: "sort", onClick: () => setSampleSort({ by: "kw", key: f5, desc: false }) },
+      {
+        label: "Make a group for each value",
+        icon: "tag",
+        onClick: () => {
+          const n2 = groupByKeyword(f5);
+          toast(n2 ? `Made ${n2} group${n2 > 1 ? "s" : ""} from \u201C${f5}\u201D` : `Samples were added to the existing groups for \u201C${f5}\u201D`);
+        }
+      },
+      { divider: true },
+      { label: "Move left", icon: "left", disabled: i4 === 0, onClick: () => moveMetaField(f5, i4 - 1) },
+      { label: "Move right", icon: "right", disabled: i4 === fields.length - 1, onClick: () => moveMetaField(f5, i4 + 1) },
+      { divider: true },
+      { label: "Delete column", icon: "trash", danger: true, onClick: () => removeMetaField(f5) }
+    ]);
+    const kwMenu = (k3, e3) => openMenu(rectOf(e3.currentTarget), [
+      { heading: `From the FCS files (${k3})` },
+      {
+        label: "Make an editable copy",
+        icon: "pencil",
+        onClick: () => {
+          const values = {};
+          for (const s3 of doc.samples) values[s3.id] = String(fileKw(s3.id, k3) ?? "");
+          addMetaField(k3, { values });
+        }
+      },
+      { label: "Sort samples by this", icon: "sort", onClick: () => setSampleSort({ by: "kw", key: k3, desc: false }) },
+      { label: "Make a group for each value", icon: "tag", onClick: () => toast(`Made ${groupByKeyword(k3)} group(s) from ${k3}`) },
+      { divider: true },
+      { label: "Hide this column", icon: "close", onClick: () => setKwCols((doc.settings.sampleKwCols || []).filter((x3) => x3 !== k3)) }
+    ]);
+    const showKeyword = (e3) => {
+      const all = sortableKeywords(doc, meta).filter((k3) => !fields.includes(k3));
+      openMenu(
+        rectOf(e3.currentTarget),
+        all.length ? all.map((k3) => ({ label: k3, checked: kwCols.includes(k3), onClick: () => setKwCols(kwCols.includes(k3) ? kwCols.filter((x3) => x3 !== k3) : [...kwCols, k3]) })) : [{ label: "Load data files to see their keywords", disabled: true }],
+        { title: "Show a keyword from the FCS files" }
+      );
+    };
+    const focusCell = (r3, c3) => {
+      const el = tableRef.current && tableRef.current.querySelector(`[data-r="${r3}"][data-c="${c3}"]`);
+      if (el) {
+        el.focus();
+        if (el.select) el.select();
+      }
+    };
+    const onCellKey = (r3, c3) => (e3) => {
+      if (e3.key === "Enter" || e3.key === "ArrowDown") {
+        e3.preventDefault();
+        focusCell(e3.shiftKey && e3.key === "Enter" ? r3 - 1 : r3 + 1, c3);
+      } else if (e3.key === "ArrowUp") {
+        e3.preventDefault();
+        focusCell(r3 - 1, c3);
+      }
+    };
+    const onCellPaste = (r3, c3) => (e3) => {
+      const text = (e3.clipboardData || window.clipboardData).getData("text");
+      if (!/[\t\n\r]/.test(text.replace(/[\r\n]+$/, ""))) return;
+      e3.preventDefault();
+      const cur = store.get().doc;
+      const { entries, newFields } = pasteBlock(parseTable(text), rows.map((s3) => s3.id), cur.metaFields || [], r3, c3);
+      for (const f5 of newFields) addMetaField(f5);
+      setSampleMeta(entries);
+      toast(`Pasted ${new Set(entries.map((x3) => x3[0])).size} row${entries.length > 1 ? "s" : ""}${newFields.length ? `, adding ${newFields.length} column${newFields.length > 1 ? "s" : ""}` : ""}.`);
+    };
+    const importSheet = async () => {
+      const files = await pickFiles({ accept: ".csv,.tsv,.txt", multiple: false });
+      if (!files || !files.length) return;
+      const res = matchSheet(store.get().doc, parseTable(await files[0].text()));
+      if (!res.keyHeader) {
+        toast("No column in that file names these samples. Include a column of sample or file names.", { kind: "error", timeout: 9e3 });
+        return;
+      }
+      const cur = store.get().doc.metaFields || [];
+      for (const f5 of res.fields) if (!cur.some((x3) => x3.toUpperCase() === f5.toUpperCase())) addMetaField(f5);
+      const canon = (f5) => (store.get().doc.metaFields || []).find((x3) => x3.toUpperCase() === f5.toUpperCase()) || f5;
+      setSampleMeta(res.entries.map(([id, f5, v3]) => [id, canon(f5), v3]));
+      toast(`Filled ${res.fields.length} column${res.fields.length === 1 ? "" : "s"} for ${res.matched} of ${doc.samples.length} samples (matched by \u201C${res.keyHeader}\u201D).${res.unmatched.length ? ` Not found: ${res.unmatched.slice(0, 4).join(", ")}${res.unmatched.length > 4 ? "\u2026" : ""}` : ""}`, { timeout: 1e4 });
+    };
+    const exportSheet = async () => {
+      const groupNames = (s3) => (s3.groupIds || []).map((g4) => (doc.groups.find((x3) => x3.id === g4) || {}).name).filter(Boolean).join("; ");
+      const out = [
+        ["Sample", "File", "Groups", "Events", ...fields, ...kwCols],
+        ...rows.map((s3) => [s3.name, s3.fileName || "", groupNames(s3), s3.nEvents || "", ...fields.map((f5) => own(s3.id, f5)), ...kwCols.map((k3) => String(fileKw(s3.id, k3) ?? ""))])
+      ];
+      report(await saveFile(`${safeName(doc.name)} samples.csv`, toCSV(out)), "Sample table exported");
+    };
+    const groupCell = (s3) => (e3) => openMenu(
+      rectOf(e3.currentTarget),
+      [
+        ...doc.groups.map((g4) => ({ label: g4.name, checked: (s3.groupIds || []).includes(g4.id), onClick: () => toggleSampleGroup(s3.id, g4.id) })),
+        doc.groups.length ? { divider: true } : null,
+        { label: "New group with this sample\u2026", icon: "plus", onClick: () => openDialog("group", { sampleIds: [s3.id] }) }
+      ],
+      { title: s3.name }
+    );
+    return /* @__PURE__ */ u3("div", { class: "view-pad samples-view", children: [
+      /* @__PURE__ */ u3("div", { class: "view-toolbar", children: [
+        /* @__PURE__ */ u3("div", { class: "vt-left", children: [
+          /* @__PURE__ */ u3("h1", { class: "view-title", children: "Samples" }),
+          /* @__PURE__ */ u3("span", { class: "muted small", children: [
+            doc.samples.length,
+            " sample",
+            doc.samples.length === 1 ? "" : "s"
           ] })
+        ] }),
+        /* @__PURE__ */ u3("div", { class: "vt-right", children: [
+          /* @__PURE__ */ u3(Button, { variant: "primary", icon: "plus", onClick: newColumn, children: "Add column" }),
+          /* @__PURE__ */ u3(Button, { icon: "tag", onClick: showKeyword, children: "Show file keyword" }),
+          /* @__PURE__ */ u3(Button, { icon: "upload", onClick: importSheet, children: "Import sheet\u2026" }),
+          /* @__PURE__ */ u3(Button, { icon: "download", onClick: exportSheet, children: "Export CSV" })
         ] })
       ] }),
-      !plots.length || !ready.length ? /* @__PURE__ */ u3(Empty, { icon: "layers", title: plots.length ? "No loaded samples chosen" : "No plots yet", children: plots.length ? "Choose other samples above, or add data files." : "Draw plots and gates in the Gating view; they appear here for every sample." }) : /* @__PURE__ */ u3("div", { class: "batch-scroll", children: /* @__PURE__ */ u3("div", { class: "batch batch-all", style: { gridTemplateColumns: `minmax(100px, 150px) repeat(${plots.length}, ${size}px)` }, children: [
-        /* @__PURE__ */ u3("div", { class: "batch-corner" }),
-        plots.map((p3) => /* @__PURE__ */ u3("div", { class: "batch-col", children: [
-          /* @__PURE__ */ u3("b", { children: popName(doc, p3.pop) }),
-          /* @__PURE__ */ u3("span", { children: axesLabel(doc, p3) })
-        ] }, p3.id)),
-        ready.map((smp) => /* @__PURE__ */ u3(k, { children: [
-          /* @__PURE__ */ u3("div", { class: "batch-row", children: smp.name }, `h${smp.id}`),
-          plots.map(
-            (p3) => p3.type === "tree" ? /* @__PURE__ */ u3("div", { class: "batch-cell batch-cell-static", children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`) : /* @__PURE__ */ u3("button", { type: "button", class: "batch-cell", onClick: () => open(smp.id, p3), title: `Open ${popName(doc, p3.pop)} for ${smp.name}`, children: /* @__PURE__ */ u3(StaticPanel, { plot: p3, sampleId: smp.id, size, title: "", subtitle: "" }) }, `${p3.id}|${smp.id}`)
-          )
-        ] }))
-      ] }) })
+      /* @__PURE__ */ u3("p", { class: "muted small samples-help", children: "Add a column for anything you know about your samples (treatment, donor, time point\u2026) and type the values in, or paste a block of cells from a spreadsheet. Your columns work like the files\u2019 keywords everywhere: make groups from them, sort the sample list by them, or add them to the Statistics table." }),
+      /* @__PURE__ */ u3("div", { class: "table-scroll samples-scroll", children: [
+        /* @__PURE__ */ u3("table", { class: "samples-table", ref: tableRef, children: [
+          /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
+            /* @__PURE__ */ u3("th", { class: "sticky-col", children: /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: () => sortBy("name"), title: "Sort by name", children: [
+              "Sample ",
+              sortMark("name")
+            ] }) }),
+            /* @__PURE__ */ u3("th", { children: /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: () => sortBy("group"), title: "Sort by group", children: [
+              "Groups ",
+              sortMark("group")
+            ] }) }),
+            /* @__PURE__ */ u3("th", { class: "num", children: /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: () => sortBy("events"), title: "Sort by event count", children: [
+              "Events ",
+              sortMark("events")
+            ] }) }),
+            fields.map((f5, i4) => /* @__PURE__ */ u3("th", { class: "own-col", children: renaming === f5 ? /* @__PURE__ */ u3(
+              ColumnNameInput,
+              {
+                name: f5,
+                onDone: (v3) => {
+                  setRenaming(null);
+                  if (v3 !== null && !renameMetaField(f5, v3)) toast(`There is already a column called \u201C${v3.trim()}\u201D.`, { kind: "warn" });
+                }
+              }
+            ) : /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: (e3) => fieldMenu(f5, i4, e3), onDblClick: () => setRenaming(f5), title: "Rename, sort, make groups, move or delete", children: [
+              f5,
+              " ",
+              sortMark("kw", f5),
+              /* @__PURE__ */ u3(Icon, { name: "down", size: 10 })
+            ] }) }, `f:${f5}`)),
+            kwCols.map((k3) => /* @__PURE__ */ u3("th", { class: "kw-col", children: /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: (e3) => kwMenu(k3, e3), title: "A keyword from the FCS files (read only)", children: [
+              /* @__PURE__ */ u3("span", { class: "mono", children: k3 }),
+              " ",
+              sortMark("kw", k3),
+              /* @__PURE__ */ u3(Icon, { name: "down", size: 10 })
+            ] }) }, `k:${k3}`)),
+            /* @__PURE__ */ u3("th", { class: "add-col", children: /* @__PURE__ */ u3("button", { type: "button", class: "th-btn", onClick: newColumn, title: "Add a column", children: /* @__PURE__ */ u3(Icon, { name: "plus", size: 13 }) }) })
+          ] }) }),
+          /* @__PURE__ */ u3("tbody", { children: rows.map((s3, r3) => {
+            const st = (meta[s3.id] || {}).status || "missing";
+            return /* @__PURE__ */ u3("tr", { class: s3.id === sampleId ? "is-current" : "", children: [
+              /* @__PURE__ */ u3("th", { class: "sticky-col", scope: "row", children: [
+                /* @__PURE__ */ u3("span", { class: `st-dot st-${st}`, title: st === "ready" ? "Loaded" : st === "missing" ? "Data file not loaded" : st }),
+                /* @__PURE__ */ u3(
+                  "input",
+                  {
+                    class: "cell-input name-input",
+                    value: s3.name,
+                    "data-r": r3,
+                    "data-c": -1,
+                    "aria-label": `Name of ${s3.name}`,
+                    title: s3.fileName && s3.fileName !== s3.name ? `File: ${s3.fileName}` : void 0,
+                    onFocus: () => setUI({ sampleId: s3.id }),
+                    onKeyDown: onCellKey(r3, -1),
+                    onChange: (e3) => renameSample(s3.id, e3.currentTarget.value)
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ u3("td", { class: "groups-cell", children: /* @__PURE__ */ u3("button", { type: "button", class: "groups-btn", onClick: groupCell(s3), title: "Groups", children: [
+                (s3.groupIds || []).map((g4) => (doc.groups.find((x3) => x3.id === g4) || {}).name).filter(Boolean).map((n2) => /* @__PURE__ */ u3("i", { class: "mini-chip", children: n2 }, n2)),
+                /* @__PURE__ */ u3(Icon, { name: "plus", size: 11 })
+              ] }) }),
+              /* @__PURE__ */ u3("td", { class: "num muted", children: fmtN(s3.nEvents) }),
+              fields.map((f5, c3) => {
+                const fallback = fileKw(s3.id, f5);
+                return /* @__PURE__ */ u3("td", { class: "own-col", children: /* @__PURE__ */ u3(
+                  "input",
+                  {
+                    class: "cell-input",
+                    value: own(s3.id, f5),
+                    placeholder: fallback !== void 0 ? String(fallback) : "",
+                    "data-r": r3,
+                    "data-c": c3,
+                    "aria-label": `${f5} for ${s3.name}`,
+                    onInput: (e3) => setSampleMeta([[s3.id, f5, e3.currentTarget.value]], { coalesce: `cell:${s3.id}:${f5}` }),
+                    onKeyDown: onCellKey(r3, c3),
+                    onPaste: onCellPaste(r3, c3)
+                  }
+                ) }, f5);
+              }),
+              kwCols.map((k3) => /* @__PURE__ */ u3("td", { class: "kw-col mono", children: String(fileKw(s3.id, k3) ?? "") }, k3)),
+              /* @__PURE__ */ u3("td", { class: "add-col" })
+            ] }, s3.id);
+          }) })
+        ] }),
+        !fields.length ? /* @__PURE__ */ u3("div", { class: "samples-empty", children: [
+          /* @__PURE__ */ u3(Button, { icon: "plus", onClick: newColumn, children: "Add your first column" }),
+          /* @__PURE__ */ u3("span", { class: "muted small", children: "e.g. Treatment, Donor, Time point. Or import a sheet with a column of sample names." })
+        ] }) : null
+      ] })
     ] });
+  }
+  function ColumnNameInput({ name, onDone }) {
+    const ref = A2();
+    const done = A2(false);
+    y2(() => {
+      const el = ref.current;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, []);
+    const finish = (v3) => {
+      if (done.current) return;
+      done.current = true;
+      onDone(v3);
+    };
+    return /* @__PURE__ */ u3(
+      "input",
+      {
+        ref,
+        class: "field th-input",
+        defaultValue: name,
+        "aria-label": "Column name",
+        onKeyDown: (e3) => {
+          if (e3.key === "Enter") {
+            e3.preventDefault();
+            finish(e3.currentTarget.value);
+          }
+          if (e3.key === "Escape") finish(null);
+        },
+        onBlur: (e3) => finish(e3.currentTarget.value)
+      }
+    );
   }
 
   // src/ui/components/KeywordsView.jsx
@@ -16449,8 +17071,8 @@ canvas.mini.is-hl {
     const [q4, setQ] = h2("");
     const [mode, setMode] = h2("one");
     const [picked, setPicked] = h2(["$DATE", "$CYT", "TUBE NAME", "$TOT"]);
-    const m3 = meta[sampleId] || {};
-    const kw = m3.keywords || {};
+    const kw = T2(() => sampleKeywords(doc, meta, sampleId), [doc.sampleMeta, doc.metaFields, meta, sampleId]);
+    const own = new Set((doc.metaFields || []).filter((f5) => findKeyword(kw, f5) !== void 0 && ((doc.sampleMeta || {})[sampleId] || {})[f5]));
     const needle = q4.trim().toLowerCase();
     const entries = T2(
       () => Object.entries(kw).filter(([k3, v3]) => !needle || k3.toLowerCase().includes(needle) || String(v3).toLowerCase().includes(needle)).sort((a3, b2) => a3[0].localeCompare(b2[0])),
@@ -16459,14 +17081,15 @@ canvas.mini.is-hl {
     const allKeys = T2(() => {
       const set = /* @__PURE__ */ new Set();
       for (const smp2 of doc.samples) for (const k3 of Object.keys((meta[smp2.id] || {}).keywords || {})) set.add(k3);
-      return [...set].sort();
-    }, [doc.samples, meta]);
+      const fields = doc.metaFields || [];
+      return [...fields, ...[...set].filter((k3) => !fields.some((f5) => f5.toUpperCase() === k3.toUpperCase())).sort()];
+    }, [doc.samples, doc.metaFields, meta]);
     const smp = doc.samples.find((x3) => x3.id === sampleId);
     if (!doc.samples.length) {
       return /* @__PURE__ */ u3("div", { class: "view-pad", children: /* @__PURE__ */ u3(Empty, { icon: "tag", title: "No samples yet", children: "Keywords are the metadata stored in each FCS file, such as the cytometer, date and tube name." }) });
     }
     const exportCompare = async () => {
-      const rows = [["Sample", ...picked], ...doc.samples.map((s3) => [s3.name, ...picked.map((k3) => findKeyword((meta[s3.id] || {}).keywords || {}, k3) ?? "")])];
+      const rows = [["Sample", ...picked], ...doc.samples.map((s3) => [s3.name, ...picked.map((k3) => findKeyword(sampleKeywords(doc, meta, s3.id), k3) ?? "")])];
       report(await saveFile(`${safeName(doc.name)} keywords.csv`, toCSV(rows)), "Keywords exported");
     };
     return /* @__PURE__ */ u3("div", { class: "view-pad keywords-view", children: [
@@ -16497,8 +17120,11 @@ canvas.mini.is-hl {
             /* @__PURE__ */ u3("th", { children: "Keyword" }),
             /* @__PURE__ */ u3("th", { children: "Value" })
           ] }) }),
-          /* @__PURE__ */ u3("tbody", { children: entries.map(([k3, v3]) => /* @__PURE__ */ u3("tr", { children: [
-            /* @__PURE__ */ u3("th", { scope: "row", class: "mono", children: k3 }),
+          /* @__PURE__ */ u3("tbody", { children: entries.map(([k3, v3]) => /* @__PURE__ */ u3("tr", { class: own.has(k3) ? "kw-own" : "", children: [
+            /* @__PURE__ */ u3("th", { scope: "row", class: "mono", children: [
+              k3,
+              own.has(k3) ? /* @__PURE__ */ u3("span", { class: "kw-own-tag", children: "your column" }) : null
+            ] }),
             /* @__PURE__ */ u3("td", { class: "mono", children: String(v3) })
           ] }, k3)) })
         ] })
@@ -16517,7 +17143,7 @@ canvas.mini.is-hl {
           ] }) }),
           /* @__PURE__ */ u3("tbody", { children: doc.samples.map((s3) => /* @__PURE__ */ u3("tr", { children: [
             /* @__PURE__ */ u3("th", { scope: "row", children: /* @__PURE__ */ u3("button", { type: "button", class: "link-btn", onClick: () => setUI({ sampleId: s3.id }), children: s3.name }) }),
-            picked.map((k3) => /* @__PURE__ */ u3("td", { class: "mono", children: String(findKeyword((meta[s3.id] || {}).keywords || {}, k3) ?? "") }, k3))
+            picked.map((k3) => /* @__PURE__ */ u3("td", { class: "mono", children: String(findKeyword(sampleKeywords(doc, meta, s3.id), k3) ?? "") }, k3))
           ] }, s3.id)) })
         ] }) })
       ] })
@@ -17416,16 +18042,16 @@ canvas.mini.is-hl {
       }
     );
   }
-  var norm = (s3) => String(s3 || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  var norm2 = (s3) => String(s3 || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   function guessDetector(name, detectors, labels) {
-    const n2 = norm(name);
+    const n2 = norm2(name);
     let best = null;
     for (const d3 of detectors) {
-      const k3 = norm(d3);
-      const k22 = norm(d3.replace(/-[AHW]$/i, ""));
+      const k3 = norm2(d3);
+      const k22 = norm2(d3.replace(/-[AHW]$/i, ""));
       for (const key of [k3, k22]) if (key.length >= 2 && n2.includes(key) && (!best || key.length > best.len)) best = { d: d3, len: key.length };
       const lab = labels[d3];
-      if (lab && norm(lab).length >= 3 && n2.includes(norm(lab)) && (!best || norm(lab).length > best.len)) best = { d: d3, len: norm(lab).length };
+      if (lab && norm2(lab).length >= 3 && n2.includes(norm2(lab)) && (!best || norm2(lab).length > best.len)) best = { d: d3, len: norm2(lab).length };
     }
     return best ? best.d : "";
   }
@@ -17580,9 +18206,10 @@ canvas.mini.is-hl {
     const keys = T2(() => {
       const set = /* @__PURE__ */ new Set();
       for (const smp of doc.samples) for (const k4 of Object.keys((meta[smp.id] || {}).keywords || {})) if (!/^\$?P\d+[A-Z]$/i.test(k4)) set.add(k4);
-      return [...set].sort();
-    }, [doc.samples, meta]);
-    const [k3, setK] = h2(keys.includes("$SRC") ? "$SRC" : keys.includes("TUBE NAME") ? "TUBE NAME" : keys[0] || "");
+      const own = doc.metaFields || [];
+      return [...own, ...[...set].filter((k4) => !own.some((f5) => f5.toUpperCase() === k4.toUpperCase())).sort()];
+    }, [doc.samples, doc.metaFields, meta]);
+    const [k3, setK] = h2((doc.metaFields || [])[0] || (keys.includes("$SRC") ? "$SRC" : keys.includes("TUBE NAME") ? "TUBE NAME" : keys[0] || ""));
     return /* @__PURE__ */ u3(Dialog, { title: "Group samples by keyword", onClose: closeDialog, width: 460, footer: /* @__PURE__ */ u3(k, { children: [
       /* @__PURE__ */ u3(Button, { onClick: closeDialog, children: "Cancel" }),
       /* @__PURE__ */ u3(Button, { variant: "primary", disabled: !k3, onClick: () => {
@@ -17591,7 +18218,7 @@ canvas.mini.is-hl {
         toast(n2 ? `Created ${n2} group${n2 > 1 ? "s" : ""} from ${k3}` : `Samples were added to existing groups for ${k3}`);
       }, children: "Create groups" })
     ] }), children: [
-      /* @__PURE__ */ u3("p", { class: "muted small", children: "One group is made for each distinct value of the keyword." }),
+      /* @__PURE__ */ u3("p", { class: "muted small", children: "One group is made for each distinct value of the keyword (or your own column from the Samples tab). Samples with no value are left out." }),
       /* @__PURE__ */ u3("label", { class: "field-row", children: [
         /* @__PURE__ */ u3("span", { children: "Keyword" }),
         /* @__PURE__ */ u3("select", { class: "field", value: k3, onChange: (e3) => setK(e3.currentTarget.value), children: keys.map((x3) => /* @__PURE__ */ u3("option", { value: x3, children: x3 }, x3)) })
@@ -17758,10 +18385,10 @@ canvas.mini.is-hl {
       /* @__PURE__ */ u3("main", { class: `app-body view-${view}`, children: [
         withSidebar ? /* @__PURE__ */ u3(Sidebar, {}) : null,
         /* @__PURE__ */ u3("div", { class: "view", children: [
+          view === "samples" ? /* @__PURE__ */ u3(SamplesView, {}) : null,
           view === "gating" ? /* @__PURE__ */ u3(GatingView, {}) : null,
           view === "comp" ? /* @__PURE__ */ u3(CompView, {}) : null,
           view === "table" ? /* @__PURE__ */ u3(TableView, {}) : null,
-          view === "batch" ? /* @__PURE__ */ u3(BatchView, {}) : null,
           view === "layout" ? /* @__PURE__ */ u3(LayoutView, {}) : null,
           view === "keywords" ? /* @__PURE__ */ u3(KeywordsView, {}) : null
         ] })
@@ -17783,7 +18410,8 @@ canvas.mini.is-hl {
   var WORKER_SOURCE = true ? '(() => {\n  // src/core/fcs-parse.js\n  var FCSError = class extends Error {\n    constructor(message) {\n      super(message);\n      this.name = "FCSError";\n    }\n  };\n  var utf8 = new TextDecoder("utf-8");\n  var latin1 = new TextDecoder("windows-1252");\n  function keywordGetter(keywords) {\n    const upper = /* @__PURE__ */ new Map();\n    for (const k of Object.keys(keywords)) upper.set(k.toUpperCase(), keywords[k]);\n    return (name) => {\n      const v = upper.get(name.toUpperCase());\n      return v === void 0 ? void 0 : v;\n    };\n  }\n  function readHeader(bytes, base) {\n    if (bytes.length < base + 58) throw new FCSError("File is too short to be an FCS file.");\n    const ascii = (s, e) => {\n      let out = "";\n      for (let i = base + s; i < base + e; i++) out += String.fromCharCode(bytes[i]);\n      return out;\n    };\n    const version = ascii(0, 6);\n    if (!/^FCS\\d\\.\\d$/.test(version)) {\n      throw new FCSError(\'This is not an FCS file: the header does not start with "FCS".\');\n    }\n    const num2 = (s, e) => {\n      const t = ascii(s, e).trim();\n      if (t === "") return 0;\n      const n = parseInt(t, 10);\n      return Number.isFinite(n) ? n : 0;\n    };\n    return {\n      version,\n      textStart: num2(10, 18),\n      textEnd: num2(18, 26),\n      dataStart: num2(26, 34),\n      dataEnd: num2(34, 42),\n      analysisStart: num2(42, 50),\n      analysisEnd: num2(50, 58)\n    };\n  }\n  function decodeText(bytes) {\n    const s = utf8.decode(bytes);\n    if (s.indexOf("\\uFFFD") >= 0) return latin1.decode(bytes);\n    return s;\n  }\n  function splitText(str, escapes) {\n    const delim = str[0];\n    const tokens = [];\n    let cur = "";\n    let i = 1;\n    const n = str.length;\n    while (i < n) {\n      const j = str.indexOf(delim, i);\n      if (j < 0) {\n        cur += str.slice(i);\n        break;\n      }\n      cur += str.slice(i, j);\n      if (escapes && j + 1 < n && str[j + 1] === delim) {\n        cur += delim;\n        i = j + 2;\n        continue;\n      }\n      tokens.push(cur);\n      cur = "";\n      i = j + 1;\n    }\n    if (cur.length > 0) tokens.push(cur);\n    return { tokens, delim };\n  }\n  function tokensToKeywords(tokens) {\n    const kw = {};\n    let odd = tokens.length % 2 === 1;\n    for (let i = 0; i + 1 < tokens.length; i += 2) {\n      const key = tokens[i].trim();\n      if (key === "") continue;\n      kw[key] = tokens[i + 1];\n    }\n    return { kw, odd };\n  }\n  function scoreKeywords(kw, delim) {\n    let bad = 0;\n    for (const k of Object.keys(kw)) {\n      if (k.indexOf(delim) >= 0) bad += 2;\n      if (/[\\x00-\\x1f]/.test(k)) bad += 1;\n    }\n    const get = keywordGetter(kw);\n    for (const req of ["$PAR", "$DATATYPE", "$BYTEORD"]) if (get(req) === void 0) bad += 5;\n    return bad;\n  }\n  function hasRequired(kw) {\n    const get = keywordGetter(kw);\n    return ["$PAR", "$DATATYPE", "$BYTEORD"].every((k) => get(k) !== void 0);\n  }\n  function parseTextSegment(bytes) {\n    const str = decodeText(bytes);\n    if (str.length < 2) return {};\n    const a = splitText(str, true);\n    const ka = tokensToKeywords(a.tokens);\n    if (!ka.odd && hasRequired(ka.kw)) return ka.kw;\n    const sa = scoreKeywords(ka.kw, a.delim) + (ka.odd ? 1 : 0);\n    const b = splitText(str, false);\n    const kb = tokensToKeywords(b.tokens);\n    const sb = scoreKeywords(kb.kw, b.delim) + (kb.odd ? 1 : 0);\n    return sb < sa ? kb.kw : ka.kw;\n  }\n  function intOr(v, d) {\n    if (v === void 0 || v === null) return d;\n    const n = parseInt(String(v).trim(), 10);\n    return Number.isFinite(n) ? n : d;\n  }\n  function floatOr(v, d) {\n    if (v === void 0 || v === null) return d;\n    const n = parseFloat(String(v).trim().replace(",", "."));\n    return Number.isFinite(n) ? n : d;\n  }\n  function parseSpillover(value) {\n    if (!value) return null;\n    const parts = String(value).split(",").map((s) => s.trim());\n    const n = parseInt(parts[0], 10);\n    if (!Number.isFinite(n) || n <= 0) return null;\n    if (parts.length < 1 + n + n * n) return null;\n    const names = parts.slice(1, 1 + n);\n    const vals = parts.slice(1 + n, 1 + n + n * n).map((s) => parseFloat(s));\n    if (vals.some((x) => !Number.isFinite(x))) return null;\n    const matrix = [];\n    for (let i = 0; i < n; i++) matrix.push(vals.slice(i * n, (i + 1) * n));\n    return { names, matrix };\n  }\n  function findSpillover(get) {\n    for (const key of ["$SPILLOVER", "SPILL", "$SPILL", "SPILLOVER"]) {\n      const v = get(key);\n      if (v) {\n        const s = parseSpillover(v);\n        if (s) return { ...s, keyword: key };\n      }\n    }\n    return null;\n  }\n  function byteOrder(str, nbytes) {\n    const parts = String(str || "1,2,3,4").split(",").map((s) => parseInt(s.trim(), 10)).filter((x) => Number.isFinite(x));\n    if (parts.length === 0) return { little: true, perm: null };\n    const little = parts[0] === 1 || parts.length > 1 && parts[0] < parts[parts.length - 1];\n    let perm = null;\n    if (parts.length === nbytes) {\n      const isLE = parts.every((p, i) => p === i + 1);\n      const isBE = parts.every((p, i) => p === nbytes - i);\n      if (!isLE && !isBE) perm = parts.map((p) => p - 1);\n    }\n    return { little, perm };\n  }\n  function classifyChannel(name, label) {\n    const n = String(name || "").trim();\n    if (/^time$/i.test(n) || /^(hdr-t|time[\\s_-]?(lsw|msw)?)$/i.test(n)) return "time";\n    if (/^(b|v|r|y)?-?(fsc|ssc|fs|ss)(\\b|[-_ \\d]|$)/i.test(n) || /scatter/i.test(n) || /^(fsc|ssc)/i.test(n)) return "scatter";\n    if (/^(event[\\s_#-]*(length|num|number|count)?|eventnum|event_length|original_?id|cell[\\s_]?id|index|residual|offset|width|center|gaussian.*|cell_length|beadDist)$/i.test(n)) return "other";\n    if (/^\\(?[A-Z][a-z]?\\d{2,3}\\)?D[di]$/.test(n) || /^\\d{2,3}[A-Z][a-z]?(_|$)/.test(n)) return "mass";\n    if (/(sample|well|tube)/i.test(n) && !label) return "other";\n    return "fluor";\n  }\n  function parseFCS(input, options = {}) {\n    const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);\n    const { dataset = 0, applyGain = true, maxEvents = 0 } = options;\n    if (options.dataset !== void 0 && !(Number.isInteger(dataset) && dataset >= 0)) throw new FCSError("Invalid data set index.");\n    const warnings = [];\n    const offsets = [0];\n    {\n      let base2 = 0;\n      for (let guard = 0; guard < 1e3; guard++) {\n        let next = 0;\n        try {\n          const h = readHeader(bytes, base2);\n          const kw = readKeywords(bytes, base2, h, warnings, true);\n          next = intOr(keywordGetter(kw)("$NEXTDATA"), 0);\n        } catch (e) {\n          if (base2 === 0) throw e;\n          break;\n        }\n        if (next > 0 && base2 + next + 58 <= bytes.length) {\n          base2 += next;\n          offsets.push(base2);\n        } else break;\n      }\n    }\n    const datasetCount = offsets.length;\n    let chosen = dataset;\n    if (options.dataset === void 0 && offsets.length > 1) {\n      let best = -1;\n      offsets.forEach((off, i) => {\n        try {\n          const v = parseFloat(readHeader(bytes, off).version.slice(3));\n          if (v > best) {\n            best = v;\n            chosen = i;\n          }\n        } catch (e) {\n        }\n      });\n    }\n    if (chosen >= offsets.length) throw new FCSError(`Data set ${chosen + 1} not found; the file has ${offsets.length}.`);\n    const base = offsets[chosen];\n    const header = readHeader(bytes, base);\n    const keywords = readKeywords(bytes, base, header, warnings, false);\n    const get = keywordGetter(keywords);\n    const P = intOr(get("$PAR"), 0);\n    if (!(P > 0)) throw new FCSError("The file does not declare how many parameters it has ($PAR).");\n    const datatype = String(get("$DATATYPE") || "").trim().toUpperCase();\n    if (!["I", "F", "D", "A"].includes(datatype)) throw new FCSError(`Unsupported data type "${datatype}" ($DATATYPE).`);\n    const mode = String(get("$MODE") || "L").trim().toUpperCase();\n    if (mode !== "L") throw new FCSError(`Only list-mode data is supported; this file uses $MODE ${mode}.`);\n    const totDeclared = intOr(get("$TOT"), -1);\n    let dStart = header.dataStart;\n    let dEnd = header.dataEnd;\n    if (dStart === 0 || dEnd === 0 || dEnd < dStart) {\n      dStart = intOr(get("$BEGINDATA"), 0);\n      dEnd = intOr(get("$ENDDATA"), 0);\n    }\n    const empty = totDeclared === 0;\n    if (!empty) {\n      if (!(dEnd >= dStart) || dStart <= 0) throw new FCSError("Could not find the data segment in this file.");\n      dStart += base;\n      dEnd += base;\n      if (dEnd >= bytes.length) {\n        warnings.push("The data segment extends past the end of the file; the file may be truncated.");\n        dEnd = bytes.length - 1;\n      }\n    }\n    const channels = [];\n    for (let p = 1; p <= P; p++) {\n      const name = String(get(`$P${p}N`) ?? `P${p}`).trim();\n      const label = String(get(`$P${p}S`) ?? "").trim();\n      const own = String(get(`$P${p}DATATYPE`) ?? "").trim().toUpperCase();\n      const type = datatype !== "A" && ["I", "F", "D"].includes(own) ? own : datatype;\n      const bitsRaw = String(get(`$P${p}B`) ?? "").trim();\n      const bits = bitsRaw === "*" ? "*" : intOr(bitsRaw, type === "F" ? 32 : type === "D" ? 64 : 16);\n      const range = floatOr(get(`$P${p}R`), 0);\n      const ampStr = String(get(`$P${p}E`) ?? "0,0");\n      const ampParts = ampStr.split(",").map((s) => parseFloat(s));\n      let f1 = Number.isFinite(ampParts[0]) ? ampParts[0] : 0;\n      let f2 = Number.isFinite(ampParts[1]) ? ampParts[1] : 0;\n      if (f1 > 0 && f2 === 0) f2 = 1;\n      const gain = floatOr(get(`$P${p}G`), 1);\n      const voltage = floatOr(get(`$P${p}V`), null);\n      const display = String(get(`$P${p}D`) ?? "").trim();\n      channels.push({\n        index: p - 1,\n        name,\n        label,\n        type,\n        bits,\n        range,\n        amp: [f1, f2],\n        gain,\n        voltage,\n        display,\n        kind: classifyChannel(name, label)\n      });\n    }\n    let columns;\n    let nEvents;\n    if (empty) {\n      columns = channels.map(() => new Float32Array(0));\n      nEvents = 0;\n    } else if (datatype === "A") {\n      ({ columns, nEvents } = readAscii(bytes, dStart, dEnd, channels, totDeclared));\n    } else {\n      ({ columns, nEvents } = readBinary(bytes, dStart, dEnd, channels, datatype, get("$BYTEORD"), totDeclared, warnings));\n    }\n    if (datasetCount > 1) warnings.push(`This file contains ${datasetCount} data sets; showing data set ${chosen + 1} (${header.version}).`);\n    if (maxEvents > 0 && nEvents > maxEvents) {\n      columns = columns.map((c) => c.slice(0, maxEvents));\n      nEvents = maxEvents;\n      warnings.push(`Loaded the first ${maxEvents.toLocaleString()} events only.`);\n    }\n    for (const ch of channels) {\n      const col = columns[ch.index];\n      const [f1, f2] = ch.amp;\n      if (f1 > 0 && (ch.type === "I" || ch.type === "A")) {\n        const r = ch.range > 0 ? ch.range : Math.pow(2, typeof ch.bits === "number" ? ch.bits : 16);\n        const k = f1 / r;\n        for (let i = 0; i < nEvents; i++) col[i] = Math.pow(10, k * col[i]) * f2;\n        ch.logAmplified = true;\n        ch.originalRange = ch.range;\n        ch.range = f2 * Math.pow(10, f1);\n      } else if (f1 > 0) {\n        warnings.push(`${ch.name}: ignored log amplification for floating point data.`);\n      } else if (applyGain && ch.gain && ch.gain !== 1 && ch.gain > 0 && ch.kind !== "time") {\n        const g = 1 / ch.gain;\n        for (let i = 0; i < nEvents; i++) col[i] *= g;\n        ch.gainApplied = ch.gain;\n      }\n    }\n    for (const ch of channels) {\n      const col = columns[ch.index];\n      let mn = Infinity;\n      let mx = -Infinity;\n      for (let i = 0; i < nEvents; i++) {\n        const v = col[i];\n        if (v < mn) mn = v;\n        if (v > mx) mx = v;\n      }\n      ch.min = nEvents ? mn : 0;\n      ch.max = nEvents ? mx : 0;\n      if (!(ch.range > 0)) ch.range = mx > 0 ? mx : 1;\n    }\n    const spillover = findSpillover(get);\n    return {\n      version: header.version,\n      keywords,\n      channels,\n      nEvents,\n      columns,\n      spillover,\n      datasetCount,\n      datasetIndex: chosen,\n      warnings\n    };\n  }\n  function readKeywords(bytes, base, h, warnings, quiet) {\n    let tStart = h.textStart;\n    let tEnd = h.textEnd;\n    if (!(tEnd > tStart) || base + tEnd >= bytes.length) {\n      throw new FCSError("The TEXT segment offsets in the header are invalid.");\n    }\n    const kw = parseTextSegment(bytes.subarray(base + tStart, base + tEnd + 1));\n    const get = keywordGetter(kw);\n    const sStart = intOr(get("$BEGINSTEXT"), 0);\n    const sEnd = intOr(get("$ENDSTEXT"), 0);\n    if (sStart > 0 && sEnd > sStart && base + sEnd < bytes.length && (sStart > tEnd || sEnd < tStart)) {\n      try {\n        const sup = parseTextSegment(bytes.subarray(base + sStart, base + sEnd + 1));\n        for (const k of Object.keys(sup)) if (!(k in kw)) kw[k] = sup[k];\n      } catch (e) {\n        if (!quiet) warnings.push("Could not read the supplemental TEXT segment.");\n      }\n    }\n    return kw;\n  }\n  function readBinary(bytes, dStart, dEnd, channels, datatype, byteord, totDeclared, warnings) {\n    const P = channels.length;\n    const types = channels.map((ch) => ch.type || datatype);\n    const widths = channels.map((ch, p) => {\n      if (types[p] === "F") return 4;\n      if (types[p] === "D") return 8;\n      const b = ch.bits;\n      if (typeof b !== "number" || b % 8 !== 0 || b <= 0 || b > 64) {\n        throw new FCSError(`${ch.name}: ${b}-bit integer values are not supported.`);\n      }\n      return b / 8;\n    });\n    const eventBytes = widths.reduce((a, b) => a + b, 0);\n    const available = dEnd - dStart + 1;\n    let n = Math.floor(available / eventBytes);\n    if (totDeclared >= 0) {\n      if (totDeclared > n) {\n        const n2 = Math.floor((available + 1) / eventBytes);\n        if (totDeclared <= n2 && dStart + totDeclared * eventBytes <= bytes.length) n = totDeclared;\n        else warnings.push(`File declares ${totDeclared} events but only ${n} are present.`);\n      } else n = totDeclared;\n    }\n    const columns = channels.map(() => new Float32Array(n));\n    if (n === 0) return { columns, nEvents: 0 };\n    const uniform = widths.every((w) => w === widths[0]) && types.every((t) => t === types[0]);\n    const w0 = widths[0];\n    datatype = types[0];\n    const order = byteOrder(byteord, w0);\n    const nbytes = n * eventBytes;\n    const buf = new ArrayBuffer(nbytes);\n    const u8 = new Uint8Array(buf);\n    u8.set(bytes.subarray(dStart, dStart + nbytes));\n    if (uniform && (datatype === "F" || datatype === "D" || w0 === 2 || w0 === 4 || w0 === 1)) {\n      if (w0 > 1) normaliseOrder(u8, w0, order);\n      let view;\n      if (datatype === "F") view = new Float32Array(buf);\n      else if (datatype === "D") view = new Float64Array(buf);\n      else if (w0 === 1) view = u8;\n      else if (w0 === 2) view = new Uint16Array(buf);\n      else view = new Uint32Array(buf);\n      const masks2 = datatype === "I" ? channels.map((ch) => intMask(ch, w0 * 8)) : null;\n      for (let p = 0; p < P; p++) {\n        const col = columns[p];\n        const m = masks2 ? masks2[p] : 0;\n        if (m) {\n          for (let i = 0, k = p; i < n; i++, k += P) col[i] = (view[k] & m) >>> 0;\n        } else {\n          for (let i = 0, k = p; i < n; i++, k += P) col[i] = view[k];\n        }\n      }\n      return { columns, nEvents: n };\n    }\n    const dv = new DataView(buf);\n    const little = order.little;\n    const offs = [];\n    let acc = 0;\n    for (const w of widths) {\n      offs.push(acc);\n      acc += w;\n    }\n    const masks = channels.map((ch, p) => types[p] === "I" ? intMask(ch, widths[p] * 8) : 0);\n    for (let i = 0; i < n; i++) {\n      const base = i * eventBytes;\n      for (let p = 0; p < P; p++) {\n        const o = base + offs[p];\n        if (types[p] === "F") {\n          columns[p][i] = dv.getFloat32(o, little);\n          continue;\n        }\n        if (types[p] === "D") {\n          columns[p][i] = dv.getFloat64(o, little);\n          continue;\n        }\n        let v;\n        switch (widths[p]) {\n          case 1:\n            v = dv.getUint8(o);\n            break;\n          case 2:\n            v = dv.getUint16(o, little);\n            break;\n          case 4:\n            v = dv.getUint32(o, little);\n            break;\n          case 8:\n            v = Number(dv.getBigUint64(o, little));\n            break;\n          default: {\n            v = 0;\n            const w = widths[p];\n            for (let b = 0; b < w; b++) {\n              const byte = dv.getUint8(o + b);\n              v += byte * Math.pow(256, little ? b : w - 1 - b);\n            }\n          }\n        }\n        const m = masks[p];\n        if (m && widths[p] <= 4) v = (v & m) >>> 0;\n        columns[p][i] = v;\n      }\n    }\n    return { columns, nEvents: n };\n  }\n  function intMask(ch, bits) {\n    const r = ch.range;\n    if (!(r > 0) || bits > 32) return 0;\n    const need2 = Math.ceil(Math.log2(r));\n    if (need2 >= bits || need2 <= 0) return 0;\n    return Math.pow(2, need2) - 1 >>> 0;\n  }\n  function normaliseOrder(u8, w, order) {\n    const n = u8.length;\n    if (order.perm) {\n      const perm = order.perm;\n      const tmp = new Uint8Array(w);\n      for (let i = 0; i < n; i += w) {\n        for (let b = 0; b < w; b++) tmp[perm[b]] = u8[i + b];\n        for (let b = 0; b < w; b++) u8[i + b] = tmp[b];\n      }\n      return;\n    }\n    if (order.little) return;\n    for (let i = 0; i < n; i += w) {\n      for (let a = i, b = i + w - 1; a < b; a++, b--) {\n        const t = u8[a];\n        u8[a] = u8[b];\n        u8[b] = t;\n      }\n    }\n  }\n  function readAscii(bytes, dStart, dEnd, channels, totDeclared) {\n    const P = channels.length;\n    const text = latin1.decode(bytes.subarray(dStart, dEnd + 1));\n    const delimited = channels.some((ch) => ch.bits === "*");\n    let values;\n    if (delimited) {\n      values = text.split(/[\\s,]+/).filter((s) => s.length > 0).map(Number);\n    } else {\n      values = [];\n      let pos2 = 0;\n      const widths = channels.map((ch) => ch.bits);\n      const clean = text.replace(/[\\r\\n]/g, "");\n      while (pos2 < clean.length) {\n        for (let p = 0; p < P && pos2 < clean.length; p++) {\n          values.push(Number(clean.substr(pos2, widths[p])));\n          pos2 += widths[p];\n        }\n      }\n    }\n    let n = Math.floor(values.length / P);\n    if (totDeclared >= 0 && totDeclared < n) n = totDeclared;\n    const columns = channels.map(() => new Float32Array(n));\n    for (let i = 0; i < n; i++) for (let p = 0; p < P; p++) columns[p][i] = values[i * P + p];\n    return { columns, nEvents: n };\n  }\n  function summaryKeywords(keywords) {\n    const get = keywordGetter(keywords);\n    const pick = ["$FIL", "$DATE", "$BTIM", "$ETIM", "$CYT", "$CYTSN", "$SRC", "$OP", "$INST", "TUBE NAME", "EXPERIMENT NAME", "$PROJ", "$SMNO", "$WELLID", "$PLATENAME"];\n    const out = {};\n    for (const k of pick) {\n      const v = get(k);\n      if (v !== void 0 && String(v).trim() !== "") out[k] = String(v).trim();\n    }\n    return out;\n  }\n\n  // src/core/fcs-write.js\n  var STRUCTURAL = /* @__PURE__ */ new Set([\n    "$BEGINANALYSIS",\n    "$ENDANALYSIS",\n    "$BEGINSTEXT",\n    "$ENDSTEXT",\n    "$BEGINDATA",\n    "$ENDDATA",\n    "$NEXTDATA",\n    "$PAR",\n    "$TOT",\n    "$DATATYPE",\n    "$BYTEORD",\n    "$MODE",\n    "$COMP",\n    "$UNICODE",\n    "$SPILLOVER",\n    "SPILL",\n    "$SPILL",\n    "SPILLOVER",\n    "$CRC"\n  ]);\n  var littleEndianPlatform = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;\n  var encoder = new TextEncoder();\n  function esc(s, d) {\n    let v = String(s);\n    if (v.length === 0) v = " ";\n    return v.split(d).join(d + d);\n  }\n  function pad8(n) {\n    const s = String(n);\n    if (s.length > 8) throw new Error("Header offset too large");\n    return " ".repeat(8 - s.length) + s;\n  }\n  function spilloverToString({ names, matrix }) {\n    const parts = [String(names.length), ...names];\n    for (const row of matrix) for (const v of row) parts.push(fmt(v));\n    return parts.join(",");\n  }\n  function fmt(v) {\n    if (!Number.isFinite(v)) return "0";\n    if (v === 0) return "0";\n    return String(Number(v.toPrecision(8)));\n  }\n  function writeFCS({ channels, columns, nEvents, indices = null, keywords = {}, spillover = null, extra = {} }) {\n    const P = channels.length;\n    const n = indices ? indices.length : nEvents;\n    const data = new Float32Array(n * P);\n    for (let p = 0; p < P; p++) {\n      const col = columns[p];\n      if (indices) for (let i = 0, k = p; i < n; i++, k += P) data[k] = col[indices[i]];\n      else for (let i = 0, k = p; i < n; i++, k += P) data[k] = col[i];\n    }\n    const dataBytes = new Uint8Array(data.buffer);\n    const kw = /* @__PURE__ */ new Map();\n    for (const [k, v] of Object.entries(keywords || {})) {\n      const K = k.toUpperCase();\n      if (STRUCTURAL.has(K)) continue;\n      if (/^\\$?P\\d+[A-Z_]+$/.test(K)) continue;\n      if (v === void 0 || v === null) continue;\n      kw.set(k, String(v));\n    }\n    kw.set("$BYTEORD", littleEndianPlatform ? "1,2,3,4" : "4,3,2,1");\n    kw.set("$DATATYPE", "F");\n    kw.set("$MODE", "L");\n    kw.set("$NEXTDATA", "0");\n    kw.set("$PAR", String(P));\n    kw.set("$TOT", String(n));\n    kw.set("$BEGINANALYSIS", "0");\n    kw.set("$ENDANALYSIS", "0");\n    kw.set("$BEGINSTEXT", "0");\n    kw.set("$ENDSTEXT", "0");\n    channels.forEach((ch, i) => {\n      const p = i + 1;\n      kw.set(`$P${p}N`, ch.name);\n      if (ch.label) kw.set(`$P${p}S`, ch.label);\n      kw.set(`$P${p}B`, "32");\n      kw.set(`$P${p}E`, "0,0");\n      const r = ch.range > 0 ? ch.range : 262144;\n      kw.set(`$P${p}R`, String(Math.round(r)));\n      if (Number.isFinite(ch.voltage)) kw.set(`$P${p}V`, String(ch.voltage));\n      if (ch.display) kw.set(`$P${p}D`, ch.display);\n    });\n    if (spillover && spillover.names && spillover.names.length) kw.set("$SPILLOVER", spilloverToString(spillover));\n    for (const [k, v] of Object.entries(extra || {})) if (v !== void 0 && v !== null) kw.set(k, String(v));\n    const delim = "|";\n    const build = () => {\n      let s = delim;\n      for (const [k, v] of kw) s += esc(k, delim) + delim + esc(v, delim) + delim;\n      return encoder.encode(s);\n    };\n    const textStart = 58;\n    let begin = 0;\n    let end = 0;\n    let text;\n    for (let iter = 0; iter < 12; iter++) {\n      kw.set("$BEGINDATA", String(begin));\n      kw.set("$ENDDATA", String(end));\n      text = build();\n      const textEnd2 = textStart + text.length - 1;\n      const nb = n > 0 ? textEnd2 + 1 : 0;\n      const ne = n > 0 ? nb + dataBytes.length - 1 : 0;\n      if (nb === begin && ne === end) break;\n      begin = nb;\n      end = ne;\n    }\n    const textEnd = textStart + text.length - 1;\n    const big = end > 99999999;\n    const header = "FCS3.1    " + pad8(textStart) + pad8(textEnd) + pad8(big ? 0 : begin) + pad8(big ? 0 : end) + pad8(0) + pad8(0);\n    const headerBytes = encoder.encode(header);\n    const crc = encoder.encode("00000000");\n    const out = new Uint8Array(headerBytes.length + text.length + dataBytes.length + crc.length);\n    out.set(headerBytes, 0);\n    out.set(text, textStart);\n    out.set(dataBytes, textEnd + 1);\n    out.set(crc, textEnd + 1 + dataBytes.length);\n    return out;\n  }\n\n  // src/core/logicle.js\n  var TAYLOR_LENGTH = 16;\n  var LN10 = Math.LN10;\n  var EPS = Number.EPSILON;\n  var LogicleError = class extends Error {\n  };\n  var Logicle = class {\n    constructor(T, W, M = 4.5, A = 0) {\n      if (!(T > 0)) throw new LogicleError("Logicle T must be greater than zero");\n      if (!(W >= 0)) throw new LogicleError("Logicle W must not be negative");\n      if (!(M > 0)) throw new LogicleError("Logicle M must be greater than zero");\n      if (2 * W > M) throw new LogicleError("Logicle W is too large (2W must not exceed M)");\n      if (-A > W || A + W > M - W) throw new LogicleError("Logicle A is out of range");\n      this.T = T;\n      this.W = W;\n      this.M = M;\n      this.A = A;\n      const w = W / (M + A);\n      const x2 = A / (M + A);\n      const x1 = x2 + w;\n      const x0 = x2 + 2 * w;\n      const b = (M + A) * LN10;\n      const d = solve(b, w);\n      const cA = Math.exp(x0 * (b + d));\n      const mfA = Math.exp(b * x1) - cA / Math.exp(d * x1);\n      const a = T / (Math.exp(b) - mfA - cA / Math.exp(d));\n      const c = cA * a;\n      const f = -mfA * a;\n      this.w = w;\n      this.x0 = x0;\n      this.x1 = x1;\n      this.x2 = x2;\n      this.a = a;\n      this.b = b;\n      this.c = c;\n      this.d = d;\n      this.f = f;\n      this.xTaylor = x1 + w / 4;\n      let posCoef = a * Math.exp(b * x1);\n      let negCoef = -c / Math.exp(d * x1);\n      const taylor = new Float64Array(TAYLOR_LENGTH);\n      for (let i = 0; i < TAYLOR_LENGTH; ++i) {\n        posCoef *= b / (i + 1);\n        negCoef *= -d / (i + 1);\n        taylor[i] = posCoef + negCoef;\n      }\n      taylor[1] = 0;\n      this.taylor = taylor;\n    }\n    seriesBiexponential(scale) {\n      const x = scale - this.x1;\n      const t = this.taylor;\n      let sum = t[TAYLOR_LENGTH - 1] * x;\n      for (let i = TAYLOR_LENGTH - 2; i >= 2; --i) sum = (sum + t[i]) * x;\n      return (sum * x + t[0]) * x;\n    }\n    /** Data value -> scale value (exact, Halley\'s method). */\n    scale(value) {\n      if (value === 0) return this.x1;\n      if (Number.isNaN(value)) return NaN;\n      if (value === Infinity) return Infinity;\n      if (value === -Infinity) return -Infinity;\n      const negative = value < 0;\n      if (negative) value = -value;\n      let x;\n      if (value < this.f) x = this.x1 + value / this.taylor[0];\n      else x = Math.log(value / this.a) / this.b;\n      let tolerance = 3 * EPS;\n      if (x > 1) tolerance = 3 * x * EPS;\n      for (let i = 0; i < 40; ++i) {\n        const ae2bx = this.a * Math.exp(this.b * x);\n        const ce2mdx = this.c / Math.exp(this.d * x);\n        let y;\n        if (x < this.xTaylor) y = this.seriesBiexponential(x) - value;\n        else y = ae2bx + this.f - (ce2mdx + value);\n        const abe2bx = this.b * ae2bx;\n        const cde2mdx = this.d * ce2mdx;\n        const dy = abe2bx + cde2mdx;\n        const ddy = this.b * abe2bx - this.d * cde2mdx;\n        const delta = y / (dy * (1 - y * ddy / (2 * dy * dy)));\n        x -= delta;\n        if (Math.abs(delta) < tolerance) break;\n      }\n      return negative ? 2 * this.x1 - x : x;\n    }\n    /** Scale value -> data value. */\n    inverse(scale) {\n      if (Number.isNaN(scale)) return NaN;\n      const negative = scale < this.x1;\n      if (negative) scale = 2 * this.x1 - scale;\n      let inv;\n      if (scale < this.xTaylor) inv = this.seriesBiexponential(scale);\n      else inv = this.a * Math.exp(this.b * scale) + this.f - this.c / Math.exp(this.d * scale);\n      return negative ? -inv : inv;\n    }\n    /** Derivative of the inverse (data units per scale unit). */\n    slope(scale) {\n      if (scale < this.x1) scale = 2 * this.x1 - scale;\n      return this.a * this.b * Math.exp(this.b * scale) + this.c * this.d / Math.exp(this.d * scale);\n    }\n    /** Data value at the bottom of the display (scale 0). */\n    get bottom() {\n      return this.inverse(0);\n    }\n  };\n  function solve(b, w) {\n    if (w === 0) return b;\n    const tolerance = 2 * b * EPS;\n    let dLo = 0;\n    let dHi = b;\n    let d = (dLo + dHi) / 2;\n    let lastDelta = dHi - dLo;\n    let delta;\n    const fB = -2 * Math.log(b) + w * b;\n    let f = 2 * Math.log(d) + w * d + fB;\n    let lastF = NaN;\n    for (let i = 1; i < 100; ++i) {\n      const df = 2 / d + w;\n      if (((d - dHi) * df - f) * ((d - dLo) * df - f) >= 0 || Math.abs(1.9 * f) > Math.abs(lastDelta * df)) {\n        delta = (dHi - dLo) / 2;\n        d = dLo + delta;\n        if (d === dLo) return d;\n      } else {\n        delta = f / df;\n        const t = d;\n        d -= delta;\n        if (d === t) return d;\n      }\n      if (Math.abs(delta) < tolerance) return d;\n      lastDelta = delta;\n      f = 2 * Math.log(d) + w * d + fB;\n      if (f === 0 || f === lastF) return d;\n      lastF = f;\n      if (f < 0) dLo = d;\n      else dHi = d;\n    }\n    return d;\n  }\n  var FastLogicle = class {\n    constructor(logicle, { lo: lo2 = -0.25, hi: hi2 = 1.25, bins = 16384 } = {}) {\n      this.l = logicle;\n      this.lo = lo2;\n      this.hi = hi2;\n      this.bins = bins;\n      const table = new Float64Array(bins + 1);\n      const step = (hi2 - lo2) / bins;\n      for (let i = 0; i <= bins; i++) table[i] = logicle.inverse(lo2 + i * step);\n      this.table = table;\n      this.step = step;\n      this.vmin = table[0];\n      this.vmax = table[bins];\n    }\n    scale(v) {\n      if (!(v > this.vmin && v < this.vmax)) {\n        return this.l.scale(v);\n      }\n      const t = this.table;\n      let lo2 = 0;\n      let hi2 = this.bins;\n      while (hi2 - lo2 > 1) {\n        const mid = lo2 + hi2 >> 1;\n        if (t[mid] <= v) lo2 = mid;\n        else hi2 = mid;\n      }\n      const t0 = t[lo2];\n      const frac = (v - t0) / (t[hi2] - t0);\n      return this.lo + (lo2 + frac) * this.step;\n    }\n    scaleArray(src, dst = new Float32Array(src.length)) {\n      const t = this.table;\n      const bins = this.bins;\n      const vmin = this.vmin;\n      const vmax = this.vmax;\n      const lo0 = this.lo;\n      const step = this.step;\n      const l = this.l;\n      const n = src.length;\n      for (let k = 0; k < n; k++) {\n        const v = src[k];\n        if (!(v > vmin && v < vmax)) {\n          dst[k] = l.scale(v);\n          continue;\n        }\n        let lo2 = 0;\n        let hi2 = bins;\n        while (hi2 - lo2 > 1) {\n          const mid = lo2 + hi2 >> 1;\n          if (t[mid] <= v) lo2 = mid;\n          else hi2 = mid;\n        }\n        const t0 = t[lo2];\n        dst[k] = lo0 + (lo2 + (v - t0) / (t[hi2] - t0)) * step;\n      }\n      return dst;\n    }\n  };\n  function estimateLogicleW(values, T, M = 4.5, A = 0, q = 0.05) {\n    const neg = [];\n    for (let i = 0; i < values.length; i++) {\n      const v = values[i];\n      if (v < 0) neg.push(v);\n    }\n    if (neg.length < 10) return 0;\n    neg.sort((x, y) => x - y);\n    const idx = Math.min(neg.length - 1, Math.max(0, Math.floor(q * (neg.length - 1))));\n    const r = Math.abs(neg[idx]) + EPS;\n    let w = (M - Math.log10(T / r)) / 2;\n    if (!Number.isFinite(w) || w < 0) w = 0;\n    const wMax = (M - Math.max(0, -A)) / 2;\n    if (w > wMax) w = wMax;\n    if (w > M / 2) w = M / 2;\n    if (-A > w) w = -A;\n    return Math.round(w * 100) / 100;\n  }\n\n  // src/core/hyperlog.js\n  var LN102 = Math.LN10;\n  var Hyperlog = class {\n    constructor(T, W, M = 4.5, A = 0) {\n      if (!(T > 0)) throw new Error("Hyperlog T must be greater than zero");\n      if (!(W > 0)) throw new Error("Hyperlog W must be greater than zero");\n      if (!(M > 0)) throw new Error("Hyperlog M must be greater than zero");\n      if (2 * W > M) throw new Error("Hyperlog W is too large (2W must not exceed M)");\n      if (-A > W || A + 2 * W > M) throw new Error("Hyperlog A is out of range");\n      this.T = T;\n      this.W = W;\n      this.M = M;\n      this.A = A;\n      const w = W / (M + A);\n      const x2 = A / (M + A);\n      const x1 = x2 + w;\n      const x0 = x2 + 2 * w;\n      const b = (M + A) * LN102;\n      const e0 = Math.exp(b * x0);\n      const ca = e0 / w;\n      const fa = Math.exp(b * x1) + ca * x1;\n      const a = T / (Math.exp(b) + ca - fa);\n      this.x1 = x1;\n      this.b = b;\n      this.a = a;\n      this.c = ca * a;\n      this.f = fa * a;\n    }\n    eh(y) {\n      if (y >= this.x1) return this.a * Math.exp(this.b * y) + this.c * y - this.f;\n      const r = 2 * this.x1 - y;\n      return -(this.a * Math.exp(this.b * r) + this.c * r - this.f);\n    }\n    /** derivative of EH (always positive) */\n    deh(y) {\n      const r = y >= this.x1 ? y : 2 * this.x1 - y;\n      return this.a * this.b * Math.exp(this.b * r) + this.c;\n    }\n    inverse(s) {\n      return Number.isNaN(s) ? NaN : this.eh(s);\n    }\n    scale(x) {\n      if (Number.isNaN(x)) return NaN;\n      if (x === Infinity) return Infinity;\n      if (x === -Infinity) return -Infinity;\n      if (x === 0) return this.x1;\n      const neg = x < 0;\n      const v = neg ? -x : x;\n      let y = v > this.f ? Math.log((v + this.f) / this.a) / this.b : this.x1 + v / this.deh(this.x1);\n      let lo2 = this.x1;\n      let hi2 = Math.max(this.x1 + 1e-9, y);\n      while (this.eh(hi2) < v) hi2 = this.x1 + (hi2 - this.x1) * 2 + 0.1;\n      if (y < lo2 || y > hi2) y = (lo2 + hi2) / 2;\n      for (let i = 0; i < 60; i++) {\n        const fy = this.eh(y) - v;\n        if (fy > 0) hi2 = y;\n        else lo2 = y;\n        let next = y - fy / this.deh(y);\n        if (!(next > lo2 && next < hi2)) next = (lo2 + hi2) / 2;\n        if (Math.abs(next - y) < 1e-15 * Math.max(1, Math.abs(y))) {\n          y = next;\n          break;\n        }\n        y = next;\n      }\n      return neg ? 2 * this.x1 - y : y;\n    }\n  };\n  var FastHyperlog = class {\n    constructor(h, { lo: lo2 = -0.25, hi: hi2 = 1.25, bins = 16384 } = {}) {\n      this.h = h;\n      this.lo = lo2;\n      this.bins = bins;\n      this.step = (hi2 - lo2) / bins;\n      const t = new Float64Array(bins + 1);\n      for (let i = 0; i <= bins; i++) t[i] = h.eh(lo2 + i * this.step);\n      this.table = t;\n      this.vmin = t[0];\n      this.vmax = t[bins];\n    }\n    scaleArray(src, dst = new Float32Array(src.length)) {\n      const t = this.table;\n      const bins = this.bins;\n      for (let k = 0, n = src.length; k < n; k++) {\n        const v = src[k];\n        if (!(v > this.vmin && v < this.vmax)) {\n          dst[k] = this.h.scale(v);\n          continue;\n        }\n        let a = 0;\n        let b = bins;\n        while (b - a > 1) {\n          const m = a + b >> 1;\n          if (t[m] <= v) a = m;\n          else b = m;\n        }\n        dst[k] = this.lo + (a + (v - t[a]) / (t[b] - t[a])) * this.step;\n      }\n      return dst;\n    }\n  };\n\n  // src/core/transforms.js\n  var LN103 = Math.LN10;\n  function normalizeSpec(spec) {\n    const s = spec || { type: "linear" };\n    switch (s.type) {\n      case "log": {\n        const max = pos(s.max, 262144);\n        const decades = clamp(num(s.decades, 4.5), 0.5, 12);\n        return { type: "log", max, decades };\n      }\n      case "logicle": {\n        const T = pos(s.T, 262144);\n        const M = clamp(num(s.M, 4.5), 1, 12);\n        let W = clamp(num(s.W, 0.5), 0, M / 2);\n        let A = num(s.A, 0);\n        if (A < -W) A = -W;\n        if (A + 2 * W > M) A = M - 2 * W;\n        return { type: "logicle", T, W: round(W, 4), M: round(M, 4), A: round(A, 4) };\n      }\n      case "hyperlog": {\n        const T = pos(s.T, 262144);\n        const M = clamp(num(s.M, 4.5), 1, 12);\n        let W = clamp(num(s.W, 1), 0.01, M / 2);\n        let A = num(s.A, 0);\n        if (A < -W) A = -W;\n        if (A + 2 * W > M) A = M - 2 * W;\n        return { type: "hyperlog", T, W: round(W, 4), M: round(M, 4), A: round(A, 4) };\n      }\n      case "arcsinh": {\n        const cofactor = pos(s.cofactor, 150);\n        const max = pos(s.max, 262144);\n        let min = num(s.min, -cofactor * 2);\n        if (min >= max) min = max - Math.abs(max) * 0.5 - 1;\n        return { type: "arcsinh", cofactor, max, min };\n      }\n      case "linear":\n      default: {\n        let min = num(s.min, 0);\n        let max = num(s.max, 262144);\n        if (!(max > min)) max = min + 1;\n        return { type: "linear", min, max };\n      }\n    }\n  }\n  function transformKey(spec) {\n    const s = normalizeSpec(spec);\n    switch (s.type) {\n      case "log":\n        return `log:${s.max}:${s.decades}`;\n      case "logicle":\n        return `logicle:${s.T}:${s.W}:${s.M}:${s.A}`;\n      case "hyperlog":\n        return `hyperlog:${s.T}:${s.W}:${s.M}:${s.A}`;\n      case "arcsinh":\n        return `arcsinh:${s.cofactor}:${s.max}:${s.min}`;\n      default:\n        return `linear:${s.min}:${s.max}`;\n    }\n  }\n  var LinearTransform = class {\n    constructor(s) {\n      this.spec = s;\n      this.min = s.min;\n      this.max = s.max;\n      this.span = s.max - s.min;\n    }\n    scale(x) {\n      return (x - this.min) / this.span;\n    }\n    inverse(s) {\n      return this.min + s * this.span;\n    }\n    scaleArray(src, dst = new Float32Array(src.length)) {\n      const m = this.min;\n      const k = 1 / this.span;\n      for (let i = 0, n = src.length; i < n; i++) dst[i] = (src[i] - m) * k;\n      return dst;\n    }\n    ticks() {\n      return linearTicks(this.min, this.max, (v) => this.scale(v));\n    }\n  };\n  var LogTransform = class {\n    constructor(s) {\n      this.spec = s;\n      this.T = s.max;\n      this.M = s.decades;\n      this.lo = s.max / Math.pow(10, s.decades);\n    }\n    scale(x) {\n      if (!(x > 0)) return x === x ? -Infinity : NaN;\n      return Math.log10(x / this.T) / this.M + 1;\n    }\n    inverse(s) {\n      return this.T * Math.pow(10, (s - 1) * this.M);\n    }\n    scaleArray(src, dst = new Float32Array(src.length)) {\n      const kT = 1 / this.T;\n      const kM = 1 / (this.M * LN103);\n      for (let i = 0, n = src.length; i < n; i++) {\n        const x = src[i];\n        dst[i] = x > 0 ? Math.log(x * kT) * kM + 1 : -Infinity;\n      }\n      return dst;\n    }\n    ticks() {\n      const out = [];\n      const e0 = Math.floor(Math.log10(this.lo));\n      const e1 = Math.ceil(Math.log10(this.T));\n      for (let e = e0; e <= e1; e++) {\n        const base = Math.pow(10, e);\n        for (let m = 1; m <= 9; m++) {\n          const v = m * base;\n          const s = this.scale(v);\n          if (s < -1e-9 || s > 1 + 1e-9) continue;\n          out.push({ v, s, major: m === 1, label: m === 1 ? decadeLabel(1, e) : null, priority: m === 1 ? 10 + e : 0 });\n        }\n      }\n      return out;\n    }\n  };\n  var LogicleTransform = class {\n    constructor(s) {\n      this.spec = s;\n      this.l = new Logicle(s.T, s.W, s.M, s.A);\n      this._fast = null;\n    }\n    get fast() {\n      if (!this._fast) this._fast = new FastLogicle(this.l);\n      return this._fast;\n    }\n    scale(x) {\n      return this.l.scale(x);\n    }\n    inverse(s) {\n      return this.l.inverse(s);\n    }\n    scaleArray(src, dst) {\n      return this.fast.scaleArray(src, dst);\n    }\n    ticks() {\n      return decadeTicks(this);\n    }\n  };\n  var HyperlogTransform = class {\n    constructor(s) {\n      this.spec = s;\n      this.h = new Hyperlog(s.T, s.W, s.M, s.A);\n      this._fast = null;\n    }\n    scale(x) {\n      return this.h.scale(x);\n    }\n    inverse(s) {\n      return this.h.inverse(s);\n    }\n    scaleArray(src, dst) {\n      if (!this._fast) this._fast = new FastHyperlog(this.h);\n      return this._fast.scaleArray(src, dst);\n    }\n    ticks() {\n      return decadeTicks(this);\n    }\n  };\n  var ArcsinhTransform = class {\n    constructor(s) {\n      this.spec = s;\n      this.c = s.cofactor;\n      this.a0 = Math.asinh(s.min / s.cofactor);\n      this.a1 = Math.asinh(s.max / s.cofactor);\n      this.span = this.a1 - this.a0;\n    }\n    scale(x) {\n      return (Math.asinh(x / this.c) - this.a0) / this.span;\n    }\n    inverse(s) {\n      return this.c * Math.sinh(this.a0 + s * this.span);\n    }\n    scaleArray(src, dst = new Float32Array(src.length)) {\n      const ic = 1 / this.c;\n      const a0 = this.a0;\n      const k = 1 / this.span;\n      for (let i = 0, n = src.length; i < n; i++) dst[i] = (Math.asinh(src[i] * ic) - a0) * k;\n      return dst;\n    }\n    ticks() {\n      return decadeTicks(this);\n    }\n    /** Gating-ML 2.0 fasinh parameters equivalent to this transform. */\n    gatingML() {\n      const T = this.spec.max;\n      const M = Math.asinh(T / this.c) / LN103;\n      const A = Math.asinh(-this.spec.min / this.c) / LN103;\n      return { T, M, A };\n    }\n  };\n  var cache = /* @__PURE__ */ new Map();\n  function makeTransform(spec) {\n    const s = normalizeSpec(spec);\n    const key = transformKey(s);\n    let t = cache.get(key);\n    if (t) return t;\n    switch (s.type) {\n      case "log":\n        t = new LogTransform(s);\n        break;\n      case "logicle":\n        t = new LogicleTransform(s);\n        break;\n      case "hyperlog":\n        t = new HyperlogTransform(s);\n        break;\n      case "arcsinh":\n        t = new ArcsinhTransform(s);\n        break;\n      default:\n        t = new LinearTransform(s);\n    }\n    t.key = key;\n    t.type = s.type;\n    if (cache.size > 500) cache.clear();\n    cache.set(key, t);\n    return t;\n  }\n  var SUP = { "0": "\\u2070", "1": "\\xB9", "2": "\\xB2", "3": "\\xB3", "4": "\\u2074", "5": "\\u2075", "6": "\\u2076", "7": "\\u2077", "8": "\\u2078", "9": "\\u2079", "-": "\\u207B" };\n  function decadeLabel(sign, e) {\n    const sup = String(e).split("").map((c) => SUP[c] || c).join("");\n    return `${sign < 0 ? "\\u2212" : ""}10${sup}`;\n  }\n  function decadeTicks(t) {\n    const out = [];\n    const lo2 = t.inverse(0);\n    const hi2 = t.inverse(1);\n    out.push({ v: 0, s: t.scale(0), major: true, label: "0", priority: 100 });\n    const maxPos = Math.floor(Math.log10(Math.max(hi2, 1)));\n    for (let e = 0; e <= maxPos + 1; e++) {\n      const base = Math.pow(10, e);\n      for (let m = 1; m <= 9; m++) {\n        const v = m * base;\n        if (v > hi2 * 1.0000001) break;\n        const s = t.scale(v);\n        if (s < 0 || s > 1.0000001) continue;\n        out.push({ v, s, major: m === 1, label: m === 1 ? decadeLabel(1, e) : null, priority: m === 1 ? 10 + e : 0 });\n      }\n    }\n    if (lo2 < 0) {\n      const maxNeg = Math.floor(Math.log10(-lo2));\n      for (let e = 0; e <= maxNeg; e++) {\n        const base = Math.pow(10, e);\n        for (let m = 1; m <= 9; m++) {\n          const v = -m * base;\n          if (v < lo2 * 1.0000001) break;\n          const s = t.scale(v);\n          if (s < 0 || s > 1) continue;\n          out.push({ v, s, major: m === 1, label: m === 1 ? decadeLabel(-1, e) : null, priority: m === 1 ? 5 + e : 0 });\n        }\n      }\n    }\n    return out;\n  }\n  function linearTicks(min, max, scale) {\n    const span = max - min;\n    const raw = span / 5;\n    const mag = Math.pow(10, Math.floor(Math.log10(raw)));\n    const norm = raw / mag;\n    let step;\n    if (norm < 1.5) step = 1 * mag;\n    else if (norm < 2.25) step = 2 * mag;\n    else if (norm < 3.5) step = 2.5 * mag;\n    else if (norm < 7.5) step = 5 * mag;\n    else step = 10 * mag;\n    const out = [];\n    const first = Math.ceil(min / step - 1e-9) * step;\n    for (let v = first, i = 0; v <= max + step * 1e-9 && i < 100; v += step, i++) {\n      const vv = Math.abs(v) < step * 1e-9 ? 0 : v;\n      out.push({ v: vv, s: scale(vv), major: true, label: formatValue(vv, step), priority: 10 });\n      const half = vv + step / 2;\n      if (half <= max) out.push({ v: half, s: scale(half), major: false, label: null, priority: 0 });\n    }\n    if (first - step / 2 >= min) out.push({ v: first - step / 2, s: scale(first - step / 2), major: false, label: null, priority: 0 });\n    return out;\n  }\n  function formatValue(v, step) {\n    if (!Number.isFinite(v)) return v > 0 ? "\\u221E" : v < 0 ? "\\u2212\\u221E" : "\\u2013";\n    const a = Math.abs(v);\n    const sign = v < 0 ? "\\u2212" : "";\n    if (a === 0) return "0";\n    if (a >= 1e6 && (step === void 0 || step >= 1e5)) return sign + trim(a / 1e6, step ? step / 1e6 : null) + "M";\n    if (a >= 1e3 && (step === void 0 || step >= 100)) return sign + trim(a / 1e3, step ? step / 1e3 : null) + "K";\n    return sign + trim(a, step || null);\n  }\n  function trim(x, step) {\n    let digits = 2;\n    if (step) digits = Math.max(0, Math.min(6, -Math.floor(Math.log10(step) + 1e-9) + 1));\n    else if (x >= 100) digits = 0;\n    else if (x >= 10) digits = 1;\n    let s = x.toFixed(digits);\n    if (s.indexOf(".") >= 0) s = s.replace(/0+$/, "").replace(/\\.$/, "");\n    return s;\n  }\n  function num(v, d) {\n    const x = typeof v === "string" ? parseFloat(v) : v;\n    return Number.isFinite(x) ? x : d;\n  }\n  function pos(v, d) {\n    const x = num(v, d);\n    return x > 0 ? x : d;\n  }\n  function clamp(x, a, b) {\n    return x < a ? a : x > b ? b : x;\n  }\n  function round(x, d) {\n    const k = Math.pow(10, d);\n    return Math.round(x * k) / k;\n  }\n\n  // src/core/compensation.js\n  var CompensationError = class extends Error {\n  };\n  function identity(n) {\n    const m = [];\n    for (let i = 0; i < n; i++) {\n      const row = new Array(n).fill(0);\n      row[i] = 1;\n      m.push(row);\n    }\n    return m;\n  }\n  function invertMatrix(m) {\n    const n = m.length;\n    const a = m.map((r) => Float64Array.from(r));\n    const inv = identity(n).map((r) => Float64Array.from(r));\n    for (let col = 0; col < n; col++) {\n      let piv = col;\n      let best = Math.abs(a[col][col]);\n      for (let r = col + 1; r < n; r++) {\n        const v = Math.abs(a[r][col]);\n        if (v > best) {\n          best = v;\n          piv = r;\n        }\n      }\n      if (best < 1e-12) throw new CompensationError("The spillover matrix cannot be inverted (it is singular).");\n      if (piv !== col) {\n        [a[piv], a[col]] = [a[col], a[piv]];\n        [inv[piv], inv[col]] = [inv[col], inv[piv]];\n      }\n      const p = a[col][col];\n      for (let c = 0; c < n; c++) {\n        a[col][c] /= p;\n        inv[col][c] /= p;\n      }\n      for (let r = 0; r < n; r++) {\n        if (r === col) continue;\n        const f = a[r][col];\n        if (f === 0) continue;\n        for (let c = 0; c < n; c++) {\n          a[r][c] -= f * a[col][c];\n          inv[r][c] -= f * inv[col][c];\n        }\n      }\n    }\n    return inv.map((r) => Array.from(r));\n  }\n  function matchChannels(names, channels) {\n    const byName = /* @__PURE__ */ new Map();\n    const byLower = /* @__PURE__ */ new Map();\n    const byLabel = /* @__PURE__ */ new Map();\n    channels.forEach((ch, i) => {\n      byName.set(ch.name, i);\n      byLower.set(ch.name.toLowerCase(), i);\n      if (ch.label) byLabel.set(ch.label.toLowerCase(), i);\n    });\n    return names.map((raw) => {\n      const name = String(raw).trim();\n      if (byName.has(name)) return byName.get(name);\n      const lower = name.toLowerCase();\n      if (byLower.has(lower)) return byLower.get(lower);\n      const stripped = lower.replace(/^comp-/, "");\n      if (byLower.has(stripped)) return byLower.get(stripped);\n      if (/^\\d+$/.test(name)) {\n        const k = parseInt(name, 10) - 1;\n        if (k >= 0 && k < channels.length) return k;\n      }\n      if (byLabel.has(lower)) return byLabel.get(lower);\n      return -1;\n    });\n  }\n  function matrixKey(m) {\n    if (!m) return "none";\n    let h = 2166136261;\n    const s = m.names.join("") + "|" + m.matrix.map((r) => r.map((v) => v.toPrecision(10)).join(",")).join(";");\n    for (let i = 0; i < s.length; i++) {\n      h ^= s.charCodeAt(i);\n      h = Math.imul(h, 16777619);\n    }\n    return "m" + (h >>> 0).toString(36) + ":" + m.names.length;\n  }\n  function compensateColumns(columns, idx, inv, N) {\n    const n = idx.length;\n    const out = [];\n    for (let j = 0; j < n; j++) {\n      const dst = new Float32Array(N);\n      for (let k = 0; k < n; k++) {\n        const coef = inv[k][j];\n        if (coef === 0) continue;\n        const src = columns[idx[k]];\n        if (coef === 1) {\n          for (let i = 0; i < N; i++) dst[i] += src[i];\n        } else {\n          for (let i = 0; i < N; i++) dst[i] += src[i] * coef;\n        }\n      }\n      out.push(dst);\n    }\n    return out;\n  }\n\n  // src/core/gates.js\n  var ROOT = "root";\n  var GateError = class extends Error {\n  };\n  function needsScale(g) {\n    return g && (g.type === "polygon" || g.type === "ellipse");\n  }\n  function evalSpecs(g, transforms) {\n    if (g.scale && g.scale.x && g.scale.y) return [g.scale.x, g.scale.y];\n    return [transforms[g.x], transforms[g.y]];\n  }\n  var GEOMETRY_KEYS = ["rect", "polygon", "ellipse", "range"];\n  function applyOverride(g, ov) {\n    if (!ov) return g;\n    const out = { ...g };\n    for (const k of GEOMETRY_KEYS) if (ov[k] !== void 0) out[k] = ov[k];\n    return out;\n  }\n  function gateDeps(g) {\n    const deps = [];\n    if (g.parent && g.parent !== ROOT) deps.push(g.parent);\n    if (g.type === "boolean" && g.boolean && Array.isArray(g.boolean.refs)) {\n      for (const r of g.boolean.refs) if (r && r.id && r.id !== ROOT) deps.push(r.id);\n    }\n    return deps;\n  }\n  function orderGates(gates) {\n    const list = Array.isArray(gates) ? gates : Object.values(gates);\n    const byId = new Map(list.map((g) => [g.id, g]));\n    const state = /* @__PURE__ */ new Map();\n    const ordered = [];\n    const invalid = /* @__PURE__ */ new Set();\n    const visit = (g, stack) => {\n      const s = state.get(g.id);\n      if (s === 2) return !invalid.has(g.id);\n      if (s === 1) {\n        for (const id of stack) invalid.add(id);\n        return false;\n      }\n      state.set(g.id, 1);\n      stack.push(g.id);\n      let ok = true;\n      for (const d of gateDeps(g)) {\n        const dg = byId.get(d);\n        if (!dg) {\n          ok = false;\n          continue;\n        }\n        if (!visit(dg, stack)) ok = false;\n      }\n      stack.pop();\n      state.set(g.id, 2);\n      if (!ok) invalid.add(g.id);\n      else ordered.push(g);\n      return ok;\n    };\n    for (const g of list) visit(g, []);\n    return { ordered, invalid };\n  }\n  function lo(v) {\n    return v === null || v === void 0 ? -Infinity : v;\n  }\n  function hi(v) {\n    return v === null || v === void 0 ? Infinity : v;\n  }\n  function evaluateGate(g, parent, ctx) {\n    switch (g.type) {\n      case "rect":\n        return rectFilter(g, parent, ctx);\n      case "range":\n        return rangeFilter(g, parent, ctx);\n      case "polygon":\n        return polygonFilter(g, parent, ctx);\n      case "ellipse":\n        return ellipseFilter(g, parent, ctx);\n      case "boolean":\n        return booleanFilter(g, parent, ctx);\n      default:\n        throw new GateError(`Unknown gate type "${g.type}"`);\n    }\n  }\n  function need(ctx, fn, ch) {\n    const a = ctx[fn](ch);\n    if (!a) throw new GateError(`Channel "${ch}" is not present in this sample.`);\n    return a;\n  }\n  function rectFilter(g, parent, ctx) {\n    const xv = need(ctx, "values", g.x);\n    const yv = need(ctx, "values", g.y);\n    const r = g.rect || {};\n    const x0 = lo(r.x0), x1 = hi(r.x1), y0 = lo(r.y0), y1 = hi(r.y1);\n    const out = new Uint32Array(parent.length);\n    let m = 0;\n    for (let k = 0, n = parent.length; k < n; k++) {\n      const i = parent[k];\n      const x = xv[i];\n      if (x >= x0 && x < x1) {\n        const y = yv[i];\n        if (y >= y0 && y < y1) out[m++] = i;\n      }\n    }\n    return out.slice(0, m);\n  }\n  function rangeFilter(g, parent, ctx) {\n    const xv = need(ctx, "values", g.x);\n    const r = g.range || {};\n    const x0 = lo(r.lo), x1 = hi(r.hi);\n    const out = new Uint32Array(parent.length);\n    let m = 0;\n    for (let k = 0, n = parent.length; k < n; k++) {\n      const i = parent[k];\n      const x = xv[i];\n      if (x >= x0 && x < x1) out[m++] = i;\n    }\n    return out.slice(0, m);\n  }\n  function clampScale(v) {\n    if (v === Infinity) return 1e6;\n    if (v === -Infinity) return -1e6;\n    if (v !== v) return 0;\n    return v;\n  }\n  function polygonToScale(poly, tx, ty) {\n    return poly.map(([x, y]) => [clampScale(tx.scale(x)), clampScale(ty.scale(y))]);\n  }\n  function evalSpace(g, ctx) {\n    const own = g.scale;\n    if (own && own.x && own.y && ctx.scaledWith) {\n      const sx = ctx.scaledWith(g.x, own.x);\n      const sy = ctx.scaledWith(g.y, own.y);\n      if (!sx) throw new GateError(`Channel "${g.x}" is not present in this sample.`);\n      if (!sy) throw new GateError(`Channel "${g.y}" is not present in this sample.`);\n      return { sx, sy, tx: ctx.transformFor(own.x), ty: ctx.transformFor(own.y), clamp: false };\n    }\n    return { sx: need(ctx, "scaled", g.x), sy: need(ctx, "scaled", g.y), tx: ctx.transform(g.x), ty: ctx.transform(g.y), clamp: true };\n  }\n  function polygonFilter(g, parent, ctx) {\n    const poly = g.polygon || [];\n    if (poly.length < 3) return new Uint32Array(0);\n    const { sx, sy, tx, ty, clamp: clamp2 } = evalSpace(g, ctx);\n    const verts = polygonToScale(poly, tx, ty);\n    const n = verts.length;\n    const vx = new Float64Array(n);\n    const vy = new Float64Array(n);\n    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;\n    for (let a = 0; a < n; a++) {\n      vx[a] = verts[a][0];\n      vy[a] = verts[a][1];\n      if (vx[a] < minX) minX = vx[a];\n      if (vx[a] > maxX) maxX = vx[a];\n      if (vy[a] < minY) minY = vy[a];\n      if (vy[a] > maxY) maxY = vy[a];\n    }\n    const out = new Uint32Array(parent.length);\n    let m = 0;\n    for (let k = 0, len = parent.length; k < len; k++) {\n      const i = parent[k];\n      let x = sx[i];\n      if (clamp2) x = x > 0 ? x < 1 ? x : 1 : 0;\n      if (!(x >= minX && x <= maxX)) continue;\n      let y = sy[i];\n      if (clamp2) y = y > 0 ? y < 1 ? y : 1 : 0;\n      if (!(y >= minY && y <= maxY)) continue;\n      let inside = false;\n      for (let a = 0, b = n - 1; a < n; b = a++) {\n        const ya = vy[a];\n        const yb = vy[b];\n        if (ya > y !== yb > y) {\n          const xi = vx[a] + (y - ya) * (vx[b] - vx[a]) / (yb - ya);\n          if (x < xi) inside = !inside;\n        }\n      }\n      if (inside) out[m++] = i;\n    }\n    return out.slice(0, m);\n  }\n  function ellipseToScale(e, tx, ty) {\n    const c = [clampScale(tx.scale(e.c[0])), clampScale(ty.scale(e.c[1]))];\n    const a = [clampScale(tx.scale(e.a[0])), clampScale(ty.scale(e.a[1]))];\n    const b = [clampScale(tx.scale(e.b[0])), clampScale(ty.scale(e.b[1]))];\n    return { c, u: [a[0] - c[0], a[1] - c[1]], v: [b[0] - c[0], b[1] - c[1]] };\n  }\n  function ellipseFilter(g, parent, ctx) {\n    const { sx, sy, tx, ty, clamp: clamp2 } = evalSpace(g, ctx);\n    const { c, u, v } = ellipseToScale(g.ellipse, tx, ty);\n    const det = u[0] * v[1] - v[0] * u[1];\n    if (Math.abs(det) < 1e-14) return new Uint32Array(0);\n    const i00 = v[1] / det, i01 = -v[0] / det, i10 = -u[1] / det, i11 = u[0] / det;\n    const rx = Math.abs(u[0]) + Math.abs(v[0]);\n    const ry = Math.abs(u[1]) + Math.abs(v[1]);\n    const out = new Uint32Array(parent.length);\n    let m = 0;\n    for (let k = 0, n = parent.length; k < n; k++) {\n      const i = parent[k];\n      let x = sx[i];\n      if (clamp2) x = x > 0 ? x < 1 ? x : 1 : 0;\n      const dx = x - c[0];\n      if (!(dx <= rx && dx >= -rx)) continue;\n      let y = sy[i];\n      if (clamp2) y = y > 0 ? y < 1 ? y : 1 : 0;\n      const dy = y - c[1];\n      if (!(dy <= ry && dy >= -ry)) continue;\n      const s = i00 * dx + i01 * dy;\n      const t = i10 * dx + i11 * dy;\n      if (s * s + t * t <= 1) out[m++] = i;\n    }\n    return out.slice(0, m);\n  }\n  function booleanFilter(g, parent, ctx) {\n    const spec = g.boolean || { op: "and", refs: [] };\n    const refs = (spec.refs || []).filter((r) => r && r.id);\n    if (refs.length === 0) return new Uint32Array(0);\n    const N = ctx.N;\n    const masks = refs.map((r) => {\n      const mask = new Uint8Array(N);\n      const idx = ctx.pop(r.id);\n      if (!idx) throw new GateError(`Boolean gate "${g.name}" refers to a missing population.`);\n      for (let k = 0; k < idx.length; k++) mask[idx[k]] = 1;\n      return mask;\n    });\n    const nots = refs.map((r) => r.not ? 1 : 0);\n    const out = new Uint32Array(parent.length);\n    let m = 0;\n    const R = refs.length;\n    if (spec.op === "or") {\n      for (let k = 0; k < parent.length; k++) {\n        const i = parent[k];\n        for (let r = 0; r < R; r++) {\n          if ((masks[r][i] ^ nots[r]) === 1) {\n            out[m++] = i;\n            break;\n          }\n        }\n      }\n    } else {\n      for (let k = 0; k < parent.length; k++) {\n        const i = parent[k];\n        let ok = true;\n        for (let r = 0; r < R; r++) {\n          if ((masks[r][i] ^ nots[r]) !== 1) {\n            ok = false;\n            break;\n          }\n        }\n        if (ok) out[m++] = i;\n      }\n    }\n    return out.slice(0, m);\n  }\n  function hashString(s) {\n    let h1 = 3735928559 ^ s.length;\n    let h2 = 1103547991 ^ s.length;\n    for (let i = 0; i < s.length; i++) {\n      const ch = s.charCodeAt(i);\n      h1 = Math.imul(h1 ^ ch, 2654435761);\n      h2 = Math.imul(h2 ^ ch, 1597334677);\n    }\n    h1 = Math.imul(h1 ^ h1 >>> 16, 2246822507) ^ Math.imul(h2 ^ h2 >>> 13, 3266489909);\n    h2 = Math.imul(h2 ^ h2 >>> 16, 2246822507) ^ Math.imul(h1 ^ h1 >>> 13, 3266489909);\n    return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);\n  }\n\n  // src/core/stats.js\n  function subset(values, idx) {\n    const out = new Float32Array(idx.length);\n    let m = 0;\n    for (let k = 0; k < idx.length; k++) {\n      const v = values[idx[k]];\n      if (v === v && v !== Infinity && v !== -Infinity) out[m++] = v;\n    }\n    return m === idx.length ? out : out.slice(0, m);\n  }\n  function percentileSorted(sorted, p) {\n    const n = sorted.length;\n    if (n === 0) return NaN;\n    if (n === 1) return sorted[0];\n    const pos2 = Math.min(100, Math.max(0, p)) / 100 * (n - 1);\n    const lo2 = Math.floor(pos2);\n    const hi2 = Math.min(n - 1, lo2 + 1);\n    const f = pos2 - lo2;\n    return sorted[lo2] + f * (sorted[hi2] - sorted[lo2]);\n  }\n  function channelStats(values, idx, wanted, scaled = null, transform = null) {\n    const res = {};\n    const vals = subset(values, idx);\n    const n = vals.length;\n    let sorted = null;\n    const getSorted = () => {\n      if (!sorted) {\n        sorted = vals.slice();\n        sorted.sort();\n      }\n      return sorted;\n    };\n    let mean = NaN;\n    let sd = NaN;\n    if (n > 0) {\n      let s = 0;\n      for (let i = 0; i < n; i++) s += vals[i];\n      mean = s / n;\n      let ss = 0;\n      for (let i = 0; i < n; i++) {\n        const d = vals[i] - mean;\n        ss += d * d;\n      }\n      sd = n > 1 ? Math.sqrt(ss / (n - 1)) : 0;\n    }\n    for (const w of wanted) {\n      const key = w.stat === "percentile" ? `percentile:${w.arg ?? 50}` : w.stat;\n      if (n === 0) {\n        res[key] = NaN;\n        continue;\n      }\n      switch (w.stat) {\n        case "mean":\n          res[key] = mean;\n          break;\n        case "sd":\n          res[key] = sd;\n          break;\n        case "cv":\n          res[key] = mean !== 0 ? 100 * sd / Math.abs(mean) : NaN;\n          break;\n        case "median":\n          res[key] = percentileSorted(getSorted(), 50);\n          break;\n        case "min":\n          res[key] = getSorted()[0];\n          break;\n        case "max":\n          res[key] = getSorted()[n - 1];\n          break;\n        case "percentile":\n          res[key] = percentileSorted(getSorted(), w.arg ?? 50);\n          break;\n        case "rsd": {\n          const so = getSorted();\n          res[key] = (percentileSorted(so, 84.13) - percentileSorted(so, 15.87)) / 2;\n          break;\n        }\n        case "rcv": {\n          const so = getSorted();\n          const med = percentileSorted(so, 50);\n          const r = (percentileSorted(so, 84.13) - percentileSorted(so, 15.87)) / 2;\n          res[key] = med !== 0 ? 100 * r / Math.abs(med) : NaN;\n          break;\n        }\n        case "geomean": {\n          let s = 0;\n          let c = 0;\n          for (let i = 0; i < n; i++) {\n            const v = vals[i];\n            if (v > 0) {\n              s += Math.log(v);\n              c++;\n            }\n          }\n          res[key] = c > 0 ? Math.exp(s / c) : NaN;\n          break;\n        }\n        case "mode": {\n          if (scaled && transform) {\n            const bins = 256;\n            const h = new Float64Array(bins);\n            for (let k = 0; k < idx.length; k++) {\n              let s = scaled[idx[k]];\n              if (!(s >= 0)) s = 0;\n              if (s > 1) s = 1;\n              h[Math.min(bins - 1, s * bins | 0)]++;\n            }\n            let best = 0;\n            for (let b = 1; b < bins; b++) if (h[b] > h[best]) best = b;\n            res[key] = transform.inverse((best + 0.5) / bins);\n          } else {\n            res[key] = percentileSorted(getSorted(), 50);\n          }\n          break;\n        }\n        default:\n          res[key] = NaN;\n      }\n    }\n    return res;\n  }\n\n  // src/core/csv.js\n  function csvCell(v) {\n    if (v === null || v === void 0) return "";\n    if (typeof v === "number") {\n      if (!Number.isFinite(v)) return "";\n      return String(v);\n    }\n    const s = String(v);\n    return /[",\\n\\r]/.test(s) ? `"${s.replace(/"/g, \'""\')}"` : s;\n  }\n  function toCSV(rows) {\n    return rows.map((r) => r.map(csvCell).join(",")).join("\\r\\n") + "\\r\\n";\n  }\n  function parseEventTable(text) {\n    const lines = text.split(/\\r?\\n/).filter((l) => l.trim().length > 0);\n    if (lines.length < 2) throw new Error("The table needs a header row and at least one row of values.");\n    const head = lines[0];\n    const sep = head.indexOf("	") >= 0 ? "	" : head.split(";").length > head.split(",").length ? ";" : ",";\n    const split = (line) => {\n      const out = [];\n      let cur = "";\n      let q = false;\n      for (let i = 0; i < line.length; i++) {\n        const c = line[i];\n        if (q) {\n          if (c === \'"\') {\n            if (line[i + 1] === \'"\') {\n              cur += \'"\';\n              i++;\n            } else q = false;\n          } else cur += c;\n        } else if (c === \'"\') q = true;\n        else if (c === sep) {\n          out.push(cur);\n          cur = "";\n        } else cur += c;\n      }\n      out.push(cur);\n      return out;\n    };\n    const channels = split(head).map((s) => s.trim());\n    const P = channels.length;\n    const n = lines.length - 1;\n    const columns = channels.map(() => new Float32Array(n));\n    let m = 0;\n    for (let r = 1; r < lines.length; r++) {\n      const cells = split(lines[r]);\n      if (cells.length < P) continue;\n      let ok = true;\n      for (let p = 0; p < P; p++) {\n        const v = parseFloat(cells[p]);\n        if (!Number.isFinite(v)) {\n          ok = false;\n          break;\n        }\n        columns[p][m] = v;\n      }\n      if (ok) m++;\n    }\n    if (m === 0) throw new Error("No numeric rows were found in the table.");\n    return { channels, columns: m === n ? columns : columns.map((c) => c.slice(0, m)), nEvents: m };\n  }\n\n  // src/core/demo-data.js\n  function mulberry32(seed) {\n    let a = seed >>> 0;\n    return function rand() {\n      a = a + 1831565813 >>> 0;\n      let t = a;\n      t = Math.imul(t ^ t >>> 15, t | 1);\n      t ^= t + Math.imul(t ^ t >>> 7, t | 61);\n      return ((t ^ t >>> 14) >>> 0) / 4294967296;\n    };\n  }\n  function normalGen(rand) {\n    let spare = null;\n    return function normal() {\n      if (spare !== null) {\n        const s = spare;\n        spare = null;\n        return s;\n      }\n      let u = 0;\n      let v = 0;\n      while (u <= 1e-12) u = rand();\n      v = rand();\n      const r = Math.sqrt(-2 * Math.log(u));\n      spare = r * Math.sin(2 * Math.PI * v);\n      return r * Math.cos(2 * Math.PI * v);\n    };\n  }\n  var DEMO_DETECTORS = ["BV421-A", "BV510-A", "FITC-A", "PE-A", "PerCP-Cy5-5-A", "PE-Cy7-A", "APC-A"];\n  var DEMO_MARKERS = ["CD14", "Viability", "CD3", "CD56", "CD8", "CD4", "CD19"];\n  var DEMO_SPILL = [\n    [1, 0.22, 0.03, 5e-3, 2e-3, 1e-3, 0],\n    [0.03, 1, 0.18, 0.04, 0.01, 3e-3, 1e-3],\n    [0, 0.02, 1, 0.24, 0.06, 8e-3, 1e-3],\n    [0, 2e-3, 0.012, 1, 0.16, 0.03, 3e-3],\n    [0, 0, 0, 0.01, 1, 0.18, 0.06],\n    [0, 0, 0, 0.02, 0.04, 1, 0.012],\n    [0, 0, 0, 2e-3, 0.12, 0.02, 1]\n  ];\n  var DEMO_SPILL_ACQ = DEMO_SPILL.map((row, i) => row.map((v, j) => {\n    if (i === 2 && j === 3) return 0.205;\n    if (i === 4 && j === 5) return 0.15;\n    if (i === 0 && j === 1) return 0.19;\n    return v;\n  }));\n  var AUTO = { lymph: [140, 260, 180, 70, 55, 35, 25], mono: [320, 520, 380, 160, 110, 70, 50], gran: [520, 800, 640, 260, 170, 110, 80], dead: [600, 900, 500, 260, 200, 150, 120], debris: [90, 160, 110, 50, 40, 25, 20], bead: [220, 300, 260, 120, 90, 70, 60] };\n  var DONORS = [\n    { name: "PBMC_Donor01", seed: 101, cd4: 0.63, cd8: 0.28, t: 0.7, b: 0.11, nk: 0.13, dead: 0.05, mono: 0.16 },\n    { name: "PBMC_Donor02", seed: 202, cd4: 0.48, cd8: 0.43, t: 0.62, b: 0.15, nk: 0.17, dead: 0.08, mono: 0.12 },\n    { name: "PBMC_Donor03", seed: 303, cd4: 0.71, cd8: 0.2, t: 0.74, b: 0.09, nk: 0.1, dead: 0.03, mono: 0.21 }\n  ];\n  var CH = [\n    { name: "FSC-A", label: "", range: 262144, voltage: 380 },\n    { name: "FSC-H", label: "", range: 262144, voltage: 380 },\n    { name: "SSC-A", label: "", range: 262144, voltage: 260 },\n    { name: "SSC-H", label: "", range: 262144, voltage: 260 },\n    ...DEMO_DETECTORS.map((d, i) => ({ name: d, label: DEMO_MARKERS[i], range: 262144, voltage: [420, 440, 480, 520, 560, 600, 540][i] })),\n    { name: "Time", label: "", range: 262144 }\n  ];\n  var MAX = 262143;\n  var Sim = class {\n    constructor(seed) {\n      this.rand = mulberry32(seed);\n      this.normal = normalGen(this.rand);\n    }\n    ln(median, sigma) {\n      return median * Math.exp(sigma * this.normal());\n    }\n    pick(weights) {\n      const r = this.rand();\n      let acc = 0;\n      for (let i = 0; i < weights.length; i++) {\n        acc += weights[i];\n        if (r < acc) return i;\n      }\n      return weights.length - 1;\n    }\n  };\n  function makeCell(sim, type, d) {\n    const dyes = new Float64Array(7);\n    let fsc;\n    let ssc;\n    let auto = AUTO.lymph;\n    switch (type) {\n      case "debris":\n        fsc = Math.min(3e4, 2e3 + sim.rand() * 16e3 + Math.abs(sim.normal()) * 6e3);\n        ssc = sim.ln(7e3, 0.65);\n        auto = AUTO.debris;\n        if (sim.rand() < 0.3) dyes[1] = sim.ln(9e3, 0.8);\n        break;\n      case "dead":\n        fsc = 4e4 + sim.normal() * 9e3;\n        ssc = sim.ln(3e4, 0.32);\n        auto = AUTO.dead;\n        dyes[1] = sim.ln(42e3, 0.35);\n        if (sim.rand() < 0.5) dyes[2] = sim.ln(4e3, 0.6);\n        break;\n      case "gran":\n        fsc = 118e3 + sim.normal() * 13e3;\n        ssc = sim.ln(14e4, 0.14);\n        auto = AUTO.gran;\n        dyes[0] = sim.ln(900, 0.5);\n        break;\n      case "mono": {\n        fsc = 102e3 + sim.normal() * 12e3;\n        ssc = sim.ln(56e3, 0.2);\n        auto = AUTO.mono;\n        const classical = sim.rand() < 0.85;\n        dyes[0] = classical ? sim.ln(32e3, 0.32) : sim.ln(3500, 0.45);\n        dyes[5] = sim.ln(1400, 0.4);\n        break;\n      }\n      default: {\n        fsc = 62e3 + sim.normal() * 6500;\n        ssc = sim.ln(17500, 0.17);\n        auto = AUTO.lymph;\n        const sub = sim.pick([d.t, d.b, d.nk, 1 - d.t - d.b - d.nk]);\n        if (sub === 0) {\n          dyes[2] = sim.ln(12500, 0.3);\n          const t = sim.pick([d.cd4, d.cd8, 0.025, Math.max(0, 1 - d.cd4 - d.cd8 - 0.025)]);\n          if (t === 0) dyes[5] = sim.ln(8500, 0.28);\n          else if (t === 1) dyes[4] = sim.ln(26e3, 0.3);\n          else if (t === 2) {\n            dyes[5] = sim.ln(6e3, 0.3);\n            dyes[4] = sim.ln(14e3, 0.35);\n          }\n          if (sim.rand() < 0.04) dyes[3] = sim.ln(4200, 0.4);\n        } else if (sub === 1) {\n          dyes[6] = sim.ln(9500, 0.3);\n          fsc += 3e3;\n        } else if (sub === 2) {\n          const bright = sim.rand() < 0.1;\n          dyes[3] = bright ? sim.ln(32e3, 0.25) : sim.ln(6500, 0.35);\n          if (sim.rand() < 0.35) dyes[4] = sim.ln(2200, 0.4);\n          ssc *= 1.15;\n        }\n        break;\n      }\n    }\n    return { fsc: Math.max(200, fsc), ssc: Math.max(200, ssc), dyes, auto };\n  }\n  function detect(sim, cell, spill, out, k) {\n    for (let j = 0; j < 7; j++) {\n      let s = cell.auto[j] * Math.exp(0.25 * sim.normal());\n      for (let i = 0; i < 7; i++) {\n        const a = cell.dyes[i];\n        if (a > 0) s += a * spill[i][j];\n      }\n      const sd = Math.sqrt(45 * 45 + 3.2 * Math.max(0, s));\n      let v = s + sd * sim.normal();\n      if (v > MAX) v = MAX;\n      out[4 + j][k] = v;\n    }\n  }\n  function generateSample(kind, opts = {}) {\n    const spec = typeof kind === "string" ? { kind, ...opts } : kind;\n    const sim = new Sim(spec.seed || 1);\n    const n = spec.events || 5e4;\n    const cols = CH.map(() => new Float32Array(n));\n    const donor = DONORS.find((dd) => dd.name === spec.donor) || DONORS[0];\n    if (spec.kind === "bead") {\n      const dye = spec.dye;\n      for (let k = 0; k < n; k++) {\n        const fsc = 82e3 + sim.normal() * 4500;\n        const ssc = 31e3 * Math.exp(0.07 * sim.normal());\n        const dyes = new Float64Array(7);\n        const positive = dye >= 0 && sim.rand() < 0.55;\n        if (positive) dyes[dye] = sim.ln(dye === 1 ? 52e3 : 38e3, 0.22);\n        const cell = { fsc, ssc, dyes, auto: AUTO.bead };\n        scatter(sim, cell, cols, k, false);\n        detect(sim, cell, DEMO_SPILL, cols, k);\n      }\n    } else {\n      const d = donor;\n      const fr = { debris: 0.07, dead: d.dead, gran: 0.03, mono: d.mono, doublet: 0.04 };\n      const lymph = Math.max(0.2, 1 - fr.debris - fr.dead - fr.gran - fr.mono - fr.doublet);\n      const types = ["debris", "dead", "gran", "mono", "doublet", "lymph"];\n      const weights = [fr.debris, fr.dead, fr.gran, fr.mono, fr.doublet, lymph];\n      for (let k = 0; k < n; k++) {\n        const t2 = types[sim.pick(weights)];\n        if (t2 === "doublet") {\n          const a = makeCell(sim, sim.rand() < 0.8 ? "lymph" : "mono", d);\n          const b = makeCell(sim, sim.rand() < 0.85 ? "lymph" : "mono", d);\n          const dyes = new Float64Array(7);\n          for (let i = 0; i < 7; i++) dyes[i] = a.dyes[i] + b.dyes[i];\n          const auto = a.auto.map((v, i) => v + b.auto[i]);\n          const cell = { fsc: a.fsc + b.fsc, ssc: a.ssc + b.ssc, dyes, auto, hMax: Math.max(a.fsc, b.fsc), sMax: Math.max(a.ssc, b.ssc) };\n          scatter(sim, cell, cols, k, true);\n          detect(sim, cell, DEMO_SPILL, cols, k);\n        } else {\n          const cell = makeCell(sim, t2, d);\n          scatter(sim, cell, cols, k, false);\n          detect(sim, cell, DEMO_SPILL, cols, k);\n        }\n      }\n    }\n    const tcol = cols[CH.length - 1];\n    let t = 0;\n    const duration = spec.kind === "bead" ? 1800 : 6200;\n    const step = duration / n;\n    for (let k = 0; k < n; k++) {\n      t += step * (0.6 + 0.8 * sim.rand()) * (1 + 0.15 * Math.sin(k / n * 6.283));\n      tcol[k] = t;\n    }\n    const keywords = {\n      $CYT: "Kestrel Simulator",\n      $CYTSN: "SIM-0001",\n      $DATE: "18-SEP-2026",\n      $BTIM: "10:12:00",\n      $ETIM: "10:13:04",\n      $FIL: `${spec.name}.fcs`,\n      $SRC: spec.kind === "bead" ? "Compensation" : "PBMC",\n      $TIMESTEP: "0.01",\n      "TUBE NAME": spec.name,\n      "EXPERIMENT NAME": "Demo 7-colour PBMC panel",\n      "SAMPLE ID": spec.kind === "bead" ? "Comp beads" : spec.donor,\n      $OP: "Kestrel demo",\n      CREATOR: "Kestrel demo generator"\n    };\n    return writeFCS({\n      channels: CH,\n      columns: cols,\n      nEvents: n,\n      keywords,\n      spillover: { names: DEMO_DETECTORS.slice(), matrix: DEMO_SPILL_ACQ }\n    });\n  }\n  function scatter(sim, cell, cols, k, doublet) {\n    const clip = (v) => v > MAX ? MAX : v;\n    const fscA = cell.fsc * (1 + 0.02 * sim.normal()) + 150 * sim.normal();\n    const sscA = cell.ssc * (1 + 0.02 * sim.normal()) + 120 * sim.normal();\n    let fscH;\n    let sscH;\n    if (doublet) {\n      fscH = cell.hMax * (1.18 + 0.06 * sim.normal());\n      sscH = cell.sMax * (1.2 + 0.07 * sim.normal());\n    } else {\n      fscH = fscA * (0.84 + 0.025 * sim.normal());\n      sscH = sscA * (0.86 + 0.03 * sim.normal());\n    }\n    cols[0][k] = clip(fscA);\n    cols[1][k] = clip(fscH);\n    cols[2][k] = clip(sscA);\n    cols[3][k] = clip(sscH);\n  }\n\n  // src/engine/engine.js\n  var DEFAULT_SPEC = { type: "linear", min: 0, max: 262144 };\n  var Sample = class {\n    constructor(id, name, parsed) {\n      this.id = id;\n      this.name = name;\n      this.N = parsed.nEvents;\n      this.channels = parsed.channels;\n      this.raw = parsed.columns;\n      this.keywords = parsed.keywords;\n      this.spillover = parsed.spillover;\n      this.index = /* @__PURE__ */ new Map();\n      parsed.channels.forEach((c, i) => this.index.set(c.name, i));\n      this.comp = null;\n      this.scaled = /* @__PURE__ */ new Map();\n      this.pops = /* @__PURE__ */ new Map();\n      this.sigMemo = /* @__PURE__ */ new Map();\n      this.derivedCols = /* @__PURE__ */ new Map();\n      this._root = null;\n    }\n    root() {\n      if (!this._root) {\n        const r = new Uint32Array(this.N);\n        for (let i = 0; i < this.N; i++) r[i] = i;\n        this._root = r;\n      }\n      return this._root;\n    }\n    values(ch) {\n      const i = this.index.get(ch);\n      if (i === void 0) return null;\n      if (this.comp) {\n        const c = this.comp.cols.get(i);\n        if (c) return c;\n      }\n      return this.raw[i];\n    }\n    rawValues(ch) {\n      const i = this.index.get(ch);\n      return i === void 0 ? null : this.raw[i];\n    }\n    compKey() {\n      return this.comp ? this.comp.key : "none";\n    }\n    invalidate() {\n      this.scaled.clear();\n      this.pops.clear();\n      this.sigMemo.clear();\n      this.derivedCols.clear();\n    }\n  };\n  function quickSample(arr, max) {\n    if (arr.length <= max) return arr;\n    const out = new Float32Array(max);\n    const step = arr.length / max;\n    for (let i = 0; i < max; i++) out[i] = arr[Math.floor(i * step)];\n    return out;\n  }\n  var Engine = class {\n    constructor() {\n      this.samples = /* @__PURE__ */ new Map();\n      this.transforms = {};\n      this.gates = [];\n      this.gateById = /* @__PURE__ */ new Map();\n      this.ordered = [];\n      this.invalid = /* @__PURE__ */ new Set();\n      this.overrides = {};\n      this.derived = /* @__PURE__ */ new Map();\n    }\n    /** Dispatch a message. Returns { result, transfer }. */\n    handle(type, p) {\n      const fn = this["cmd_" + type];\n      if (!fn) throw new Error(`Unknown engine command "${type}"`);\n      return fn.call(this, p || {});\n    }\n    sample(id) {\n      const s = this.samples.get(id);\n      if (!s) throw new Error("That sample is not loaded.");\n      return s;\n    }\n    // ------------------------------------------------------------ loading\n    cmd_load({ id, name, buffer, format = "fcs", options = {} }) {\n      let parsed;\n      if (format === "csv") {\n        const text = new TextDecoder().decode(buffer);\n        const t = parseEventTable(text);\n        parsed = {\n          version: "CSV",\n          keywords: { $FIL: name },\n          channels: t.channels.map((nm, i) => {\n            const col = t.columns[i];\n            let mn = Infinity;\n            let mx = -Infinity;\n            for (let k = 0; k < col.length; k++) {\n              if (col[k] < mn) mn = col[k];\n              if (col[k] > mx) mx = col[k];\n            }\n            return { index: i, name: nm, label: "", bits: 32, range: mx > 0 ? mx : 1, amp: [0, 0], gain: 1, kind: classifyChannel(nm, ""), min: mn, max: mx };\n          }),\n          nEvents: t.nEvents,\n          columns: t.columns,\n          spillover: null,\n          datasetCount: 1,\n          warnings: []\n        };\n      } else {\n        parsed = parseFCS(buffer, options);\n      }\n      const s = new Sample(id, name, parsed);\n      this.samples.set(id, s);\n      return { result: this.meta(s, parsed) };\n    }\n    cmd_loadDemo({ id, name, spec }) {\n      const bytes = generateSample(spec);\n      const parsed = parseFCS(bytes);\n      const s = new Sample(id, name, parsed);\n      this.samples.set(id, s);\n      return { result: { ...this.meta(s, parsed), size: bytes.length } };\n    }\n    cmd_generateDemo({ spec }) {\n      const bytes = generateSample(spec);\n      return { result: { buffer: bytes.buffer }, transfer: [bytes.buffer] };\n    }\n    meta(s, parsed) {\n      let sampleCols = null;\n      const sub = Math.min(s.N, 4e4);\n      if (s.spillover) {\n        try {\n          const idx = matchChannels(s.spillover.names, s.channels);\n          if (idx.every((k) => k >= 0)) {\n            const inv = invertMatrix(s.spillover.matrix);\n            const small = s.raw.map((c) => quickSample(c, sub));\n            const comp = compensateColumns(small, idx, inv, small[0].length);\n            sampleCols = small.slice();\n            idx.forEach((k, j) => sampleCols[k] = comp[j]);\n          }\n        } catch (e) {\n          sampleCols = null;\n        }\n      }\n      const suggestions = s.channels.map((ch, i) => {\n        const col = sampleCols ? sampleCols[i] : quickSample(s.raw[i], sub);\n        const sorted = Float32Array.from(col).sort();\n        const p001 = percentileSorted(sorted, 0.1);\n        const p999 = percentileSorted(sorted, 99.9);\n        const T = ch.range > 0 ? ch.range : Math.max(p999, 1);\n        let W = 0.5;\n        try {\n          W = estimateLogicleW(col, T, 4.5, 0);\n        } catch (e) {\n          W = 0.5;\n        }\n        return { W, p001, p999 };\n      });\n      return {\n        id: s.id,\n        name: s.name,\n        nEvents: s.N,\n        version: parsed.version,\n        channels: s.channels.map((c, i) => ({\n          name: c.name,\n          label: c.label,\n          range: c.range,\n          kind: c.kind,\n          min: c.min,\n          max: c.max,\n          voltage: c.voltage,\n          gain: c.gain,\n          logAmplified: !!c.logAmplified,\n          suggest: suggestions[i]\n        })),\n        keywords: s.keywords,\n        summary: summaryKeywords(s.keywords),\n        spillover: s.spillover ? { names: s.spillover.names, matrix: s.spillover.matrix, keyword: s.spillover.keyword } : null,\n        warnings: parsed.warnings || [],\n        datasetCount: parsed.datasetCount || 1\n      };\n    }\n    cmd_unload({ id }) {\n      this.samples.delete(id);\n      return { result: true };\n    }\n    cmd_ping() {\n      return { result: { samples: this.samples.size } };\n    }\n    // ------------------------------------------------------------ state sync\n    cmd_setTransforms({ transforms }) {\n      const prev = this.transforms;\n      this.transforms = transforms || {};\n      const changed = /* @__PURE__ */ new Set();\n      const keys = /* @__PURE__ */ new Set([...Object.keys(prev), ...Object.keys(this.transforms)]);\n      for (const k of keys) if (transformKey(prev[k] || DEFAULT_SPEC) !== transformKey(this.transforms[k] || DEFAULT_SPEC)) changed.add(k);\n      if (changed.size) for (const s of this.samples.values()) s.sigMemo.clear();\n      return { result: { changed: [...changed] } };\n    }\n    cmd_setComp({ id, comp }) {\n      const s = this.sample(id);\n      const key = comp ? matrixKey(comp) : "none";\n      if (s.compKey() === key) return { result: { key, missing: s.comp ? s.comp.missing : [] } };\n      if (!comp) {\n        s.comp = null;\n      } else {\n        const idxAll = matchChannels(comp.names, s.channels);\n        const keep = idxAll.map((k, j) => k >= 0 ? j : -1).filter((j) => j >= 0);\n        const missing = comp.names.filter((_, j) => idxAll[j] < 0);\n        const sub = keep.map((r) => keep.map((c) => comp.matrix[r][c]));\n        const idx = keep.map((j) => idxAll[j]);\n        const inv = invertMatrix(sub);\n        const cols = compensateColumns(s.raw, idx, inv, s.N);\n        const map = /* @__PURE__ */ new Map();\n        idx.forEach((k, j) => map.set(k, cols[j]));\n        s.comp = { key, cols: map, missing };\n      }\n      s.invalidate();\n      return { result: { key, missing: s.comp ? s.comp.missing : [] } };\n    }\n    cmd_setGates({ gates, overrides }) {\n      this.gates = gates || [];\n      this.gateById = new Map(this.gates.map((g) => [g.id, g]));\n      const { ordered, invalid } = orderGates(this.gates);\n      this.ordered = ordered;\n      this.invalid = invalid;\n      if (overrides) this.overrides = overrides;\n      for (const s of this.samples.values()) s.sigMemo.clear();\n      return { result: { invalid: [...invalid] } };\n    }\n    cmd_setOverrides({ overrides }) {\n      this.overrides = overrides || {};\n      for (const s of this.samples.values()) s.sigMemo.clear();\n      return { result: true };\n    }\n    // ------------------------------------------------------------ evaluation\n    spec(ch) {\n      return this.transforms[ch] || DEFAULT_SPEC;\n    }\n    /** Channel values (compensated when applicable), including derived ratio parameters. */\n    values(s, ch) {\n      const v = s.values(ch);\n      if (v) return v;\n      const def = this.derived.get(ch);\n      if (!def) return null;\n      const key = derivedKey(def) + "|" + s.compKey();\n      const c = s.derivedCols.get(ch);\n      if (c && c.key === key) return c.arr;\n      const x = s.values(def.x);\n      const y = s.values(def.y);\n      if (!x || !y) return null;\n      const A = Number.isFinite(def.A) ? def.A : 1;\n      const B = Number.isFinite(def.B) ? def.B : 0;\n      const C = Number.isFinite(def.C) ? def.C : 0;\n      const arr = new Float32Array(s.N);\n      for (let i = 0; i < s.N; i++) arr[i] = A * (x[i] - B) / (y[i] - C);\n      s.derivedCols.set(ch, { key, arr });\n      return arr;\n    }\n    hasChannel(s, ch) {\n      if (s.index.has(ch)) return true;\n      const def = this.derived.get(ch);\n      return !!(def && s.index.has(def.x) && s.index.has(def.y));\n    }\n    cmd_setDerived({ derived }) {\n      const next = new Map((derived || []).map((d) => [d.name, d]));\n      const changed = [];\n      for (const [k, d] of next) if (!this.derived.has(k) || derivedKey(this.derived.get(k)) !== derivedKey(d)) changed.push(k);\n      for (const k of this.derived.keys()) if (!next.has(k)) changed.push(k);\n      this.derived = next;\n      if (changed.length) {\n        for (const s of this.samples.values()) {\n          for (const k of changed) s.derivedCols.delete(k);\n          s.scaled.clear();\n          s.pops.clear();\n          s.sigMemo.clear();\n        }\n      }\n      return { result: { changed } };\n    }\n    scaled(s, ch) {\n      const vals = this.values(s, ch);\n      if (!vals) return null;\n      const i = s.index.has(ch) ? s.index.get(ch) : `d:${ch}`;\n      const spec = this.spec(ch);\n      const def = this.derived.get(ch);\n      const key = transformKey(spec) + "|" + s.compKey() + (def && !s.index.has(ch) ? "|" + derivedKey(def) : "");\n      const c = s.scaled.get(i);\n      if (c && c.key === key) return c.arr;\n      const t = makeTransform(spec);\n      const arr = t.scaleArray(vals, c && c.arr.length === s.N ? c.arr : new Float32Array(s.N));\n      s.scaled.set(i, { key, arr });\n      return arr;\n    }\n    /** Values on an arbitrary scale (for gates that carry their own scales). */\n    scaledWith(s, ch, spec) {\n      const tk = transformKey(spec);\n      if (tk === transformKey(this.spec(ch))) return this.scaled(s, ch);\n      const vals = this.values(s, ch);\n      if (!vals) return null;\n      const slot = `w:${ch}:${tk}`;\n      const key = tk + "|" + s.compKey();\n      const c = s.scaled.get(slot);\n      if (c && c.key === key) return c.arr;\n      const arr = makeTransform(spec).scaleArray(vals, new Float32Array(s.N));\n      s.scaled.set(slot, { key, arr });\n      return arr;\n    }\n    ctx(s) {\n      return {\n        N: s.N,\n        values: (ch) => this.values(s, ch),\n        scaled: (ch) => this.scaled(s, ch),\n        transform: (ch) => makeTransform(this.spec(ch)),\n        transformFor: (spec) => makeTransform(spec),\n        scaledWith: (ch, spec) => this.scaledWith(s, ch, spec),\n        pop: (id) => this.pop(s, id)\n      };\n    }\n    effective(s, g) {\n      const ov = this.overrides[s.id];\n      return ov && ov[g.id] ? applyOverride(g, ov[g.id]) : g;\n    }\n    sig(s, id) {\n      if (id === ROOT || !id) return "root:" + s.N;\n      const memo = s.sigMemo.get(id);\n      if (memo) return memo;\n      const g = this.gateById.get(id);\n      if (!g || this.invalid.has(id)) return "invalid";\n      const eff = this.effective(s, g);\n      let str = geometrySignature(eff) + "|" + s.compKey();\n      for (const ch of [eff.x, eff.y]) if (ch && !s.index.has(ch) && this.derived.has(ch)) str += "|" + derivedKey(this.derived.get(ch));\n      if (needsScale(eff)) {\n        const [sx, sy] = evalSpecs(eff, this.transforms);\n        str += "|" + transformKey(sx || DEFAULT_SPEC) + "|" + transformKey(sy || DEFAULT_SPEC);\n      }\n      for (const d of gateDeps(eff)) str += "|" + this.sig(s, d);\n      str += "|" + this.sig(s, eff.parent || ROOT);\n      const h = hashString(str);\n      s.sigMemo.set(id, h);\n      return h;\n    }\n    /** Event indices of a population (cached). */\n    pop(s, id) {\n      if (!id || id === ROOT) return s.root();\n      const g = this.gateById.get(id);\n      if (!g || this.invalid.has(id)) return new Uint32Array(0);\n      const sig = this.sig(s, id);\n      const cached = s.pops.get(id);\n      if (cached && cached.sig === sig) return cached.idx;\n      const parent = this.pop(s, g.parent || ROOT);\n      let idx;\n      let error = null;\n      try {\n        idx = evaluateGate(this.effective(s, g), parent, this.ctx(s));\n      } catch (e) {\n        idx = new Uint32Array(0);\n        error = e.message || String(e);\n      }\n      s.pops.set(id, { sig, idx, error });\n      return idx;\n    }\n    cmd_counts({ id }) {\n      const s = this.sample(id);\n      const counts = { root: s.N };\n      const errors = {};\n      for (const g of this.ordered) {\n        const idx = this.pop(s, g.id);\n        counts[g.id] = idx.length;\n        const c = s.pops.get(g.id);\n        if (c && c.error) errors[g.id] = c.error;\n      }\n      for (const gid of this.invalid) {\n        counts[gid] = 0;\n        errors[gid] = "This gate depends on a missing or circular population.";\n      }\n      return { result: { counts, errors } };\n    }\n    // ------------------------------------------------------------ plotting\n    cmd_plot({ id, req }) {\n      const s = this.sample(id);\n      const idx = this.pop(s, req.pop);\n      const missing = [];\n      if (req.x && !this.hasChannel(s, req.x)) missing.push(req.x);\n      if (req.y && !this.hasChannel(s, req.y)) missing.push(req.y);\n      if (missing.length) return { result: { missing, n: idx.length, total: s.N } };\n      const transfer = [];\n      if (req.y) {\n        const w = Math.max(1, Math.min(2048, req.w | 0));\n        const h = Math.max(1, Math.min(2048, req.h | 0));\n        const sx2 = this.scaled(s, req.x);\n        const sy = this.scaled(s, req.y);\n        const counts2 = bin2d(idx, sx2, sy, w, h);\n        transfer.push(counts2.buffer);\n        const overlays2 = (req.overlays || []).map((oid) => {\n          const oidx = this.pop(s, oid);\n          const c = bin2d(oidx, sx2, sy, w, h);\n          transfer.push(c.buffer);\n          return { id: oid, counts: c, n: oidx.length };\n        });\n        return { result: { kind: "2d", w, h, counts: counts2, overlays: overlays2, n: idx.length, total: s.N }, transfer };\n      }\n      const bins = Math.max(8, Math.min(4096, req.bins | 0 || 256));\n      const sx = this.scaled(s, req.x);\n      const counts = bin1d(idx, sx, bins);\n      transfer.push(counts.buffer);\n      const overlays = (req.overlays || []).map((oid) => {\n        const oidx = this.pop(s, oid);\n        const c = bin1d(oidx, sx, bins);\n        transfer.push(c.buffer);\n        return { id: oid, counts: c, n: oidx.length };\n      });\n      return { result: { kind: "1d", bins, counts, overlays, n: idx.length, total: s.N }, transfer };\n    }\n    /** Several small plots in one call (compensation matrix preview, batch layouts). */\n    cmd_plots({ id, reqs }) {\n      const out = [];\n      const transfer = [];\n      for (const req of reqs) {\n        const r = this.cmd_plot({ id, req });\n        out.push(r.result);\n        if (r.transfer) transfer.push(...r.transfer);\n      }\n      return { result: out, transfer };\n    }\n    // ------------------------------------------------------------ statistics\n    cmd_stats({ id, reqs }) {\n      const s = this.sample(id);\n      const groups = /* @__PURE__ */ new Map();\n      reqs.forEach((r, i) => {\n        const key = r.pop + "" + r.channel;\n        if (!groups.has(key)) groups.set(key, { pop: r.pop, channel: r.channel, items: [] });\n        groups.get(key).items.push({ i, stat: r.stat, arg: r.arg });\n      });\n      const values = new Array(reqs.length).fill(null);\n      for (const gr of groups.values()) {\n        const vals = this.values(s, gr.channel);\n        if (!vals) continue;\n        const idx = this.pop(s, gr.pop);\n        const needMode = gr.items.some((it) => it.stat === "mode");\n        const res = channelStats(vals, idx, gr.items, needMode ? this.scaled(s, gr.channel) : null, needMode ? makeTransform(this.spec(gr.channel)) : null);\n        for (const it of gr.items) {\n          const key = it.stat === "percentile" ? `percentile:${it.arg ?? 50}` : it.stat;\n          values[it.i] = res[key];\n        }\n      }\n      return { result: values };\n    }\n    /** Suggest a Logicle width for a channel from current (compensated) data. */\n    cmd_estimateW({ id, channel, T, M = 4.5, A = 0, pop }) {\n      const s = this.sample(id);\n      const v = this.values(s, channel);\n      if (!v) return { result: null };\n      const idx = this.pop(s, pop || ROOT);\n      const vals = quickSample(subset(v, idx), 6e4);\n      return { result: estimateLogicleW(vals, T, M, A) };\n    }\n    cmd_quantiles({ id, channel, pop, ps, raw = false }) {\n      const s = this.sample(id);\n      const v = raw ? s.rawValues(channel) : this.values(s, channel);\n      if (!v) return { result: null };\n      const idx = this.pop(s, pop || ROOT);\n      const vals = subset(v, idx).sort();\n      return { result: ps.map((p) => percentileSorted(vals, p)) };\n    }\n    /**\n     * Medians of uncompensated detector values for one single-stain control.\n     * Positive events are above `threshold` in the primary detector (or the\n     * top `posFrac` when no threshold is given); the negative reference is the\n     * bottom `negFrac` unless `internalNeg` is false.\n     */\n    cmd_controlMedians({ id, pop, primary, channels, threshold = null, posFrac = 0.25, negFrac = 0.3, internalNeg = true, satFrac = 0.98 }) {\n      const s = this.sample(id);\n      const pv = s.rawValues(primary);\n      if (!pv) return { result: { error: `${primary} is not in ${s.name}` } };\n      const idx = this.pop(s, pop || ROOT);\n      const ch = s.channels[s.index.get(primary)];\n      const sat = (ch.range > 0 ? ch.range : Infinity) * satFrac;\n      const vals = subset(pv, idx).sort();\n      let thr = threshold;\n      if (thr === null || thr === void 0) thr = percentileSorted(vals, 100 * (1 - posFrac));\n      const negThr = percentileSorted(vals, 100 * negFrac);\n      const pos2 = [];\n      const neg = [];\n      for (let k = 0; k < idx.length; k++) {\n        const i = idx[k];\n        const v = pv[i];\n        if (v > thr && v < sat) pos2.push(i);\n        else if (internalNeg && v <= negThr) neg.push(i);\n      }\n      const med = (list) => {\n        const out = {};\n        for (const c of channels) {\n          const cv = s.rawValues(c);\n          if (!cv) {\n            out[c] = NaN;\n            continue;\n          }\n          const arr = new Float32Array(list.length);\n          for (let k = 0; k < list.length; k++) arr[k] = cv[list[k]];\n          arr.sort();\n          out[c] = percentileSorted(arr, 50);\n        }\n        return out;\n      };\n      return { result: { pos: med(pos2), neg: internalNeg ? med(neg) : null, nPos: pos2.length, nNeg: neg.length, threshold: thr } };\n    }\n    /** Medians of uncompensated values for several channels in a population. */\n    cmd_medians({ id, pop, channels }) {\n      const s = this.sample(id);\n      const idx = this.pop(s, pop || ROOT);\n      const out = {};\n      for (const c of channels) {\n        const v = s.rawValues(c);\n        out[c] = v ? percentileSorted(subset(v, idx).sort(), 50) : NaN;\n      }\n      return { result: { medians: out, n: idx.length } };\n    }\n    // ------------------------------------------------------------ export\n    cmd_exportFCS({ id, pop, compensated = false, extra = {}, spillover, channels = null }) {\n      const s = this.sample(id);\n      const idx = this.pop(s, pop || ROOT);\n      const chans = channels ? s.channels.filter((c) => channels.includes(c.name)) : s.channels;\n      const cols = chans.map((c) => compensated ? s.values(c.name) : s.raw[s.index.get(c.name)]);\n      const bytes = writeFCS({\n        channels: chans,\n        columns: cols,\n        nEvents: s.N,\n        indices: pop && pop !== ROOT ? idx : null,\n        keywords: s.keywords,\n        spillover: compensated ? null : spillover === void 0 ? s.spillover : spillover,\n        extra\n      });\n      return { result: { buffer: bytes.buffer, n: idx.length }, transfer: [bytes.buffer] };\n    }\n    cmd_exportCSV({ id, pop, channels = null, values = "comp", header = "name" }) {\n      const s = this.sample(id);\n      const idx = this.pop(s, pop || ROOT);\n      const chans = channels ? s.channels.filter((c) => channels.includes(c.name)) : s.channels;\n      const cols = chans.map((c) => values === "raw" ? s.raw[s.index.get(c.name)] : values === "scaled" ? this.scaled(s, c.name) : s.values(c.name));\n      const head = chans.map((c) => header === "both" && c.label ? `${c.name} :: ${c.label}` : c.name);\n      const parts = [toCSV([head])];\n      const chunk = 2e4;\n      for (let start = 0; start < idx.length; start += chunk) {\n        const end = Math.min(idx.length, start + chunk);\n        const rows = [];\n        for (let k = start; k < end; k++) {\n          const i = idx[k];\n          const row = new Array(cols.length);\n          for (let p = 0; p < cols.length; p++) {\n            const v = cols[p][i];\n            row[p] = Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : "";\n          }\n          rows.push(row);\n        }\n        parts.push(toCSV(rows));\n      }\n      const bytes = new TextEncoder().encode(parts.join(""));\n      return { result: { buffer: bytes.buffer, n: idx.length }, transfer: [bytes.buffer] };\n    }\n    /** Event values (scaled) for a population; used for small dot overlays. */\n    cmd_events({ id, pop, channels, max = 5e3 }) {\n      const s = this.sample(id);\n      const idx = this.pop(s, pop || ROOT);\n      const n = Math.min(idx.length, max);\n      const step = idx.length / Math.max(1, n);\n      const out = channels.map((c) => {\n        const sc = this.scaled(s, c);\n        const arr = new Float32Array(n);\n        if (sc) for (let k = 0; k < n; k++) arr[k] = sc[idx[Math.floor(k * step)]];\n        return arr;\n      });\n      return { result: { n, columns: out }, transfer: out.map((a) => a.buffer) };\n    }\n  };\n  function derivedKey(d) {\n    return `${d.kind || "ratio"}:${d.x}:${d.y}:${d.A ?? 1}:${d.B ?? 0}:${d.C ?? 0}`;\n  }\n  function geometrySignature(g) {\n    return JSON.stringify([g.type, g.x || null, g.y || null, g.parent || null, g.rect || null, g.polygon || null, g.ellipse || null, g.range || null, g.boolean || null, g.scale || null]);\n  }\n  function bin2d(idx, sx, sy, w, h) {\n    const counts = new Uint32Array(w * h);\n    for (let k = 0, n = idx.length; k < n; k++) {\n      const i = idx[k];\n      let a = sx[i];\n      let b = sy[i];\n      a = a > 0 ? a < 1 ? a : 1 : 0;\n      b = b > 0 ? b < 1 ? b : 1 : 0;\n      let bx = a * w | 0;\n      let by = b * h | 0;\n      if (bx >= w) bx = w - 1;\n      if (by >= h) by = h - 1;\n      counts[by * w + bx]++;\n    }\n    return counts;\n  }\n  function bin1d(idx, sx, bins) {\n    const counts = new Float64Array(bins);\n    for (let k = 0, n = idx.length; k < n; k++) {\n      let a = sx[idx[k]];\n      a = a > 0 ? a < 1 ? a : 1 : 0;\n      let b = a * bins | 0;\n      if (b >= bins) b = bins - 1;\n      counts[b]++;\n    }\n    return counts;\n  }\n\n  // src/engine/worker-entry.js\n  var engine = new Engine();\n  self.onmessage = (e) => {\n    const { rid, type, payload } = e.data || {};\n    try {\n      const { result, transfer } = engine.handle(type, payload);\n      self.postMessage({ rid, ok: true, result }, transfer || []);\n    } catch (err) {\n      self.postMessage({ rid, ok: false, error: err && err.message || String(err) });\n    }\n  };\n  self.postMessage({ ready: true });\n})();\n' : "";
   store.set(initialState());
   var hash = (location.hash || "").replace("#", "");
-  if (["gating", "comp", "table", "batch", "layout", "keywords"].includes(hash)) setUI({ view: hash });
+  if (["samples", "gating", "comp", "table", "layout", "keywords"].includes(hash)) setUI({ view: hash });
+  else if (hash === "batch") setUI({ view: "layout" });
   installThemeWatch();
   D(/* @__PURE__ */ u3(App, {}), document.getElementById("app"));
   window.kestrel = {

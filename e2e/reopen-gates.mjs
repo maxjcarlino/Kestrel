@@ -1,6 +1,6 @@
 // A workspace whose gating was done by stepping one plot down the hierarchy
 // (the population button on a plot) is saved with a single plot. When it's
-// reopened, Batch and Layout must still offer every gate — not just the
+// reopened, Layout must still offer every gate — not just the
 // population that plot last showed.
 //
 //   node e2e/reopen-gates.mjs
@@ -59,23 +59,17 @@ await page.waitForFunction(() => {
 await page.waitForTimeout(1500);
 check('the reopened workspace has the one saved plot', (await page.evaluate(() => window.kestrel.state().doc.plots.length)) === 1);
 
-// Batch: a column for every step of the gating strategy, each with numbers
-await page.click('.view-tab:has-text("Batch")');
-await page.waitForTimeout(3000);
-const cols = await page.$$eval('.batch-col b', (els) => els.map((e) => e.textContent));
-check('Batch shows a plot for every step of the gating, not just the last population', cols.length >= 6 && cols[0] === 'All events' && cols.includes('Lymphocytes') && cols.includes('T cells'), cols.join(' | '));
+// Layout: a plot for every step of the gating strategy is offered, even
+// though the workspace saved only one
+await page.click('.view-tab:has-text("Layout")');
+await page.waitForTimeout(1500);
+const offered = await page.$$eval('.layout-side .check-list .check-row span', (els) => els.map((e) => e.textContent));
+check('Layout offers a plot for every step of the gating, not just the last population', offered.length >= 6 && offered[0].startsWith('All events') && offered.some((t) => t.startsWith('Lymphocytes')) && offered.some((t) => t.startsWith('T cells')), offered.join(' | '));
 const fresh = await page.evaluate(() => {
   const s = window.kestrel.state();
   return s.doc.samples.every((x) => s.counts[x.id] && s.counts[x.id].counts && Object.keys(s.doc.gates).every((g) => Number.isFinite(s.counts[x.id].counts[g])));
 });
 check('every gate is calculated for every sample on opening', fresh);
-check('Batch draws every one of those plots for every sample', (await page.$$eval('.batch-cell', (e) => e.length)) === cols.length * man.length, `${cols.length} plots × ${man.length} samples`);
-
-// Layout: every gate's plot can be ticked; ticking a new one makes it a real plot
-await page.click('.view-tab:has-text("Layout")');
-await page.waitForTimeout(800);
-const offered = await page.$$eval('.layout-side .check-list .check-row span', (els) => els.map((e) => e.textContent));
-check('Layout offers a plot for every step of the gating', offered.length === cols.length && offered.some((t) => t.startsWith('Singlets')), offered.join(' | '));
 await page.click('.layout-side .check-list .check-row:has-text("Singlets") input');
 await page.waitForTimeout(1500);
 const after = await page.evaluate(() => {
@@ -86,6 +80,12 @@ const after = await page.evaluate(() => {
 check('ticking one adds it to the workspace and the figure', after.real && after.inLayout && after.n === 2, JSON.stringify(after));
 const gridCols = await page.$$eval('.layout-main .batch-col', (els) => els.map((e) => e.textContent));
 check('…and it is drawn in the figure', gridCols.some((t) => t.startsWith('Singlets')), gridCols.join(' | '));
+// "All" puts every step of the gating in the figure at once
+await page.click('.layout-side .eyebrow-row .link-btn:has-text("All")');
+await page.waitForTimeout(2500);
+const all = await page.$$eval('.layout-main .batch-col', (els) => els.map((e) => e.textContent));
+check('"All" puts every step of the gating in the figure, in order', all.length === offered.length && all[0].startsWith('All events'), all.join(' | '));
+check('…drawn for every sample', (await page.$$eval('.layout-main .static-panel', (e) => e.length)) === all.length * man.length);
 check('no page errors', errors.length === 0, errors.join(' | '));
 
 await browser.close();

@@ -56,8 +56,8 @@ await page.click('.autogate-dialog .btn-primary');
 await page.waitForSelector('.autogate-dialog', { state: 'detached', timeout: 15000 });
 await page.waitForTimeout(800);
 const toastText = await page.$$eval('.toast', (els) => els.map((e) => e.textContent).join(' / '));
-// Batch keeps every sample's counts current, so all three get computed
-await page.click('.view-tab:has-text("Batch")');
+// Layout keeps every sample it shows current, so all three get computed
+await page.click('.view-tab:has-text("Layout")');
 await page.waitForTimeout(3000);
 
 const st = await page.evaluate(() => {

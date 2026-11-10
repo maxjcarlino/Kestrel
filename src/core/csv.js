@@ -72,3 +72,47 @@ export function parseEventTable(text) {
   if (m === 0) throw new Error('No numeric rows were found in the table.');
   return { channels, columns: m === n ? columns : columns.map((c) => c.slice(0, m)), nEvents: m };
 }
+
+/**
+ * Parse delimited text (a CSV/TSV file, or cells copied from a spreadsheet)
+ * into rows of strings. The delimiter is tab if the first line has one, else
+ * semicolon if it has more of those than commas, else comma. Quoted cells may
+ * contain the delimiter, newlines and doubled quotes. A trailing empty line is
+ * dropped.
+ */
+export function parseTable(text) {
+  const src = String(text || '').replace(/^﻿/, '');
+  const first = src.split(/\r?\n/, 1)[0] || '';
+  const count = (ch) => first.split(ch).length - 1;
+  const delim = first.includes('\t') ? '\t' : count(';') > count(',') ? ';' : ',';
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let q = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (q) {
+      if (c === '"') {
+        if (src[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else q = false;
+      } else cell += c;
+    } else if (c === '"' && cell === '') q = true;
+    else if (c === delim) {
+      row.push(cell);
+      cell = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && src[i + 1] === '\n') i++;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows;
+}

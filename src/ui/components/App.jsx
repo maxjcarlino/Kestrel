@@ -12,7 +12,7 @@ import { GatingView, useGlobalKeys } from './GatingView.jsx';
 import { CompView } from './CompView.jsx';
 import { TableView } from './TableView.jsx';
 import { LayoutView } from './LayoutView.jsx';
-import { BatchView } from './BatchView.jsx';
+import { SamplesView } from './SamplesView.jsx';
 import { KeywordsView } from './KeywordsView.jsx';
 import { DialogHost } from './Dialogs.jsx';
 import { MenuHost, Toasts, Icon, openDialog } from './ui.jsx';
@@ -113,10 +113,10 @@ export function App() {
       <main class={`app-body view-${view}`}>
         {withSidebar ? <Sidebar /> : null}
         <div class="view">
+          {view === 'samples' ? <SamplesView /> : null}
           {view === 'gating' ? <GatingView /> : null}
           {view === 'comp' ? <CompView /> : null}
           {view === 'table' ? <TableView /> : null}
-          {view === 'batch' ? <BatchView /> : null}
           {view === 'layout' ? <LayoutView /> : null}
           {view === 'keywords' ? <KeywordsView /> : null}
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useSel, store } from '../state/store.js';
-import { addTableColumns, removeTableColumn, moveTableColumn, setTable, samplesInGroup, findKeyword, toast, setUI } from '../state/doc.js';
+import { addTableColumns, removeTableColumn, moveTableColumn, setTable, samplesInGroup, lookupKeyword, toast, setUI } from '../state/doc.js';
 import { frequency, popName, popPath, channelInfo, countsVersion, allChannels } from '../state/derived.js';
 import { request, getCounts } from '../state/bridge.js';
 import { STATS, STAT_ORDER, statLabel, formatStat } from '../../core/stats.js';
@@ -50,11 +50,10 @@ export function TableView() {
         if (run.current !== myRun) return;
         const byId = {};
         statCols.forEach((c, i) => (byId[c.id] = vals[i]));
-        const m = store.get().meta[smp.id] || {};
         const d = store.get().doc;
         const row = {};
         for (const c of columns) {
-          if (c.kind === 'keyword') row[c.id] = m.keywords ? findKeyword(m.keywords, c.keyword) ?? '' : '';
+          if (c.kind === 'keyword') continue; // read live (see kwValue): your own columns can change any time
           else if (STATS[c.stat] && STATS[c.stat].channel) row[c.id] = byId[c.id];
           else row[c.id] = frequency(d, counts, c.pop, c.stat);
         }
@@ -86,12 +85,15 @@ export function TableView() {
     return out;
   }, [rows, colKeyStr]);
 
+  // keyword cells: the file's keyword, or your own column from the Samples tab
+  const kwValue = (smp, c) => String(lookupKeyword(doc, meta, smp.id, c.keyword) ?? '');
   const tableRows = () => {
     const head = ['Sample', ...columns.map((c) => {
       const t = colTitle(doc, c);
       return c.kind === 'keyword' ? c.keyword : `${t.path || t.top} | ${t.main}${t.sub ? ` ${t.sub}` : ''}`;
     })];
     const body = samples.map((smp) => [smp.name, ...columns.map((c) => {
+      if (c.kind === 'keyword') return kwValue(smp, c);
       const v = rows[smp.id] ? rows[smp.id][c.id] : '';
       if (typeof v === 'number') return Number.isFinite(v) ? Number(v.toPrecision(8)) : '';
       return v ?? '';
@@ -193,7 +195,7 @@ export function TableView() {
                   </th>
                   {columns.map((c) => {
                     const v = rows[smp.id] ? rows[smp.id][c.id] : undefined;
-                    if (c.kind === 'keyword') return <td class="kw-cell" key={c.id}>{v === undefined ? '…' : String(v)}</td>;
+                    if (c.kind === 'keyword') return <td class="kw-cell" key={c.id}>{kwValue(smp, c)}</td>;
                     const [lo, hi] = ranges[c.id] || [0, 0];
                     const t = Number.isFinite(v) && hi > lo ? (v - lo) / (hi - lo) : 0;
                     return (
@@ -226,7 +228,7 @@ function ColumnAdder({ anchor, keyword, onClose }) {
   const [kw, setKw] = useState('');
   const chans = allChannels(doc);
   if (keyword) {
-    const keys = Object.keys((meta[sampleId] && meta[sampleId].keywords) || {}).sort();
+    const keys = [...(doc.metaFields || []), ...Object.keys((meta[sampleId] && meta[sampleId].keywords) || {}).sort()];
     return (
       <Popover anchor={anchor} onClose={onClose} width={320} class="adder">
         <div class="adder-body">

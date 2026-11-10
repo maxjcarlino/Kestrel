@@ -18,7 +18,9 @@ const WORKER_SOURCE = typeof __WORKER_SOURCE__ === 'string' ? __WORKER_SOURCE__ 
 
 store.set(initialState());
 const hash = (location.hash || '').replace('#', '');
-if (['gating', 'comp', 'table', 'batch', 'layout', 'keywords'].includes(hash)) setUI({ view: hash });
+if (['samples', 'gating', 'comp', 'table', 'layout', 'keywords'].includes(hash)) setUI({ view: hash });
+// the Batch tab was folded into Layout
+else if (hash === 'batch') setUI({ view: 'layout' });
 installThemeWatch();
 render(<App />, document.getElementById('app'));
 

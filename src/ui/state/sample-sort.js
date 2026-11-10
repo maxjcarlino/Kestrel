@@ -3,7 +3,7 @@
 // with the workspace (doc.settings.sampleSort) but isn't an undo step.
 
 import { store } from './store.js';
-import { updateDoc, findKeyword } from './doc.js';
+import { updateDoc, lookupKeyword } from './doc.js';
 
 export const DEFAULT_SORT = { by: 'file', key: null, desc: false };
 
@@ -35,7 +35,7 @@ function cmpValues(a, b) {
 /** The value a sample is sorted on, for display next to its name (or null). */
 export function sortValue(doc, meta, smp, sort = currentSort(doc)) {
   if (sort.by === 'kw' && sort.key) {
-    const v = findKeyword(((meta[smp.id] || {}).keywords) || {}, sort.key);
+    const v = lookupKeyword(doc, meta, smp.id, sort.key);
     return v === undefined || v === null || String(v).trim() === '' ? null : String(v).trim();
   }
   return null;
@@ -105,7 +105,10 @@ export function sortableKeywords(doc, meta) {
     const i = FIRST.indexOf(k.toUpperCase());
     return i < 0 ? 1e3 : i;
   };
-  return [...seen.values()].sort((a, b) => rank(a) - rank(b) || collator.compare(a.replace(/^\$/, ''), b.replace(/^\$/, '')));
+  // your own columns (Samples tab) first, then the files' keywords
+  const own = doc.metaFields || [];
+  const fileKws = [...seen.values()].filter((k) => !own.some((f) => f.toUpperCase() === k.toUpperCase()));
+  return [...own, ...fileKws.sort((a, b) => rank(a) - rank(b) || collator.compare(a.replace(/^\$/, ''), b.replace(/^\$/, '')))];
 }
 
 export function currentSort(doc = store.get().doc) {

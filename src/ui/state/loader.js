@@ -328,6 +328,8 @@ export function makeTemplate(doc, name) {
     settings: doc.settings,
     groups: doc.groups.map((g) => ({ id: g.id, name: g.name })),
     channelLabels: doc.channelLabels || {},
+    // the names of your own sample columns (values belong to each workspace)
+    metaFields: doc.metaFields || [],
   };
 }
 
@@ -360,6 +362,9 @@ export function applyTemplate(tpl) {
     next.layout = { ...d.layout, ...(t.layout || {}) };
     next.settings = { ...DEFAULT_SETTINGS, ...(t.settings || {}) };
     next.channelLabels = { ...d.channelLabels, ...(t.channelLabels || {}) };
+    const fields = (d.metaFields || []).slice();
+    for (const f of t.metaFields || []) if (!fields.some((x) => x.toUpperCase() === f.toUpperCase())) fields.push(f);
+    next.metaFields = fields;
     const groups = d.groups.slice();
     for (const g of t.groups || []) if (!groups.some((x) => x.name === g.name)) groups.push({ id: g.id || newId('grp'), name: g.name });
     next.groups = groups;
@@ -385,6 +390,7 @@ export function migrateTemplate(raw) {
     settings: raw.settings || {},
     groups: raw.groups || [],
     channelLabels: raw.channelLabels || {},
+    metaFields: raw.metaFields || [],
   };
 }
 

@@ -1,8 +1,10 @@
-// Keywords: FCS metadata for the current sample, or compared across samples.
+// Keywords: FCS metadata for the current sample, or compared across samples,
+// along with your own sample columns from the Samples tab (which win over a
+// file keyword of the same name).
 
 import { useMemo, useState } from 'preact/hooks';
 import { useSel } from '../state/store.js';
-import { setUI, findKeyword } from '../state/doc.js';
+import { setUI, findKeyword, sampleKeywords } from '../state/doc.js';
 import { Icon, Segmented, Empty, Button } from './ui.jsx';
 import { toCSV } from '../../core/csv.js';
 import { saveFile, safeName } from '../util/download.js';
@@ -15,8 +17,8 @@ export function KeywordsView() {
   const [q, setQ] = useState('');
   const [mode, setMode] = useState('one');
   const [picked, setPicked] = useState(['$DATE', '$CYT', 'TUBE NAME', '$TOT']);
-  const m = meta[sampleId] || {};
-  const kw = m.keywords || {};
+  const kw = useMemo(() => sampleKeywords(doc, meta, sampleId), [doc.sampleMeta, doc.metaFields, meta, sampleId]);
+  const own = new Set((doc.metaFields || []).filter((f) => findKeyword(kw, f) !== undefined && ((doc.sampleMeta || {})[sampleId] || {})[f]));
   const needle = q.trim().toLowerCase();
   const entries = useMemo(
     () => Object.entries(kw).filter(([k, v]) => !needle || k.toLowerCase().includes(needle) || String(v).toLowerCase().includes(needle)).sort((a, b) => a[0].localeCompare(b[0])),
@@ -25,8 +27,9 @@ export function KeywordsView() {
   const allKeys = useMemo(() => {
     const set = new Set();
     for (const smp of doc.samples) for (const k of Object.keys((meta[smp.id] || {}).keywords || {})) set.add(k);
-    return [...set].sort();
-  }, [doc.samples, meta]);
+    const fields = doc.metaFields || [];
+    return [...fields, ...[...set].filter((k) => !fields.some((f) => f.toUpperCase() === k.toUpperCase())).sort()];
+  }, [doc.samples, doc.metaFields, meta]);
   const smp = doc.samples.find((x) => x.id === sampleId);
 
   if (!doc.samples.length) {
@@ -38,7 +41,7 @@ export function KeywordsView() {
   }
 
   const exportCompare = async () => {
-    const rows = [['Sample', ...picked], ...doc.samples.map((s) => [s.name, ...picked.map((k) => findKeyword((meta[s.id] || {}).keywords || {}, k) ?? '')])];
+    const rows = [['Sample', ...picked], ...doc.samples.map((s) => [s.name, ...picked.map((k) => findKeyword(sampleKeywords(doc, meta, s.id), k) ?? '')])];
     report(await saveFile(`${safeName(doc.name)} keywords.csv`, toCSV(rows)), 'Keywords exported');
   };
 
@@ -71,8 +74,11 @@ export function KeywordsView() {
             </thead>
             <tbody>
               {entries.map(([k, v]) => (
-                <tr key={k}>
-                  <th scope="row" class="mono">{k}</th>
+                <tr key={k} class={own.has(k) ? 'kw-own' : ''}>
+                  <th scope="row" class="mono">
+                    {k}
+                    {own.has(k) ? <span class="kw-own-tag">your column</span> : null}
+                  </th>
                   <td class="mono">{String(v)}</td>
                 </tr>
               ))}
@@ -116,7 +122,7 @@ export function KeywordsView() {
                     </th>
                     {picked.map((k) => (
                       <td class="mono" key={k}>
-                        {String(findKeyword((meta[s.id] || {}).keywords || {}, k) ?? '')}
+                        {String(findKeyword(sampleKeywords(doc, meta, s.id), k) ?? '')}
                       </td>
                     ))}
                   </tr>

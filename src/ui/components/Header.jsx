@@ -10,10 +10,10 @@ import { Icon, IconButton, openMenu, rectOf, openDialog } from './ui.jsx';
 import { KESTREL_SVG } from '../assets/kestrel-mark.js';
 
 export const VIEWS = [
+  { id: 'samples', label: 'Samples', icon: 'file' },
   { id: 'gating', label: 'Gating', icon: 'gates' },
   { id: 'comp', label: 'Compensation', icon: 'matrix' },
   { id: 'table', label: 'Statistics', icon: 'table' },
-  { id: 'batch', label: 'Batch', icon: 'layers' },
   { id: 'layout', label: 'Layout', icon: 'grid' },
   { id: 'keywords', label: 'Keywords', icon: 'tag' },
 ];

@@ -18,7 +18,7 @@ export const APP = {
   homepage: typeof __APP_HOMEPAGE__ === 'string' ? __APP_HOMEPAGE__ : '',
 };
 export const SCHEMA = 1;
-export const ANALYSIS_KEYS = ['transforms', 'comp', 'derived', 'gates', 'gateOrder', 'overrides', 'plots', 'table', 'layout', 'settings', 'groups', 'channelLabels'];
+export const ANALYSIS_KEYS = ['transforms', 'comp', 'derived', 'gates', 'gateOrder', 'overrides', 'plots', 'table', 'layout', 'settings', 'groups', 'channelLabels', 'metaFields', 'sampleMeta'];
 
 export const DEFAULT_SETTINGS = {
   colormap: 'classic',
@@ -47,6 +47,10 @@ export function emptyDoc(name = 'Untitled workspace') {
     gateOrder: [],
     overrides: {},
     channelLabels: {},
+    // your own per-sample columns (Samples tab): field names in order, and
+    // each sample's values; they work anywhere an FCS keyword does
+    metaFields: [],
+    sampleMeta: {},
     plots: [],
     table: { columns: [], groupId: null },
     layout: { plotIds: [], groupId: null, size: 220, transpose: false, overlays: [] },
@@ -703,9 +707,10 @@ export function groupByKeyword(keyword) {
   const s = store.get();
   const byVal = new Map();
   for (const smp of s.doc.samples) {
-    const m = s.meta[smp.id];
-    const kw = m && m.keywords ? findKeyword(m.keywords, keyword) : undefined;
-    const v = kw === undefined || String(kw).trim() === '' ? '(none)' : String(kw).trim();
+    const kw = lookupKeyword(s.doc, s.meta, smp.id, keyword);
+    // samples with no value aren't put in any group
+    if (kw === undefined || String(kw).trim() === '') continue;
+    const v = String(kw).trim();
     if (!byVal.has(v)) byVal.set(v, []);
     byVal.get(v).push(smp.id);
   }
@@ -726,6 +731,110 @@ export function groupByKeyword(keyword) {
     return { ...d, groups, samples };
   });
   return created.length;
+}
+
+// ------------------------------------------------------------------ sample metadata
+//
+// Your own columns of per-sample information (treatment, donor, time point...)
+// added in the Samples tab. They sit alongside the FCS file's keywords and are
+// looked up the same way, so grouping, sorting, the statistics table and the
+// Keywords view all see them. A value you enter wins over a keyword of the same
+// name; left blank, the file's own value shows through.
+
+/** A sample's keywords: the FCS file's, with your own column values over them. */
+export function sampleKeywords(doc, meta, id) {
+  const own = (doc.sampleMeta || {})[id] || {};
+  const kw = { ...(((meta || {})[id] || {}).keywords || {}) };
+  for (const f of doc.metaFields || []) {
+    const v = own[f];
+    if (v === undefined || v === null || String(v).trim() === '') continue;
+    // replace a same-named keyword whatever its case
+    for (const k of Object.keys(kw)) if (k.toUpperCase() === f.toUpperCase()) delete kw[k];
+    kw[f] = String(v);
+  }
+  return kw;
+}
+
+/** One keyword (or column) value for a sample, matched regardless of case. */
+export function lookupKeyword(doc, meta, id, name) {
+  return findKeyword(sampleKeywords(doc, meta, id), name);
+}
+
+function cleanFieldName(name) {
+  return String(name || '').replace(/\s+/g, ' ').trim();
+}
+
+/** Add a column; returns its (unique) name. */
+export function addMetaField(name = 'New column', { values = null } = {}) {
+  const fields = store.get().doc.metaFields || [];
+  const base = cleanFieldName(name) || 'New column';
+  let n = base;
+  for (let k = 2; fields.some((f) => f.toUpperCase() === n.toUpperCase()); k++) n = `${base} ${k}`;
+  updateDoc((d) => {
+    const sampleMeta = { ...(d.sampleMeta || {}) };
+    if (values) for (const [id, v] of Object.entries(values)) sampleMeta[id] = { ...(sampleMeta[id] || {}), [n]: v };
+    return { ...d, metaFields: [...(d.metaFields || []), n], sampleMeta };
+  });
+  return n;
+}
+
+/** Rename a column (its values move with it). Returns false if the name is taken. */
+export function renameMetaField(oldName, name) {
+  const n = cleanFieldName(name);
+  const d0 = store.get().doc;
+  if (!n || n === oldName) return n === oldName;
+  if ((d0.metaFields || []).some((f) => f !== oldName && f.toUpperCase() === n.toUpperCase())) return false;
+  updateDoc((d) => {
+    const sampleMeta = {};
+    for (const [id, row] of Object.entries(d.sampleMeta || {})) {
+      const r = { ...row };
+      if (oldName in r) {
+        r[n] = r[oldName];
+        delete r[oldName];
+      }
+      sampleMeta[id] = r;
+    }
+    const swap = (k) => (k === oldName ? n : k);
+    const sort = d.settings.sampleSort;
+    return {
+      ...d,
+      metaFields: d.metaFields.map(swap),
+      sampleMeta,
+      table: { ...d.table, columns: d.table.columns.map((c) => (c.kind === 'keyword' && c.keyword === oldName ? { ...c, keyword: n } : c)) },
+      settings: sort && sort.by === 'kw' && sort.key === oldName ? { ...d.settings, sampleSort: { ...sort, key: n } } : d.settings,
+    };
+  });
+  return true;
+}
+
+export function removeMetaField(name) {
+  updateDoc((d) => {
+    const sampleMeta = {};
+    for (const [id, row] of Object.entries(d.sampleMeta || {})) {
+      const r = { ...row };
+      delete r[name];
+      sampleMeta[id] = r;
+    }
+    return { ...d, metaFields: (d.metaFields || []).filter((f) => f !== name), sampleMeta };
+  });
+}
+
+export function moveMetaField(name, to) {
+  updateDoc((d) => {
+    const f = (d.metaFields || []).filter((x) => x !== name);
+    f.splice(Math.max(0, Math.min(f.length, to)), 0, name);
+    return { ...d, metaFields: f };
+  });
+}
+
+/** Set values: [[sampleId, field, value], ...], as one undo step. */
+export function setSampleMeta(entries, opts = {}) {
+  if (!entries.length) return;
+  updateDoc((d) => {
+    const sampleMeta = { ...(d.sampleMeta || {}) };
+    for (const [id, f, v] of entries) sampleMeta[id] = { ...(sampleMeta[id] || {}), [f]: v == null ? '' : String(v) };
+    return { ...d, sampleMeta };
+  }, opts);
 }
 
 export function findKeyword(keywords, name) {

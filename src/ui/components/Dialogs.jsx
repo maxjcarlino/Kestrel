@@ -689,12 +689,14 @@ function GroupByKeywordDialog() {
   const keys = useMemo(() => {
     const set = new Set();
     for (const smp of doc.samples) for (const k of Object.keys((meta[smp.id] || {}).keywords || {})) if (!/^\$?P\d+[A-Z]$/i.test(k)) set.add(k);
-    return [...set].sort();
-  }, [doc.samples, meta]);
-  const [k, setK] = useState(keys.includes('$SRC') ? '$SRC' : keys.includes('TUBE NAME') ? 'TUBE NAME' : keys[0] || '');
+    // your own columns (Samples tab) first
+    const own = doc.metaFields || [];
+    return [...own, ...[...set].filter((k) => !own.some((f) => f.toUpperCase() === k.toUpperCase())).sort()];
+  }, [doc.samples, doc.metaFields, meta]);
+  const [k, setK] = useState((doc.metaFields || [])[0] || (keys.includes('$SRC') ? '$SRC' : keys.includes('TUBE NAME') ? 'TUBE NAME' : keys[0] || ''));
   return (
     <Dialog title="Group samples by keyword" onClose={closeDialog} width={460} footer={<><Button onClick={closeDialog}>Cancel</Button><Button variant="primary" disabled={!k} onClick={() => { const n = groupByKeyword(k); closeDialog(); toast(n ? `Created ${n} group${n > 1 ? 's' : ''} from ${k}` : `Samples were added to existing groups for ${k}`); }}>Create groups</Button></>}>
-      <p class="muted small">One group is made for each distinct value of the keyword.</p>
+      <p class="muted small">One group is made for each distinct value of the keyword (or your own column from the Samples tab). Samples with no value are left out.</p>
       <label class="field-row">
         <span>Keyword</span>
         <select class="field" value={k} onChange={(e) => setK(e.currentTarget.value)}>

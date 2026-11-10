@@ -250,7 +250,7 @@ await page.keyboard.press('Escape');
 await page.waitForTimeout(600);
 await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
 
-// ---- backgating strip, Batch tab
+// ---- backgating strip, Layout
 {
   const p2 = await ctx.newPage();
   await p2.goto(url);
@@ -466,11 +466,11 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   await p2.keyboard.press('Escape');
   await p2.waitForTimeout(200);
 
-  // ---- Batch view keeps every sample's percentages current, not just the
-  // one that happened to be active in Gating. Edit a shared gate's bounds
-  // (so every sample's membership changes at once), then go straight to
-  // Batch without ever selecting the other samples individually, and check
-  // their counts were refreshed to the new gate anyway.
+  // ---- Layout keeps every sample's percentages current, not just the one
+  // that happened to be active in Gating. Edit a shared gate's bounds (so
+  // every sample's membership changes at once), then go straight to Layout
+  // without ever selecting the other samples individually, and check their
+  // counts were refreshed to the new gate anyway.
   await p2.click('.tree-row:has-text("Live")');
   await p2.waitForTimeout(300);
   const boundInputs = await p2.$$('.geom-grid input');
@@ -488,13 +488,15 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
     const members = g ? st.doc.samples.filter((s) => (s.groupIds || []).includes(g.id)) : st.doc.samples;
     return members.filter((s) => s.id !== st.ui.sampleId).map((s) => s.id);
   });
-  await p2.click('.view-tab:has-text("Batch")');
+  await p2.click('.view-tab:has-text("Layout")');
+  await p2.waitForTimeout(500);
+  await p2.click('.layout-side .eyebrow-row .link-btn:has-text("All")');
   await p2.waitForTimeout(2500);
-  const cells = await p2.$$eval('.batch-cell', (els) => els.length);
+  const cells = await p2.$$eval('.layout-main .static-panel', (els) => els.length);
   // 8 plots, plus one for "Cells": the relabel check above moved the first
   // plot's x axis to FITC-A, so no plot shows the Cells gate any more and
-  // Batch adds one to keep every step of the gating in view.
-  check('Batch tab draws every plot for every sample', cells === 9 * 3, `${cells} panels`);
+  // "All" adds one to keep every step of the gating in the figure.
+  check('Layout\'s "All" draws every step of the gating for every sample', cells === 9 * 3, `${cells} panels`);
   const freshness = await p2.evaluate((ids) => {
     const st = window.kestrel.state();
     return ids.map((id) => {
@@ -504,14 +506,16 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
     });
   }, otherIds);
   check(
-    "Batch view refreshes every sample's counts after a shared gate edit, not only the one last viewed in Gating",
+    "Layout refreshes every sample's counts after a shared gate edit, not only the one last viewed in Gating",
     editApplied && otherIds.length > 0 && freshness.every(Boolean),
     `${freshness.filter(Boolean).length} of ${freshness.length} other samples fresh (edit applied: ${editApplied})`,
   );
 
-  await p2.click('.batch-cell >> nth=4');
+  await p2.click('.layout-main .panel-btn >> nth=4');
+  await p2.waitForSelector('.panel-style-pop');
+  await p2.click('.panel-open-gating');
   await p2.waitForTimeout(600);
-  check('clicking a Batch panel opens it in Gating', (await p2.$eval('.view-tab.is-on', (e) => e.textContent)).includes('Gating'));
+  check('a Layout panel can be opened in Gating', (await p2.$eval('.view-tab.is-on', (e) => e.textContent)).includes('Gating'));
 
   // ---- layout view: toggle which labels are drawn on each panel
   await p2.click('.view-tab:has-text("Layout")');
@@ -562,19 +566,6 @@ await page.screenshot({ path: path.join(shots, '16-ratio-hyperlog.png') });
   } else {
     check('unticking a stat column removes it from the plot', false, 'no "% Parent" checkbox found');
   }
-
-  // the panel should also show up in Batch, alongside the ordinary plots
-  const batchCellsBefore = cells;
-  await p2.click('.view-tab:has-text("Batch")');
-  await p2.waitForTimeout(1500);
-  const batchCellsAfter = await p2.$$eval('.batch-cell', (els) => els.length);
-  check(
-    'the gating hierarchy panel also appears in the Batch grid',
-    batchCellsAfter === batchCellsBefore + 3,
-    `${batchCellsBefore} -> ${batchCellsAfter}`,
-  );
-  const staticTreeCell = await p2.$('.batch-cell-static');
-  check('the Batch hierarchy panel is a static (non-clickable) cell', !!staticTreeCell);
 
   // the interactive Gating grid should keep ignoring tree plots (no PlotCard crash)
   await p2.click('.view-tab:has-text("Gating")');
